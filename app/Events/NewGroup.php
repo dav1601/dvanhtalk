@@ -11,17 +11,18 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class Lobby implements ShouldBroadcastNow
+class NewGroup implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-
+    public $group;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct($group)
     {
+        $this->group = $group;
     }
 
     /**
@@ -31,6 +32,6 @@ class Lobby implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PresenceChannel('lobby');
+        return new PrivateChannel('lobby');
     }
 }

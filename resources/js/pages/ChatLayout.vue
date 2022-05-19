@@ -1,79 +1,104 @@
 <template>
-  <div class="col-12 col-lg-7 col-xl-9 position-relative">
-    <base-loading :isLoading="isLoading"></base-loading>
-    <div class="px-4 border-bottom d-none d-lg-block">
-      <div class="d-flex align-items-center py-1">
-        <div class="position-relative">
-          <img
-            :src="makeAvatar(receiver.avatar)"
-            class="rounded-circle mr-1"
-            :alt="$store.getters['message/receiver'].name"
-            width="45"
-            height="45"
-          />
-        </div>
-        <div class="flex-grow-1 pl-3">
-          <strong>{{ receiver.name }}</strong>
-          <!-- <div class="text-muted small"><em>Typing...</em></div> -->
-        </div>
-        <div>
-          <v-btn
-            @click="uploadFile"
-            color="blue-grey"
-            class="ma-2 white--text"
-            fab
-          >
-            <v-icon dark>mdi-file</v-icon>
-          </v-btn>
-          <v-btn @click="upload" color="blue-grey" class="ma-2 white--text" fab>
-            <v-icon dark>mdi-image</v-icon>
-          </v-btn>
-          <input
-            type="file"
-            accept="image/*"
-            class="d-none"
-            ref="messageImage"
-            @change="changeToSendMessage"
-            :data-image="image"
-          />
-          <input
-            type="file"
-            accept="audio/*"
-            class="d-none"
-            ref="messageAudio"
-            @change="changeAudioToSendMessage"
-          />
+  <div
+    :class="[
+      !isGroup
+        ? ['col-12', 'col-lg-7', 'col-xl-9', 'position-relative', 'row', 'g-0']
+        : ['col-12', 'row', 'g-0'],
+    ]"
+  >
+    <div class="col-3 border-right listUser scroll-custom" v-if="isGroup">
+      <item-member
+        v-for="(user, key) in receiver.members"
+        :key="'member' + key"
+        :member="user"
+      ></item-member>
+      <hr class="d-block d-lg-none mt-1 mb-0" />
+    </div>
+    <div class="position-relative" :class="[!isGroup ? ['col-12'] : ['col-9']]">
+      <v-snackbar v-model="notification" :timeout="timeout">
+        {{ text }}
+      </v-snackbar>
+      <base-loading :isLoading="isLoading"></base-loading>
+      <div class="px-4 border-bottom d-none d-lg-block">
+        <div class="d-flex align-items-center py-1">
+          <div class="position-relative">
+            <img
+              :src="makeAvatar(receiver.avatar)"
+              class="rounded-circle mr-1"
+              :alt="$store.getters['message/receiver'].name"
+              width="45"
+              height="45"
+            />
+          </div>
+          <div class="flex-grow-1 pl-3">
+            <strong>{{ receiver.name }}</strong>
+            <!-- <div class="text-muted small"><em>Typing...</em></div> -->
+          </div>
+          <div>
+            <v-btn
+              @click="uploadFile"
+              color="blue-grey"
+              class="ma-2 white--text"
+              fab
+            >
+              <v-icon dark>mdi-file</v-icon>
+            </v-btn>
+            <v-btn
+              @click="upload"
+              color="blue-grey"
+              class="ma-2 white--text"
+              fab
+            >
+              <v-icon dark>mdi-image</v-icon>
+            </v-btn>
+            <input
+              type="file"
+              accept="image/*"
+              class="d-none"
+              ref="messageImage"
+              @change="changeToSendMessage"
+              :data-image="image"
+            />
+            <input
+              type="file"
+              accept="audio/*"
+              class="d-none"
+              ref="messageAudio"
+              @change="changeAudioToSendMessage"
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="position-relative">
-      <div
-        class="chat-messages p-4 scroll-custom"
-        id="chatLayout"
-        ref="layoutChat"
-      >
-        <item-msg
-          v-for="(message, key) in messages"
-          :key="key"
-          :data="message"
-          :receiver="receiver"
-          @loaded="loaded"
-        ></item-msg>
+      <div class="position-relative">
+        <div
+          class="chat-messages p-4 scroll-custom"
+          id="chatLayout"
+          ref="layoutChat"
+        >
+          <item-msg
+            v-for="(message, key) in messages"
+            :key="key"
+            :data="message"
+            :receiver="receiver"
+            :typeUserMsg="type"
+            @loaded="loaded"
+          ></item-msg>
+        </div>
       </div>
-    </div>
-    <div class="flex-grow-0 py-3 px-4 border-top">
-      <div class="input-group">
-        <v-textarea
-          filled
-          auto-grow
-          :placeholder="placeHolder"
-          rows="2"
-          row-height="20"
-          @keydown.enter.prevent="sendMessage(1)"
-          v-model="message"
-          :disabled="disableChat"
-        ></v-textarea>
+      <div class="flex-grow-0 py-3 px-4 border-top">
+        <div class="input-group">
+          <v-textarea
+            filled
+            auto-grow
+            :placeholder="placeHolder"
+            rows="2"
+            row-height="20"
+            @keydown.enter.prevent="sendMessage(1)"
+            v-model="message"
+            :disabled="disableChat"
+          ></v-textarea>
+        </div>
       </div>
     </div>
   </div>
@@ -82,8 +107,10 @@
 import ItemMsg from "../components/chat/ItemMsg.vue";
 import user from "../mixin/user";
 import chat from "../mixin/servers/chat";
+import ItemUser from "../components/users/ItemUser.vue";
+import ItemMember from "../components/users/ItemMember.vue";
 export default {
-  components: { ItemMsg },
+  components: { ItemMsg, ItemUser, ItemMember },
   mixins: [user, chat],
   props: ["friendId"],
   data() {
@@ -96,29 +123,43 @@ export default {
       sending: false,
       disableChat: false,
       audio: "",
+      timeout: 4000,
+      notification: false,
+      text: "",
+      type: 0,
     };
   },
   async created() {
+    await this.setType;
     await this.setReceiver;
+    await this.authMember;
     await this.getMessages;
-    await Echo.leave(`chat-${this.friendId}`);
-    await Echo.leave(`chat-${this.id}`);
-    await this.server(this.friendId);
-    await this.updateSeen(this.friendId);
+    if (this.type == 0) {
+      await Echo.leave(`group-chat-${this.friendId}`);
+      await Echo.leave(`chat-${this.friendId}`);
+      await Echo.leave(`chat-${this.id}`);
+      await this.server(this.friendId);
+      await this.updateSeen(this.friendId);
+    } else {
+      await Echo.leave(`chat-${this.friendId}`);
+      await Echo.leave(`chat-${this.id}`);
+      await Echo.leave(`group-chat-${this.friendId}`);
+      await this.serverGroup(this.friendId);
+    }
     this.scrollEnd();
   },
   updated() {
     this.scrollEnd();
   },
   computed: {
-    placeHolder() {
-      return this.sending ? "Đang gửi tin nhắn...." : "Nhắn 1 cái gì đó";
+    isGroup() {
+      return this.$route.name == "group";
     },
-    receiver() {
-      return this.$store.getters["message/receiver"];
-    },
-    messages() {
-      return this.$store.getters["message/messages"];
+    setType() {
+      if (this.isGroup) {
+        return (this.type = 1);
+      }
+      return (this.type = 0);
     },
     usersMyRoom() {
       return this.$store.getters["users/usersMyRoom"];
@@ -130,9 +171,33 @@ export default {
       }
       return false;
     },
+    authMember() {
+      if (this.type == 1) {
+        let user = this.receiver.members.find(
+          (user) => user.users_id == this.id
+        );
+        if (user || this.receiver.founder.id == this.id) {
+          return;
+        }
+        return this.$router.push({ name: "home" });
+      }
+      return;
+    },
+    placeHolder() {
+      return this.sending ? "Đang gửi tin nhắn...." : "Nhắn 1 cái gì đó";
+    },
+    receiver() {
+      return this.$store.getters["message/receiver"];
+    },
+    messages() {
+      return this.$store.getters["message/messages"];
+    },
     async setReceiver() {
       await this.$store
-        .dispatch("message/getReceiver", this.friendId)
+        .dispatch("message/getReceiver", {
+          contactId: this.friendId,
+          type: this.type,
+        })
         .then((req) => {})
         .catch((err) => {
           return this.$router.push({ name: "404" });
@@ -143,12 +208,15 @@ export default {
       await this.$store
         .dispatch("message/getMessages", {
           to: this.friendId,
+          type: this.type,
         })
         .then((req) => {
           this.isLoading = false;
         })
         .catch((err) => {
           this.isLoading = false;
+          this.notification = true;
+          this.text = "Load tin nhắn thất bại";
         });
     },
   },
@@ -197,9 +265,12 @@ export default {
             msg: this.message,
             parent_id: this.parent_id,
             seen: seen,
+            // this type for text,file,audio message
             type: type,
             file: this.image,
             audio: this.audio,
+            // that type for 1: pers 2: group
+            for: this.type,
           })
           .then((req) => {
             this.resetAll();
@@ -215,12 +286,23 @@ export default {
   watch: {
     async friendId(newVal, oldVal) {
       this.disableChat = true;
+      await this.setType;
       await this.setReceiver;
+      await this.authMember;
       await this.getMessages;
-      await Echo.leave(`chat-${oldVal}`);
-      await Echo.leave(`chat-${this.id}`);
-      await this.server(newVal);
-      await this.updateSeen(newVal);
+      if (this.type == 0) {
+        await Echo.leave(`group-chat-${this.friendId}`);
+        await Echo.leave(`chat-${this.friendId}`);
+        await Echo.leave(`chat-${this.id}`);
+        await this.server(this.friendId);
+        await this.updateSeen(this.friendId);
+      } else {
+        await Echo.leave(`chat-${this.friendId}`);
+        await Echo.leave(`chat-${this.id}`);
+        await Echo.leave(`group-chat-${this.friendId}`);
+        await this.serverGroup(this.friendId);
+      }
+      this.scrollEnd();
       this.disableChat = false;
     },
   },

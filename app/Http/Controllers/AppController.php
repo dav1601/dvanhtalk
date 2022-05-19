@@ -10,8 +10,6 @@ class AppController extends Controller
 {
     public function index()
     {
-        $me = Auth::user();
-        broadcast(new Lobby);
-        return view('app', compact('me'));
+        return view('app');
     }
 }

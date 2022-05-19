@@ -70,7 +70,7 @@
     <!-- Sizes your content based upon application components -->
     <v-main>
       <!-- Provides the application the proper gutter -->
-      <v-container fluid>
+      <v-container :class="{ full: !isHome }">
         <!-- <div class="card" :class="{ fix1: isHome }">
           <v-slide-x-transition mode="out-in">
             <router-view></router-view>
@@ -92,7 +92,7 @@
 
 <script>
 import user from "./mixin/user";
-import ListUser from "./pages/ListUser.vue";
+import ListUser from "./pages/TheLobby.vue";
 export default {
   components: { ListUser },
   mixins: [user],
@@ -113,6 +113,9 @@ export default {
       })
       .leaving((user) => {
         this.$store.dispatch("users/deleteUser", user);
+      })
+      .listen("Lobby", (e) => {
+        console.log(e);
       });
   },
   computed: {
@@ -131,6 +134,9 @@ export default {
 };
 </script>
 <style lang="scss" >
+.list-group-item {
+  border-radius: 8px !important;
+}
 .fix1 {
   border: none;
   .border-right {
@@ -140,7 +146,9 @@ export default {
     justify-content: center;
   }
 }
-
+.full {
+  max-width: 100% !important;
+}
 .me-chat {
   background: #ff7675 !important;
   color: #fff !important;
@@ -179,7 +187,7 @@ export default {
 .chat-messages {
   display: flex;
   flex-direction: column;
-  height: 517px;
+  height: 590px;
   overflow-y: scroll;
 }
 

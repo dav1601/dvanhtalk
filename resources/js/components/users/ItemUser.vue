@@ -1,5 +1,6 @@
 <template>
   <router-link
+    v-if="!isLoading && link"
     class="list-group-item list-group-item-action border-0"
     :to="{
       name: 'chat',
@@ -41,7 +42,7 @@
 <script>
 import user from "../../mixin/user";
 export default {
-  props: ["user", "isOnline", "active"],
+  props: ["user", "isOnline", "active", "isLoading", "link"],
   mixins: [user],
   data() {
     return {

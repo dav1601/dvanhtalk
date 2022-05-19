@@ -17,7 +17,10 @@ export default {
         },
         isHome() {
             return this.$route.name == "home";
-          },
+        },
+        isGroup() {
+            return this.$route.name == "group";
+        },
     },
     methods: {
         makeAvatar(avatar) {

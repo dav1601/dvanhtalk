@@ -1,8 +1,13 @@
 import axios from "axios";
 const state = () => ({
     users: [],
+    myGroups: [],
     usersOnline: [],
     usersMyRoom: [],
+    groups: [],
+    founderGroupCurrent: null,
+    usersGroupCurrent: [],
+    usersGroupCurrentOnline: [],
 });
 
 const getters = {
@@ -15,11 +20,20 @@ const getters = {
     usersMyRoom(s) {
         return s.usersMyRoom;
     },
+    groups(s) {
+        return s.groups;
+    },
 };
 
 const mutations = {
     setUsers(s, p) {
         return (s.users = p);
+    },
+    setGroups(s, p) {
+        return (s.groups = p);
+    },
+    setMyGroups(s, p) {
+        return (s.myGroups = p);
     },
     setUsersOnline(s, p) {
         return (s.usersOnline = p);
@@ -52,6 +66,13 @@ const mutations = {
         s.usersOnline = updateUsers;
     },
     deleteUserMR(s, p) {},
+    // AREA GROUP
+    pushGroup(s, p) {},
+    setCurrentGroup(s, p) {},
+    pushUserOnlineGroup(s, p) {},
+    deleteGroup(s, p) {},
+    kickUser(s, p) {},
+    banUser(s, p) {},
 };
 
 const actions = {
@@ -61,6 +82,20 @@ const actions = {
                 .get("/users")
                 .then((req) => {
                     c.commit("setUsers", req.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    getGroups(c) {
+        return new Promise((rs, rj) => {
+            axios
+                .get("/groups")
+                .then((req) => {
+                    c.commit("setGroups", req.data.groups);
+                    c.commit("setMyGroups", req.data.my_groups);
                     rs(req);
                 })
                 .catch((err) => {
@@ -88,6 +123,62 @@ const actions = {
             })
             .catch((err) => {});
     },
+    searchUser(c, p) {
+        return new Promise((rs, rj) => {
+            axios
+                .get("users", { params: { keyword: p } })
+                .then((req) => {
+                    console.log(req);
+                    c.commit("setUsers", req.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    searchGroup(c, p) {
+        return new Promise((rs, rj) => {
+            axios
+                .get("/groups", { params: { keyword: p } })
+                .then((req) => {
+                    console.log(req);
+                    c.commit("setGroups", req.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    // Area Group
+    addGroup(c, p) {
+        const config = {
+            headers: {
+                "content-type": "multipart/form-data",
+            },
+        };
+        let data = new FormData();
+        data.append("file", p.file);
+        data.append("name", p.name);
+        for (let i = 0; i < p.selected.length; i++) {
+            data.append("members[]", JSON.stringify(p.selected[i]));
+        }
+        return new Promise((rs, rj) => {
+            axios
+                .post("/saveGroup", data, config)
+                .then((req) => {
+                    c.commit("pushGroup", req.data.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    addUserGroup(c, p) {},
+    deleteUserGroup(c, p) {},
+    banUserGroup(c, p) {},
 };
 
 export default {

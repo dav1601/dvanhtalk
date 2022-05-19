@@ -1,18 +1,24 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import ListUser from "./pages/ListUser.vue";
+import TheLobby from "./pages/TheLobby.vue";
 import ChatLayout from "./pages/ChatLayout";
-import NotFound from './pages/NotFound'
+import NotFound from "./pages/NotFound";
 Vue.use(VueRouter);
 const routes = [
     {
         path: "/",
         name: "home",
-        component: ListUser,
+        component: TheLobby,
         children: [
             {
                 path: "/chat/:friendId",
                 name: "chat",
+                component: ChatLayout,
+                props: true,
+            },
+            {
+                path: "/group/:friendId",
+                name: "group",
                 component: ChatLayout,
                 props: true,
             },

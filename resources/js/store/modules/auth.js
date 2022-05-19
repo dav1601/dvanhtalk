@@ -3,6 +3,7 @@ const state = () => ({
     email: null,
     name: null,
     avatar: null,
+    full: null,
 });
 
 const getters = {
@@ -18,6 +19,9 @@ const getters = {
     avatar(s) {
         return s.avatar;
     },
+    full(s) {
+        return s.full;
+    },
 };
 
 const mutations = {
@@ -25,7 +29,8 @@ const mutations = {
         (s.id = p.id),
             (s.name = p.name),
             (s.avatar = p.avatar),
-            (s.email = p.email);
+            (s.email = p.email),
+            (s.full = p);
     },
 };
 

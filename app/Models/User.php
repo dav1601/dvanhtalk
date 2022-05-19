@@ -47,4 +47,8 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\Models\UserMessage', 'rcv_id');
     }
+    public function requestsJoin()
+    {
+        return $this->hasMany('App\Models\RequestjoinGroup', 'users_id');
+    }
 }

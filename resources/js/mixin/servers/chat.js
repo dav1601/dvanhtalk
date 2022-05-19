@@ -2,6 +2,20 @@ import { toInteger } from "lodash";
 
 export default {
     methods: {
+        async serverGroup(idReceiver) {
+            await Echo.join(`group-chat-${idReceiver}`)
+                .here((users) => {
+                    console.log(users);
+                })
+                .joining((user) => {})
+                .leaving((user) => {})
+                .listen("SendMessageGroup", (e) => {
+                    this.$store.dispatch("message/getMessage", e.user_message);
+                })
+                .listenForWhisper("typing", (e) => {
+                    console.log(e);
+                });
+        },
         async server(idReceiver) {
             await Echo.join(`chat-${idReceiver}`);
             ////////////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +44,9 @@ export default {
                         }
                     }
                     this.$store.dispatch("message/getMessage", e.user_message);
+                })
+                .listenForWhisper("typing", (e) => {
+                    console.log(e);
                 });
         },
         async updateSeen(friendId) {

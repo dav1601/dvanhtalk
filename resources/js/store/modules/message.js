@@ -2,6 +2,7 @@ const state = () => ({
     messages: [],
     receiver: {},
     haveReceiver: false,
+    group: {},
 });
 
 const getters = {
@@ -11,6 +12,13 @@ const getters = {
     receiver: (s) => s.receiver,
     haveReceiver(s) {
         return s.haveReceiver;
+    },
+    meIsAdminGroup(s, gts, rS, rGts) {
+        return !!(
+            s.receiver &&
+            s.receiver.founder.id &&
+            s.receiver.founder.id == rGts["auth/id"]
+        );
     },
 };
 
@@ -36,7 +44,7 @@ const actions = {
     getReceiver(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("/user/" + p)
+                .get("/user/" + p.contactId, { params: { type: p.type } })
                 .then((req) => {
                     c.commit("setReceiver", req.data);
                     c.commit("setHaveReceiver");
@@ -50,7 +58,7 @@ const actions = {
     getMessages(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("/messages/" + p.to)
+                .get("/messages/" + p.to, { params: { type: p.type } })
                 .then((req) => {
                     const data = req.data.data;
                     const messages = [];
@@ -68,13 +76,18 @@ const actions = {
         });
     },
     getMessage(c, p) {
-        if (
-            c.rootGetters["auth/id"] == p.rcv_id &&
-            c.getters.receiver.id == p.sd_id
-        ) {
-            c.commit("pushMessage", p);
+        if (p.type == 0) {
+            if (
+                c.rootGetters["auth/id"] == p.rcv_id &&
+                c.getters.receiver.id == p.sd_id
+            ) {
+                c.commit("pushMessage", p);
+            } else {
+                return;
+            }
         } else {
-            return;
+            console.log(p);
+            c.commit("pushMessage", p);
         }
     },
     updateSeen(c, p) {
@@ -102,6 +115,7 @@ const actions = {
         data.append("type", p.type);
         data.append("file", p.file);
         data.append("audio", p.audio);
+        data.append("for", p.for);
         return new Promise((rs, rj) => {
             axios
                 .post("/saveMessage", data, config)

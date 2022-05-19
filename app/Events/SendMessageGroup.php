@@ -11,17 +11,18 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class Lobby implements ShouldBroadcastNow
+class SendMessageGroup implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-
+    public $user_message;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct($user_message)
     {
+        $this->user_message = $user_message;
     }
 
     /**
@@ -31,6 +32,6 @@ class Lobby implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PresenceChannel('lobby');
+        return new PresenceChannel('group-chat-' . $this->user_message->rcv_id);
     }
 }

@@ -18,6 +18,10 @@ class UserMessage extends Model
     ];
     public function message()
     {
-        return $this->belongsTo('App\Models\Message' , 'msg_id');
+        return $this->belongsTo('App\Models\Message', 'msg_id');
+    }
+    public function sender()
+    {
+        return $this->belongsTo('App\Models\User', 'sd_id');
     }
 }

@@ -1,6 +1,7 @@
 import axios from "axios";
 const state = () => ({
     users: [],
+    myGroupsJoined: [],
     myGroups: [],
     usersOnline: [],
     usersMyRoom: [],
@@ -23,6 +24,9 @@ const getters = {
     groups(s) {
         return s.groups;
     },
+    myGroupsJoined(s) {
+        return s.myGroupsJoined;
+    },
 };
 
 const mutations = {
@@ -31,6 +35,9 @@ const mutations = {
     },
     setGroups(s, p) {
         return (s.groups = p);
+    },
+    setmyGroupsJoined(s, p) {
+        return (s.myGroupsJoined = p);
     },
     setMyGroups(s, p) {
         return (s.myGroups = p);
@@ -45,7 +52,7 @@ const mutations = {
         if (s.usersOnline.find((user) => user.id == p.id)) {
             return;
         }
-        return s.usersOnline.push(p);
+        s.usersOnline.push(p);
     },
     deleteUserMyRoom(s, p) {
         let updateUsers = s.usersMyRoom.filter(function (item) {
@@ -57,7 +64,7 @@ const mutations = {
         if (s.usersMyRoom.find((user) => user.id == p.id)) {
             return;
         }
-        return s.usersMyRoom.push(p);
+        s.usersMyRoom.push(p);
     },
     deleteUser(s, p) {
         let updateUsers = s.usersOnline.filter(function (item) {
@@ -65,9 +72,17 @@ const mutations = {
         });
         s.usersOnline = updateUsers;
     },
-    deleteUserMR(s, p) {},
+    deleteUserMRoom(s, p) {},
     // AREA GROUP
-    pushGroup(s, p) {},
+    pushGroup(s, p) {
+        s.groups.push(p);
+    },
+    pushMyJoinedGroup(s, p) {
+        s.myGroupsJoined.push(p);
+    },
+    pushMyGroup(s, p) {
+        s.myGroups.push(p);
+    },
     setCurrentGroup(s, p) {},
     pushUserOnlineGroup(s, p) {},
     deleteGroup(s, p) {},
@@ -96,6 +111,11 @@ const actions = {
                 .then((req) => {
                     c.commit("setGroups", req.data.groups);
                     c.commit("setMyGroups", req.data.my_groups);
+                    const myGroupsJoined = [];
+                    req.data.my_groups_joined.forEach((element) => {
+                        myGroupsJoined.push(element.group);
+                    });
+                    c.commit("setmyGroupsJoined", myGroupsJoined);
                     rs(req);
                 })
                 .catch((err) => {
@@ -152,6 +172,14 @@ const actions = {
         });
     },
     // Area Group
+    getGroup(c, p) {
+        c.commit("pushGroup", p);
+        if (
+            p.members.find((user) => user.users_id == c.rootGetters["auth/id"])
+        ) {
+            c.commit("pushMyJoinedGroup", p);
+        }
+    },
     addGroup(c, p) {
         const config = {
             headers: {
@@ -169,6 +197,23 @@ const actions = {
                 .post("/saveGroup", data, config)
                 .then((req) => {
                     c.commit("pushGroup", req.data.data);
+                    c.commit("pushMyGroup", req.data.data);
+                    c.commit("pushMyJoinedGroup", req.data.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    rqJoinGr(c, p) {
+        let data = new FormData();
+        data.append("group_id", p.groupId);
+        return new Promise((rs, rj) => {
+            axios
+                .post("/saveRequest", data)
+                .then((req) => {
+                    console.log(req);
                     rs(req);
                 })
                 .catch((err) => {

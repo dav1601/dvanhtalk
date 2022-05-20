@@ -32,6 +32,6 @@ class SendMessageGroup implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PresenceChannel('group-chat-' . $this->user_message->rcv_id);
+        return new PresenceChannel('group-chat-' . $this->user_message->rcv_group_id);
     }
 }

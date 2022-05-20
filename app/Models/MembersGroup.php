@@ -22,4 +22,8 @@ class MembersGroup extends Model
     {
         return $this->belongsTo('App\Models\User', 'users_id');
     }
+    public function group()
+    {
+        return $this->belongsTo('App\Models\Groups', 'groups_id');
+    }
 }

@@ -86,7 +86,6 @@ const actions = {
                 return;
             }
         } else {
-            console.log(p);
             c.commit("pushMessage", p);
         }
     },

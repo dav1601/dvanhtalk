@@ -5,12 +5,14 @@
         ? ['col-12', 'col-lg-7', 'col-xl-9', 'position-relative', 'row', 'g-0']
         : ['col-12', 'row', 'g-0'],
     ]"
+    v-if="!checking"
   >
     <div class="col-3 border-right listUser scroll-custom" v-if="isGroup">
       <item-member
         v-for="(user, key) in receiver.members"
         :key="'member' + key"
         :member="user"
+        :isChecking="checking"
       ></item-member>
       <hr class="d-block d-lg-none mt-1 mb-0" />
     </div>
@@ -127,12 +129,14 @@ export default {
       notification: false,
       text: "",
       type: 0,
+      checking: false,
     };
   },
+
   async created() {
+    this.disableChat = true;
     await this.setType;
     await this.setReceiver;
-    await this.authMember;
     await this.getMessages;
     if (this.type == 0) {
       await Echo.leave(`group-chat-${this.friendId}`);
@@ -146,9 +150,12 @@ export default {
       await Echo.leave(`group-chat-${this.friendId}`);
       await this.serverGroup(this.friendId);
     }
-    this.scrollEnd();
+    this.disableChat = false;
   },
   updated() {
+    this.scrollEnd();
+  },
+  mounted() {
     this.scrollEnd();
   },
   computed: {
@@ -171,18 +178,6 @@ export default {
       }
       return false;
     },
-    authMember() {
-      if (this.type == 1) {
-        let user = this.receiver.members.find(
-          (user) => user.users_id == this.id
-        );
-        if (user || this.receiver.founder.id == this.id) {
-          return;
-        }
-        return this.$router.push({ name: "home" });
-      }
-      return;
-    },
     placeHolder() {
       return this.sending ? "Đang gửi tin nhắn...." : "Nhắn 1 cái gì đó";
     },
@@ -192,20 +187,33 @@ export default {
     messages() {
       return this.$store.getters["message/messages"];
     },
-    async setReceiver() {
-      await this.$store
+    setReceiver() {
+      if (this.type == 1) {
+        this.checking = true;
+      }
+      this.$store
         .dispatch("message/getReceiver", {
           contactId: this.friendId,
           type: this.type,
         })
-        .then((req) => {})
+        .then((req) => {
+          if (this.type == 1) {
+            if (
+              !this.receiver.members.find((user) => user.users_id == this.id)
+            ) {
+              this.checking = false;
+              return this.$router.push({ name: "home" });
+            }
+            this.checking = false;
+          }
+        })
         .catch((err) => {
-          return this.$router.push({ name: "404" });
+          return this.$router.push({ name: "home" });
         });
     },
-    async getMessages() {
+    getMessages() {
       this.isLoading = true;
-      await this.$store
+      this.$store
         .dispatch("message/getMessages", {
           to: this.friendId,
           type: this.type,
@@ -240,13 +248,13 @@ export default {
     uploadFile() {
       this.$refs.messageAudio.click();
     },
-    async changeAudioToSendMessage(e) {
+    changeAudioToSendMessage(e) {
       this.audio = e.target.files[0];
-      await this.sendMessage(3);
+      this.sendMessage(3);
     },
-    async changeToSendMessage(e) {
+    changeToSendMessage(e) {
       this.image = e.target.files[0];
-      await this.sendMessage(2);
+      this.sendMessage(2);
     },
     sendMessage(type) {
       let seen = 0;
@@ -286,21 +294,21 @@ export default {
   watch: {
     async friendId(newVal, oldVal) {
       this.disableChat = true;
+      this.checking = false;
       await this.setType;
       await this.setReceiver;
-      await this.authMember;
       await this.getMessages;
       if (this.type == 0) {
-        await Echo.leave(`group-chat-${this.friendId}`);
-        await Echo.leave(`chat-${this.friendId}`);
+        await Echo.leave(`group-chat-${oldVal}`);
+        await Echo.leave(`chat-${oldVal}`);
         await Echo.leave(`chat-${this.id}`);
-        await this.server(this.friendId);
-        await this.updateSeen(this.friendId);
+        await this.server(newVal);
+        await this.updateSeen(newVal);
       } else {
-        await Echo.leave(`chat-${this.friendId}`);
+        await Echo.leave(`chat-${oldVal}`);
         await Echo.leave(`chat-${this.id}`);
-        await Echo.leave(`group-chat-${this.friendId}`);
-        await this.serverGroup(this.friendId);
+        await Echo.leave(`group-chat-${oldVal}`);
+        await this.serverGroup(newVal);
       }
       this.scrollEnd();
       this.disableChat = false;

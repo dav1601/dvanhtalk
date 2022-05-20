@@ -14,4 +14,12 @@ class RequestJoinGroup extends Model
         'groups_id',
         'status'
     ];
+    public function group()
+    {
+        return $this->belongsTo('App\Models\Groups', 'groups_id');
+    }
+    public function sender()
+    {
+        return $this->belongsTo('App\Models\User', 'users_id');
+    }
 }

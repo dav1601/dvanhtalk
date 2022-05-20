@@ -1,5 +1,5 @@
 <template>
-  <router-link
+  <div
     class="list-group-item list-group-item-action border-0 card-group mb-2"
     v-if="!isLoading"
     :to="{
@@ -40,21 +40,111 @@
           </div>
         </div>
       </div>
-      <div class="group-action">
-          
+      <div class="group-action d-flex justify-content-end align-items-center">
+        <v-btn
+          :link="true"
+          :to="{ name: 'group', params: { friendId: group.id } }"
+          v-if="inGroup || statusRequest == 2"
+          rounded
+          color="primary"
+          dark
+        >
+          Vào Nhóm
+        </v-btn>
+        <v-btn
+          v-if="!request && !inGroup && statusRequest == null"
+          @click="sendRequest"
+          rounded
+          color="#263238"
+          :loading="loading"
+          :disabled="loading"
+          dark
+        >
+          Xin Vào
+        </v-btn>
+        <v-btn
+          v-if="statusRequest == 1"
+          statusUpdate="1"
+          rounded
+          color="#424242"
+          dark
+        >
+          Chờ xét duyệt
+        </v-btn>
       </div>
     </div>
-  </router-link>
+  </div>
 </template>
 <script>
 import user from "../../mixin/user";
 export default {
-  props: ["group" , "isLoading"],
+  props: ["group", "isLoading"],
   mixins: [user],
-  async updated() {},
-  async created() {},
-  computed: {},
-  methods: {},
+  data() {
+    return {
+      statusRequest: null,
+      loading: false,
+    };
+  },
+  updated() {},
+  created() {
+    this.setStatus;
+  },
+  computed: {
+    setStatus() {
+      if (this.request) {
+        this.statusRequest = this.request.status;
+      }
+    },
+
+    isMember() {
+      const exist = this.group.members.find((user) => {
+        return user.users_id == this.id;
+      });
+      if (exist) {
+        return true;
+      }
+      return false;
+    },
+    isAdmin() {
+      if (this.group.founder.id == this.id) {
+        return true;
+      }
+      return false;
+    },
+    inGroup() {
+      if (this.isMember || this.isAdmin) {
+        return true;
+      }
+      return false;
+    },
+    request() {
+      if (this.group.requests_join.length > 0) {
+        const Rq = this.group.requests_join.find((rq) => {
+          return rq.users_id == this.id;
+        });
+        if (Rq) {
+          return Rq;
+        }
+      }
+      return false;
+    },
+  },
+  methods: {
+    async sendRequest() {
+      this.loading = true;
+      await this.$store
+        .dispatch("users/rqJoinGr", {
+          groupId: this.group.id,
+        })
+        .then((req) => {
+          this.loading = false;
+        })
+        .catch((err) => {
+            this.loading = false;
+        });
+    },
+  },
 };
 </script>
 <style scoped>
@@ -68,6 +158,9 @@ export default {
 }
 .group-image {
   border-radius: 8px;
+}
+a {
+  text-decoration: none !important;
 }
 .group-name {
   font-size: 18px;

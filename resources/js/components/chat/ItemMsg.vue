@@ -24,10 +24,10 @@
       :class="[itMe ? ['me-chat'] : ['friend-chat']]"
       v-if="type == 1"
     >
-      <div v-show="typeUserMsg == 0" class="font-weight-bold mb-1 name-rcv">
+      <div v-if="typeUserMsg == 0" class="font-weight-bold mb-1 name-rcv">
         {{ itMe ? "You" : receiver.name }}
       </div>
-      <div v-show="typeUserMsg == 1" class="font-weight-bold mb-1 name-rcv">
+      <div v-if="typeUserMsg == 1" class="font-weight-bold mb-1 name-rcv">
         {{ itMe ? "You" : data.sender.name }}
       </div>
       {{ data.message.message }}

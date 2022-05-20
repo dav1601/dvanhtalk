@@ -1,7 +1,37 @@
 <template>
   <!-- App.vue -->
   <v-app>
-    <v-app-bar app v-show="!isNotFound">
+    <notifications
+      group="group"
+      :closeOnClick="false"
+      position="bottom left"
+      :speed="500"
+    >
+      <template slot="body" slot-scope="props">
+        <div class="d-flex justify-content-start align-items-center">
+          <img
+            :src="props.item.data.request.group.image"
+            class="rounded"
+            width="60"
+            height="60"
+            :alt="props.item.data.request.group.name"
+          />
+          <div class="noti-caption">
+            <h3 class="noti-title text-light">
+              <strong class="name-sender">{{
+                props.item.data.request.sender.name
+              }}</strong>
+              Đã yêu cầu tham gia nhóm
+              {{ props.item.data.request.group.name }} của bạn
+            </h3>
+            <div class="small text-grey">
+              {{ props.item.data.request.created_at }}
+            </div>
+          </div>
+        </div>
+      </template>
+    </notifications>
+    <v-app-bar app>
       <v-container class="d-flex justify-content-end">
         <v-menu
           v-model="menu"
@@ -102,9 +132,10 @@ export default {
     csrfToken: document.head.querySelector('meta[name="csrf-token"]').content,
     menu: false,
   }),
+
   async created() {
     await this.setMe;
-    Echo.join(`lobby`)
+    await Echo.join(`lobby`)
       .here((users) => {
         this.$store.dispatch("users/getUsersOnline", users);
       })
@@ -114,19 +145,19 @@ export default {
       .leaving((user) => {
         this.$store.dispatch("users/deleteUser", user);
       })
-      .listen("Lobby", (e) => {
+      .listen("NewGroup", (e) => {
         console.log(e);
+        this.$store.dispatch("users/getGroup", e.group);
       });
+    await Echo.join(`notify-${this.id}`)
+      .here((users) => {
+        console.log(users);
+      })
+      .listen("SenRqJoinGr", (e) => {});
   },
+  mounted() {},
+
   computed: {
-    async setMe() {
-      await this.$store
-        .dispatch("auth/getMe")
-        .then((req) => {})
-        .catch((err) => {
-          console.log(err);
-        });
-    },
     isNotFound() {
       return this.$route.name == "404";
     },

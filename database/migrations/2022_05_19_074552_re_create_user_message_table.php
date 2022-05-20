@@ -19,8 +19,8 @@ return new class extends Migration
             $table->foreign('sd_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedBigInteger('rcv_id');
             $table->foreign('rcv_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedBigInteger('mg_id');
-            $table->foreign('mg_id')->references('id')->on('message')->onDelete('cascade');
+            $table->unsignedBigInteger('msg_id');
+            $table->foreign('msg_id')->references('id')->on('message')->onDelete('cascade');
             $table->tinyInteger('type')->default(0);
             $table->tinyInteger('seen')->default(0)->comment('1:seen');
             $table->timestamps();

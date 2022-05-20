@@ -7,16 +7,18 @@
 require("./bootstrap");
 import Vue from "vue";
 import router from "./router";
-import store from "./store";
+import store from "./store/index";
 import App from "./App.vue";
 import Vuetify from "vuetify";
 import colors from "vuetify/lib/util/colors";
 import Multiselect from "vue-multiselect";
 import "bootstrap";
+import Notifications from "vue-notification";
 import BaseLoading from "./components/ui/BaseLoading";
 import "@mdi/font/css/materialdesignicons.css";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 Vue.use(Vuetify);
+Vue.use(Notifications);
 Vue.component("multiselect", Multiselect);
 Vue.component("base-loading", BaseLoading);
 const app = new Vue({

@@ -11,18 +11,18 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewGroup implements ShouldBroadcastNow
+class SenRqJoinGr implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-    public $group;
+    public $reqJG;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($group)
+    public function __construct($reqJG)
     {
-        $this->group = $group;
+        $this->reqJG = $reqJG;
     }
 
     /**
@@ -32,6 +32,6 @@ class NewGroup implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PresenceChannel('lobby');
+        return new PresenceChannel('notify-' . $this->reqJG->group->users_id);
     }
 }

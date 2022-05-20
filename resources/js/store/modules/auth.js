@@ -4,6 +4,7 @@ const state = () => ({
     name: null,
     avatar: null,
     full: null,
+    test: null,
 });
 
 const getters = {
@@ -22,6 +23,9 @@ const getters = {
     full(s) {
         return s.full;
     },
+    test(s) {
+        return s.test;
+    },
 };
 
 const mutations = {
@@ -32,27 +36,25 @@ const mutations = {
             (s.email = p.email),
             (s.full = p);
     },
+    setTest(s) {
+        return (s.test = 1);
+    },
 };
 
 const actions = {
-    getMe(c) {
-        return new Promise((rs, rj) => {
-            axios
-                .get("/me")
-                .then((req) => {
-                    const data = {
-                        email: req.data.me.email,
-                        id: req.data.me.id,
-                        name: req.data.me.name,
-                        avatar: null,
-                    };
-                    c.commit("setMe", data);
-                    rs(req);
-                })
-                .catch((err) => {
-                    rj(err);
-                });
-        });
+    async getMe(c) {
+        try {
+            const res = await axios.get("/me");
+            const data = {
+                email: res.data.me.email,
+                id: res.data.me.id,
+                name: res.data.me.name,
+                avatar: null,
+            };
+            c.commit("setMe", data);
+        } catch (err) {
+            throw err;
+        }
     },
 };
 

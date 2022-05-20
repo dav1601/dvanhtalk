@@ -99,7 +99,11 @@
             :isOnline="isOnline(user.id)"
             :isLoading="isLoadingUsers"
           ></item-user>
-          <sk-item-user v-for="i in 10" :key="'B' + i" :isLoading="isLoadingUsers"></sk-item-user>
+          <sk-item-user
+            v-for="i in 10"
+            :key="'B' + i"
+            :isLoading="isLoadingUsers"
+          ></sk-item-user>
         </div>
 
         <hr class="d-block d-lg-none mt-1 mb-0" />
@@ -130,7 +134,14 @@
                 placeholder="Tìm 1 nhóm để hít drama..."
               />
             </div>
-            <v-btn ref="addGroup" class="mx-2" fab dark color="indigo">
+            <v-btn
+              ref="addGroup"
+              @click="dialog = true"
+              class="mx-2"
+              fab
+              dark
+              color="indigo"
+            >
               <v-icon dark> mdi-plus </v-icon>
             </v-btn>
           </div>
@@ -164,6 +175,7 @@ import ItemSelect from "../components/users/ItemSelect.vue";
 import ItemUser from "../components/users/ItemUser.vue";
 import user from "../mixin/user";
 import { debounce } from "debounce";
+
 export default {
   components: { ItemUser, ItemSelect, ItemGroup, SkItemGroup, SkItemUser },
   mixins: [user],
@@ -186,12 +198,19 @@ export default {
   async created() {
     await this.setUsers;
     await this.setGroups;
-    this.setUid;
+    await this.setUid;
   },
+
   computed: {
-    async setUsers() {
+    requestsJoinGroup() {
+      this.$store
+        .dispatch("users/getRequestsJoinGroup")
+        .then((req) => {})
+        .catch((err) => {});
+    },
+    setUsers() {
       this.isLoadingUsers = true;
-      await this.$store
+      this.$store
         .dispatch("users/getUsers")
         .then((req) => {
           this.isLoadingUsers = false;
@@ -200,9 +219,10 @@ export default {
           this.isLoadingUsers = false;
         });
     },
-    async setGroups() {
+
+    setGroups() {
       this.isLoadingGroup = true;
-      await this.$store
+      this.$store
         .dispatch("users/getGroups")
         .then((req) => {
           this.isLoadingGroup = false;
@@ -210,12 +230,6 @@ export default {
         .catch((err) => {
           this.isLoadingGroup = false;
         });
-    },
-    async requestsJoinGroup() {
-      await this.$store
-        .dispatch("users/getRequestsJoinGroup")
-        .then((req) => {})
-        .catch((err) => {});
     },
     listUser() {
       return this.$store.getters["users/users"];

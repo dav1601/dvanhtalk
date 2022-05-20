@@ -3,6 +3,7 @@ import VueRouter from "vue-router";
 import TheLobby from "./pages/TheLobby.vue";
 import ChatLayout from "./pages/ChatLayout";
 import NotFound from "./pages/NotFound";
+import store from "./store/index";
 Vue.use(VueRouter);
 const routes = [
     {
@@ -35,4 +36,5 @@ const router = new VueRouter({
     mode: "history",
     routes,
 });
+
 export default router;

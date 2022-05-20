@@ -2,24 +2,22 @@ import { toInteger } from "lodash";
 
 export default {
     methods: {
-        async serverGroup(idReceiver) {
-            await Echo.join(`group-chat-${idReceiver}`)
+        serverGroup(idReceiver) {
+            Echo.join(`group-chat-${idReceiver}`)
                 .here((users) => {
                     console.log(users);
                 })
                 .joining((user) => {})
                 .leaving((user) => {})
                 .listen("SendMessageGroup", (e) => {
-                    this.$store.dispatch("message/getMessage", e.user_message);
-                })
-                .listenForWhisper("typing", (e) => {
                     console.log(e);
+                    this.$store.dispatch("message/getMessage", e.user_message);
                 });
         },
-        async server(idReceiver) {
-            await Echo.join(`chat-${idReceiver}`);
+        server(idReceiver) {
+            Echo.join(`chat-${idReceiver}`);
             ////////////////////////////////////////////////////////////////////////////////////////
-            await Echo.join(`chat-${this.id}`)
+            Echo.join(`chat-${this.id}`)
                 .here((users) => {
                     console.log(users);
                     this.$store.dispatch("users/getUsersMyRoom", users);
@@ -44,9 +42,6 @@ export default {
                         }
                     }
                     this.$store.dispatch("message/getMessage", e.user_message);
-                })
-                .listenForWhisper("typing", (e) => {
-                    console.log(e);
                 });
         },
         async updateSeen(friendId) {

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -21,4 +22,7 @@ Broadcast::channel('chat-{id}', function ($user) {
 });
 Broadcast::channel('group-chat-{id}', function ($user) {
     return $user;
+});
+Broadcast::channel('notify-{id}', function () {
+    return Auth::user();
 });

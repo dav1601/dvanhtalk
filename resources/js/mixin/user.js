@@ -9,6 +9,9 @@ export default {
         id() {
             return this.$store.getters["auth/id"];
         },
+        full() {
+            return this.$store.getters["auth/full"];
+        },
         avatar() {
             if (this.$store.getters["auth/avatar"] != null) {
                 return this.$store.getters["auth/avatar"];
@@ -20,6 +23,15 @@ export default {
         },
         isGroup() {
             return this.$route.name == "group";
+        },
+        groups() {
+            return this.$store.getters["users/groups"];
+        },
+        myGroups() {
+            return this.$store.getters["users/myGroups"];
+        },
+        async setMe() {
+            await this.$store.dispatch("auth/getMe");
         },
     },
     methods: {

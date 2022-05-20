@@ -11,7 +11,9 @@ use App\Events\SendMessage;
 use App\Models\UserMessage;
 use App\Events\QueueMessage;
 use App\Events\SendMessageGroup;
+use App\Events\SenRqJoinGr;
 use App\Models\MembersGroup;
+use App\Models\RequestJoinGroup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -80,15 +82,16 @@ Route::get('groups', function (Request $request) {
     $groups = Groups::with(['members', 'founder', 'requestsJoin', 'members.info'])->when($request->has('keyword'), function ($q) {
         return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
     })->get();
+    $my_groups_joined = MembersGroup::with(['group', 'group.members', 'group.founder', 'group.requestsJoin', 'group.members.info'])->where('users_id', Auth::id())->get();
     $my_groups = Groups::with(['members', 'founder', 'requestsJoin', 'members.info'])->where('users_id', Auth::id())->get();
-    return response()->json(['groups' => $groups, 'my_groups' => $my_groups], 200);
+    return response()->json(['groups' => $groups, 'my_groups_joined' => $my_groups_joined, 'my_groups' => $my_groups], 200);
 });
 
 Route::get('user/{id}', function ($id, Request $request) {
     if ($request->type == 0) {
         $user = User::where('id', $id)->firstOrFail();
     } else {
-        $user = Groups::with(['members', 'founder', 'requestsJoin', 'members.info'])->where('id', $id)->firstOrFail();
+        $user = Groups::with(['members', 'founder', 'requestsJoin' , 'requestsJoin', 'members.info'])->where('id', $id)->firstOrFail();
     }
     return response()->json($user, 200);
 });
@@ -105,7 +108,7 @@ Route::get('messages/{to}', function ($to, Request $request) {
                 ->where('type', '=', 0);
         })->get();
     } else {
-        $messages = UserMessage::with(['message', 'sender'])->where('rcv_id', $to)->where('type', '=', 1)->get();
+        $messages = UserMessage::with(['message', 'sender'])->where('rcv_group_id', $to)->where('type', '=', 1)->get();
     }
     return response()->json(['data' => $messages], 200);
 });
@@ -134,7 +137,11 @@ Route::post('saveMessage', function (Request $request) {
         try {
             $user_message->msg_id = (int)$message->id;
             $user_message->sd_id = (int)$request->from;
-            $user_message->rcv_id = (int) $request->to;
+            if ($request->for == 0) {
+                $user_message->rcv_id = (int) $request->to;
+            } else {
+                $user_message->rcv_group_id = (int) $request->to;
+            }
             $user_message->seen = (int) $request->seen;
             $user_message->type = $request->for;
             $user_message->save();
@@ -172,6 +179,13 @@ Route::post('saveGroup', function (Request $request) {
     $group->users_id = Auth::id();
     if ($group->save()) {
         try {
+            MembersGroup::create(
+                [
+                    'users_id' => Auth::id(),
+                    'groups_id' => $group->id,
+                    'role' => 0
+                ]
+            );
             foreach ($rqMembers as $mem) {
                 MembersGroup::create(
                     [
@@ -181,6 +195,7 @@ Route::post('saveGroup', function (Request $request) {
                     ]
                 );
             }
+            $group = Groups::with(['members', 'founder', 'requestsJoin', 'members.info'])->where('id', $group->id)->firstOrFail();
             broadcast(new NewGroup($group))->toOthers();
             return response()->json(['data' => $group], 200);
         } catch (\Exception $e) {
@@ -189,6 +204,20 @@ Route::post('saveGroup', function (Request $request) {
         }
     } else {
         $group->delete();
+        return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
+    }
+});
+Route::post('saveRequest', function (Request $request) {
+    $reqJG = new RequestJoinGroup();
+    $reqJG->users_id = Auth::id();
+    $reqJG->groups_id = $request->group_id;
+    if ($reqJG->save()) {
+        $reqJG = RequestJoinGroup::with(['sender', 'group'])->where('id', $reqJG->id)->firstOrFail();
+        $reqJG->created_at = Carbon::create($reqJG->created_at)->diffForHumans();
+        broadcast(new SenRqJoinGr($reqJG))->toOthers();
+        return response()->json(['data' => $reqJG], 200);
+    } else {
+        $reqJG->delete();
         return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
     }
 });

@@ -1,5 +1,8 @@
 <template>
-  <div class="list-group-item list-group-item-action border-0">
+  <div
+    class="list-group-item list-group-item-action border-0"
+    v-if="!isChecking"
+  >
     <div class="d-flex align-items-center">
       <img
         :src="makeAvatar(member.info.avatar)"
@@ -18,13 +21,10 @@
 <script>
 import user from "../../mixin/user";
 export default {
-  props: ["member"],
+  props: ["member", "isChecking"],
   mixins: [user],
-
-
-
   async created() {
-      console.log(this.member);
+    console.log(this.member);
   },
   computed: {},
   methods: {},

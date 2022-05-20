@@ -12,6 +12,7 @@ class UserMessage extends Model
     protected $fillable = [
         'sd_id',
         'rcv_id',
+        'rcv_group_id',
         'msg_id',
         'type',
         'seen',

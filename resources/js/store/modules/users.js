@@ -74,15 +74,92 @@ const mutations = {
     },
     deleteUserMRoom(s, p) {},
     // AREA GROUP
-    pushGroup(s, p) {
-        s.groups.push(p);
+    async pushGroup(s, p) {
+        await s.groups.push(p);
     },
-    pushMyJoinedGroup(s, p) {
-        s.myGroupsJoined.push(p);
+    async pushMyJoinedGroup(s, p) {
+        await s.myGroupsJoined.push(p);
     },
     pushMyGroup(s, p) {
         s.myGroups.push(p);
     },
+    async pushRequestJoinGroup(s, p) {
+        const index_1 = s.groups.findIndex((g) => {
+            return g.id == p.groups_id;
+        });
+        if (index_1 != -1) {
+            await s.groups[index_1].requests_join.push(p);
+        }
+        const index_2 = s.myGroups.findIndex((g2) => {
+            return g2.id == p.groups_id;
+        });
+        if (index_2 != -1) {
+            await s.myGroups[index_2].requests_join.push(p);
+        }
+        const index_3 = s.myGroupsJoined.findIndex((g3) => {
+            return g3.id == p.groups_id;
+        });
+        if (index_3 != -1) {
+            await s.myGroupsJoined[index_3].requests_join.push(p);
+        }
+        console.log(index_1, index_2, index_3);
+    },
+    async removeRequestJoinGroup(s, p) {
+        const index_1 = s.groups.findIndex((g) => {
+            return g.id == p.groups_id;
+        });
+        if (index_1 != -1) {
+            const newGroup = s.groups[index_1].requests_join.filter((e) => {
+                return e.id != p.id;
+            });
+            s.groups[index_1].requests_join = newGroup;
+        }
+        // //////
+        const index_2 = s.myGroups.findIndex((g2) => {
+            return g2.id == p.groups_id;
+        });
+        if (index_2 != -1) {
+            const newGroup2 = s.myGroups[index_2].requests_join.filter((e) => {
+                return e.id != p.id;
+            });
+            s.myGroups[index_2].requests_join = newGroup2;
+        }
+        // //////////////////
+        const index_3 = s.myGroupsJoined.findIndex((g3) => {
+            return g3.id == p.groups_id;
+        });
+        if (index_3 != -1) {
+            const newGroup3 = s.myGroupsJoined[index_3].requests_join.filter(
+                (e) => {
+                    return e.id != p.id;
+                }
+            );
+            s.myGroupsJoined[index_3].requests_join = newGroup3;
+        }
+    },
+    async pushMemberGroup(s, p) {
+        const index_1 = s.groups.findIndex((g) => {
+            return g.id == p.request.groups_id;
+        });
+        if (index_1 != -1) {
+            await s.groups[index_1].members.push(p.member);
+        }
+        // /////
+        const index_2 = s.myGroups.findIndex((g2) => {
+            return g2.id == p.request.groups_id;
+        });
+        if (index_2 != -1) {
+            await s.myGroups[index_2].members.push(p.member);
+        }
+        // ////////////////
+        const index_3 = s.myGroupsJoined.findIndex((g3) => {
+            return g3.id == p.request.groups_id;
+        });
+        if (index_3 != -1) {
+            await s.myGroupsJoined[index_3].members.push(p.member);
+        }
+    },
+
     setCurrentGroup(s, p) {},
     pushUserOnlineGroup(s, p) {},
     deleteGroup(s, p) {},
@@ -213,10 +290,41 @@ const actions = {
             axios
                 .post("/saveRequest", data)
                 .then((req) => {
-                    console.log(req);
+                    let data = req.data.data;
+                    delete data.group;
+                    c.commit("pushRequestJoinGroup", data);
                     rs(req);
                 })
                 .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    getReq(c, p) {
+        c.commit("pushRequestJoinGroup", p);
+        c.commit("message/updateReqJoin", p, { root: true });
+    },
+    getDataHandleRequest(c, p) {
+        c.commit("removeRequestJoinGroup", p.request);
+        c.commit("message/removeReqJoin", p.request, { root: true });
+        if (p.status == 1) {
+            c.commit("pushMemberGroup", p);
+            c.commit("message/pushMember", p, { root: true });
+        }
+    },
+    handleRequest(c, p) {
+        console.log(p);
+        let data = new FormData();
+        data.append("req", JSON.stringify(p.req));
+        data.append("status", p.status);
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("handle.gr.req"), data)
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    console.log(err);
                     rj(err);
                 });
         });

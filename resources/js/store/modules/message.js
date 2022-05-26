@@ -2,7 +2,7 @@ const state = () => ({
     messages: [],
     receiver: {},
     haveReceiver: false,
-    group: {},
+    typing: false,
 });
 
 const getters = {
@@ -20,9 +20,21 @@ const getters = {
             s.receiver.founder.id == rGts["auth/id"]
         );
     },
+    isTyping(s) {
+        return s.typing;
+    },
 };
 
 const mutations = {
+    reset(s) {
+        (s.messages = []),
+            (s.receiver = {}),
+            (s.haveReceiver = false),
+            (s.typing = false);
+    },
+    setTyping(s, p) {
+        s.typing = p;
+    },
     setUnseenMessage(s, p) {
         return (s.unSeenMessage.id = p);
     },
@@ -35,12 +47,46 @@ const mutations = {
     pushMessage(s, p) {
         return s.messages.push(p);
     },
+    updateReqJoin(s, p) {
+        if (s.receiver.requests_join) {
+            if (s.receiver.id == p.groups_id) {
+                return s.receiver.requests_join.push(p);
+            }
+        }
+        return;
+    },
+    removeReqJoin(s, p) {
+        if (s.receiver.requests_join) {
+            if (s.receiver.id == p.groups_id) {
+                const newReqJoin = s.receiver.requests_join.filter((req) => {
+                    return req.id != p.id;
+                });
+                s.receiver.requests_join = newReqJoin;
+            }
+        }
+        return;
+    },
+    pushMember(s, p) {
+        if (s.receiver.members) {
+            if (s.receiver.id == p.request.groups_id) {
+                return s.receiver.members.push(p.member);
+            }
+        }
+        return;
+    },
     setHaveReceiver(s) {
         return (s.haveReceiver = true);
     },
 };
 
 const actions = {
+    getTyping(c, p) {
+        console.log(p);
+        c.commit("setTyping", p);
+    },
+    reset(c) {
+        c.commit("reset");
+    },
     getReceiver(c, p) {
         return new Promise((rs, rj) => {
             axios
@@ -58,7 +104,9 @@ const actions = {
     getMessages(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("/messages/" + p.to, { params: { type: p.type } })
+                .get("/messages/" + p.to, {
+                    params: { type: p.type, page: p.page },
+                })
                 .then((req) => {
                     const data = req.data.data;
                     const messages = [];

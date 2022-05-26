@@ -2,6 +2,51 @@
 $body-bg: #f8fafc;
 
 // Typography
-$font-family-sans-serif: 'Nunito', sans-serif;
+$font-family-sans-serif: "Nunito", sans-serif;
 $font-size-base: 0.9rem;
 $line-height-base: 1.6;
+$bg-user: #121212;
+$bg-admin: yellow;
+$bg-mod: green;
+@mixin designRole($role) {
+    @if $role == 0 {
+        background: #636363 important !important; /* fallback for old browsers */
+        background: -webkit-linear-gradient(to right, #a2ab58, #636363) !important; /* Chrome 10-25, Safari 5.1-6 */
+        background: linear-gradient(to right, #a2ab58, #636363) !important;
+    }
+    @if $role == 1 {
+        background: #4568dc !important; /* fallback for old browsers */
+        background: -webkit-linear-gradient(to right, #b06ab3, #4568dc) !important; /* Chrome 10-25, Safari 5.1-6 */
+        background: linear-gradient(to right, #b06ab3, #4568dc) !important;
+    }
+    @if $role == 2 {
+        background: #3e4042 !important;
+    }
+}
+@mixin designNameRole($role) {
+    @if $role == 0 {
+        font-weight: 900;
+        background-image: linear-gradient(to top, #fddb92 0%, #d1fdff 100%) !important;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    }
+    @if $role == 1 {
+        font-weight: 900;
+        background: #c33764; /* fallback for old browsers */
+        background: -webkit-linear-gradient(to right, #1d2671, #c33764); /* Chrome 10-25, Safari 5.1-6 */
+        background: linear-gradient(
+            to right,
+            #1d2671,
+            #c33764
+        ); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    }
+    @if $role == 2 {
+        font-weight: 400;
+        color: #b0b3b8 !important;
+    }
+}

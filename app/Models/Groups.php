@@ -16,7 +16,7 @@ class Groups extends Model
     ];
     public function members()
     {
-        return $this->hasMany('App\Models\MembersGroup', 'groups_id');
+        return $this->hasMany('App\Models\MembersGroup', 'groups_id')->orderBy('role' , 'ASC');
     }
     public function founder()
     {

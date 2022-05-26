@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
@@ -29,7 +30,7 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-
+        User::where('id', $user->id)->update(['logged_in' => $request->ip()]);
         return redirect()->route('home');
     }
 

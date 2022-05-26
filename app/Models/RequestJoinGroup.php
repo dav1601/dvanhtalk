@@ -12,7 +12,8 @@ class RequestJoinGroup extends Model
     protected $fillable = [
         'users_id',
         'groups_id',
-        'status'
+        'status',
+        'type'
     ];
     public function group()
     {

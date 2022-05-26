@@ -22,8 +22,8 @@
           :src="makeAvatar(group.group_image)"
           class="group-image mr-1"
           alt="Vanessa Tucker"
-          width="80"
-          height="80"
+          width="120"
+          height="120"
         />
         <div class="flex-grow-1 ml-3">
           <span class="d-block group-name">{{ group.name }}</span>
@@ -52,7 +52,7 @@
           Vào Nhóm
         </v-btn>
         <v-btn
-          v-if="!request && !inGroup && statusRequest == null"
+          v-if="!request && !inGroup"
           @click="sendRequest"
           rounded
           color="#263238"
@@ -63,7 +63,7 @@
           Xin Vào
         </v-btn>
         <v-btn
-          v-if="statusRequest == 1"
+          v-if="request"
           statusUpdate="1"
           rounded
           color="#424242"
@@ -73,6 +73,15 @@
         </v-btn>
       </div>
     </div>
+    <v-snackbar
+     :color="color"
+      v-model="snackbar"
+      :timeout="10000"
+      :top="true"
+    >
+      {{ text }}
+
+    </v-snackbar>
   </div>
 </template>
 <script>
@@ -84,6 +93,9 @@ export default {
     return {
       statusRequest: null,
       loading: false,
+      snackbar: false,
+      text: '',
+      color: 'error',
     };
   },
   updated() {},
@@ -139,9 +151,17 @@ export default {
         })
         .then((req) => {
           this.loading = false;
+          this.snackbar = true;
+          this.text = "Gửi yêu cầu tham gia nhóm thành công";
+          this.color = "success";
+          this.statusRequest = 1;
         })
         .catch((err) => {
             this.loading = false;
+            this.snackbar = true;
+          this.text = "Gửi yêu cầu tham gia nhóm thất bại";
+          this.color = "error";
+            this.statusRequest = null;
         });
     },
   },
@@ -151,6 +171,11 @@ export default {
 .userActive {
   color: #fff;
   background-color: #007bff;
+}
+.card-group {
+    padding: 0 !important;
+    padding-right: 10px !important;
+
 }
 .small {
   font-size: 14px;

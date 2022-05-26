@@ -2,27 +2,30 @@
 
 namespace App\Events;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 class SenRqJoinGr implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
     public $reqJG;
+    public $to;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($reqJG)
+    public function __construct($reqJG, $to)
     {
         $this->reqJG = $reqJG;
+        $this->to = $to;
     }
 
     /**
@@ -32,6 +35,7 @@ class SenRqJoinGr implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return new PresenceChannel('notify-' . $this->reqJG->group->users_id);
+        Log::info($this->reqJG);
+        return new PresenceChannel('notify-' . $this->to);
     }
 }

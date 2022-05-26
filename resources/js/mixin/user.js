@@ -30,9 +30,7 @@ export default {
         myGroups() {
             return this.$store.getters["users/myGroups"];
         },
-        async setMe() {
-            await this.$store.dispatch("auth/getMe");
-        },
+
     },
     methods: {
         makeAvatar(avatar) {
@@ -40,6 +38,9 @@ export default {
                 return avatar;
             }
             return "https://res.cloudinary.com/vanh-tech/image/upload/v1652075156/rs.jpg";
+        },
+        formatTime($time) {
+            return this.$moment($time).fromNow();
         },
     },
 };

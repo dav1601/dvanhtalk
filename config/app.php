@@ -210,6 +210,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         'Redis' => Illuminate\Support\Facades\Redis::class,
+        'DavClient' => App\Helpers\DavClient::class
     ])->toArray(),
 
 ];

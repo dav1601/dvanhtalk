@@ -131,11 +131,15 @@ export default {
         menu: false,
     }),
 
-     created() {
-        this.setMe;
+    created() {
+        this.setMe();
     },
-    mounted() {},
     computed: {
+        isNotFound() {
+            return this.$route.name == "404";
+        },
+    },
+    methods: {
         async setMe() {
             await this.$store
                 .dispatch("auth/getMe")
@@ -152,15 +156,15 @@ export default {
                         })
                         .listen("NewGroup", (e) => {
                             this.$store.dispatch("users/getGroup", e.group);
+                        })
+                        .listen("NewUser", (e) => {
+                            this.$store.dispatch("users/getNewUser", e.user);
                         });
                     this.myServer();
                 })
                 .catch((err) => {
                     return this.$router.push("/login");
                 });
-        },
-        isNotFound() {
-            return this.$route.name == "404";
         },
     },
 };

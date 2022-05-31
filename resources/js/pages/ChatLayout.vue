@@ -13,20 +13,28 @@
                 : ['col-12', 'row', 'g-0'],
         ]"
     >
-        <!-- <v-dialog :fullscreen="true" v-model="dialog" :dark="true">
+        <v-dialog
+            :fullscreen="true"
+            content-class="dialog__setting--group"
+            v-model="dialog"
+            :dark="true"
+            style="z-index: 90000"
+        >
             <the-setting
                 :receiver="receiver"
                 :isAdmin="isAdmin"
                 :isMod="isMod"
                 :isManage="isManage"
+                :members="members"
+                @close-dialog="closeDialog"
             ></the-setting>
-        </v-dialog> -->
+        </v-dialog>
         <div
             class="col-3 border-right listUser scroll-custom"
             v-if="isGroup && !checking"
         >
             <item-member
-                v-for="(user, key) in receiver.members"
+                v-for="(user, key) in members"
                 :key="'member' + key"
                 :member="user"
                 :isChecking="checking"
@@ -112,17 +120,36 @@
                         <v-btn
                             :loading="setting"
                             :disabled="setting"
+                            v-if="isManage"
                             color="blue-grey"
                             class="ma-2 white--text"
                             fab
+                            @click="dialog = true"
                         >
-                            <v-icon dark @click="dialog = true">mdi-cog</v-icon>
+                            <v-icon dark>mdi-cog</v-icon>
                         </v-btn>
                     </div>
                 </div>
             </div>
 
             <div class="position-relative">
+                <div
+                    class="position-absolute w-100 btn__chat--end d-flex justify-center align-items-center"
+                >
+                    <v-btn
+                        :loading="setting"
+                        :disabled="setting"
+                        color="blue-grey"
+                        class="ma-2 white--text"
+                        fab
+                        small
+                        outlined
+                    >
+                        <v-icon dark color="primary"
+                            >mdi-arrow-down-thin</v-icon
+                        >
+                    </v-btn>
+                </div>
                 <div
                     class="chat-messages p-4 scroll-custom"
                     id="chatLayout"
@@ -210,39 +237,42 @@ export default {
             forcusScroll: false,
             dialog: false,
             setting: false,
+            btnGoEndChat: false,
         };
     },
-
-    created() {
-        this.setup;
-        this.setReceiver;
-        this.getMessages;
+    beforeCreate() {
+        localStorage.setItem("saveScrollHeight", 0);
     },
-    mounted() {
+    async created() {
+        this.$store.dispatch("message/reset");
+        this.setup();
+        this.setType();
+        this.setReceiver();
         if (this.type == 0) {
+            this.updateSeen(this.friendId);
             Echo.leave(`group-chat-${this.friendId}`);
             Echo.leave(`chat-${this.friendId}`);
             this.server(this.friendId);
-            this.updateSeen(this.friendId);
         } else {
             Echo.leave(`chat-${this.friendId}`);
             Echo.leave(`group-chat-${this.friendId}`);
             this.serverGroup(this.friendId);
         }
     },
+    async mounted() {
+        this.getMessages(false);
+    },
     computed: {
-        setup() {
-            this.disableChat = true;
-            this.setting = true;
-            this.setType;
-        },
-        endSetup() {
-            console.log("end setup");
-            this.disableChat = false;
-            this.setting = false;
+        members() {
+            if (this.receiver.members) {
+                return this.receiver.members.sort(this.compareRoleMember);
+            }
         },
         typing() {
             return this.$store.getters["message/isTyping"];
+        },
+        test() {
+            console.log("test computed");
         },
         isGroup() {
             return this.$route.name == "group";
@@ -270,14 +300,29 @@ export default {
             return false;
         },
 
+        usersMyRoom() {
+            return this.$store.getters["users/usersMyRoom"];
+        },
+        placeHolder() {
+            return this.sending ? "Đang gửi tin nhắn...." : "Nhắn 1 cái gì đó";
+        },
+        receiver() {
+            return this.$store.getters["message/receiver"];
+        },
+        messages() {
+            return this.$store.getters["message/messages"];
+        },
+    },
+    methods: {
+        closeDialog(close) {
+            console.log(close);
+            this.dialog = false;
+        },
         setType() {
             if (this.isGroup) {
                 return (this.type = 1);
             }
             return (this.type = 0);
-        },
-        usersMyRoom() {
-            return this.$store.getters["users/usersMyRoom"];
         },
         inRoom() {
             let user = this.usersMyRoom.find(
@@ -288,14 +333,14 @@ export default {
             }
             return false;
         },
-        placeHolder() {
-            return this.sending ? "Đang gửi tin nhắn...." : "Nhắn 1 cái gì đó";
+        setup() {
+            this.disableChat = true;
+            this.setting = true;
         },
-        receiver() {
-            return this.$store.getters["message/receiver"];
-        },
-        messages() {
-            return this.$store.getters["message/messages"];
+        endSetup() {
+            this.disableChat = false;
+            this.setting = false;
+            console.log("end setup");
         },
         async setReceiver() {
             if (this.type == 1) {
@@ -307,7 +352,6 @@ export default {
                     type: this.type,
                 })
                 .then((req) => {
-                    this.dialog = true;
                     if (this.type == 1) {
                         if (
                             !this.receiver.members.find(
@@ -324,12 +368,15 @@ export default {
                     return this.$router.push({ name: "home" });
                 });
         },
-        async getMessages() {
+
+        async getMessages(up = false) {
             if (this.endPage == null || this.endPage == 0) {
                 this.isLoading = true;
+                const elLayoutChat = document.getElementById("chatLayout");
                 let initialHeight = 0;
-                if (this.page > 1) {
-                    initialHeight = this.$refs.layoutChat.scrollHeight;
+                if (up) {
+                    initialHeight = Number(elLayoutChat.scrollHeight);
+                    localStorage.setItem("saveScrollHeight", initialHeight);
                 }
                 await this.$store
                     .dispatch("message/getMessages", {
@@ -338,28 +385,28 @@ export default {
                         page: this.page,
                     })
                     .then((req) => {
-                        this.page = req.data.page;
                         this.endPage = req.data.endPage;
                         this.isLoading = false;
-                        this.endSetup;
                         this.$nextTick(() => {
-                            console.log("his: " + initialHeight);
+                            this.scrollEnd(!this.blockSroll);
+                            this.endSetup();
                         });
                     })
                     .catch((err) => {
-                        this.page = req.data.page;
                         this.endPage = req.data.endPage;
                         this.isLoading = false;
                         this.notification = true;
                         this.text =
                             "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
+                        this.$nextTick(() => {
+                            this.scrollEnd(!this.blockSroll);
+                            this.endSetup();
+                        });
                     });
             } else {
                 return;
             }
         },
-    },
-    methods: {
         resetLoad() {
             this.message = "";
             this.image = "";
@@ -378,19 +425,21 @@ export default {
             this.endPage = null;
             this.blockSroll = false;
             this.typing = false;
+            console.log("reseted");
         },
         handleScroll(e) {
-            const scrollTop = e.target.scrollTop;
-            const height = this.$refs.layoutChat.clientHeight;
-            const scroll = this.$refs.layoutChat.scrollHeight;
-            const sum = scrollTop + height;
-            if (sum < scroll) {
+            const elLayoutChat = document.getElementById("chatLayout");
+            const scrollTop = elLayoutChat.scrollTop;
+            if (this.isPointBlockScroll()) {
                 this.blockSroll = true;
-            } else if (sum == scroll) {
+                this.btnGoEndChat = true;
+            } else {
                 this.blockSroll = false;
+                this.btnGoEndChat = false;
             }
             if (scrollTop == 0) {
-                if (this.endPage != 1) {
+                if (this.endPage != 1 && this.endPage != null) {
+                    this.blockSroll = false;
                     this.page++;
                 }
             }
@@ -412,20 +461,7 @@ export default {
         loaded() {
             return this.scrollEnd();
         },
-        scrollEnd(foc = false, saveScrollHeight = 0) {
-            console.log("after history: " + saveScrollHeight);
-            const el = document.getElementById("chatLayout");
-            if (el) {
-                let scroll = el.scrollHeight;
-                console.log("sum: " + Number(scroll - saveScrollHeight));
-                if (!this.blockSroll || foc) {
-                    return el.scrollTo({
-                        top: Number(scroll - saveScrollHeight),
-                        behavior: "smooth",
-                    });
-                }
-            }
-        },
+
         resetAll() {
             this.sending = false;
             this.disableChat = false;
@@ -448,7 +484,7 @@ export default {
         },
         sendMessage(type) {
             let seen = 0;
-            if (this.inRoom) {
+            if (this.inRoom()) {
                 seen = 1;
             }
             if (this.message == "" && this.image == "" && this.audio == "") {
@@ -483,28 +519,30 @@ export default {
     },
     watch: {
         async friendId(newVal, oldVal) {
-            await this.$store.dispatch("message/reset");
+            localStorage.setItem("saveScrollHeight", 0);
+            this.$store.dispatch("message/reset");
             this.resetLoad();
-            this.disableChat = true;
             this.setting = true;
+            this.disableChat = true;
             this.checking = false;
-            this.$nextTick();
-            this.setType;
-            this.setReceiver;
-            this.getMessages;
+            this.setType();
+            this.setReceiver();
             if (this.type == 0) {
                 await Echo.leave(`group-chat-${oldVal}`);
                 await Echo.leave(`chat-${oldVal}`);
-                await this.server(newVal);
-                await this.updateSeen(newVal);
+                this.server(newVal);
+                this.updateSeen(newVal);
             } else {
                 await Echo.leave(`chat-${oldVal}`);
                 await Echo.leave(`group-chat-${oldVal}`);
-                await this.serverGroup(newVal);
+                this.serverGroup(newVal);
             }
-            this.scrollEnd(true);
-            this.setting = false;
-            this.disableChat = false;
+            this.getMessages(false);
+        },
+        page(newVal) {
+            if (newVal > 1) {
+                this.getMessages(true);
+            }
         },
     },
 };
@@ -514,6 +552,10 @@ export default {
     .v-skeleton-loader__image {
         height: 100vh !important;
     }
+}
+.btn__chat--end {
+    bottom: 0;
+    left: 0;
 }
 .va__setting--group {
     .v-toolbar__content {

@@ -96,7 +96,7 @@
                 <div v-if="!isGroup">
                     <item-user
                         v-for="(user, key) in listUser"
-                        :key="key"
+                        :key="'Lobby-User-' + key"
                         :user="user"
                         :active="active(user.id)"
                         :link="true"
@@ -105,7 +105,7 @@
                     ></item-user>
                     <sk-item-user
                         v-for="i in 10"
-                        :key="'B' + i"
+                        :key="'Ske-User-' + i"
                         :isLoading="isLoadingUsers"
                     ></sk-item-user>
                 </div>
@@ -155,14 +155,14 @@
                 <!-- --------------- -->
                 <item-group
                     v-for="(group, key) in listGroup"
-                    :key="key"
+                    :key="'Lobby-Group-' + key"
                     :group="group"
                     :isLoading="isLoadingGroup"
                 ></item-group>
                 <sk-item-group
                     :isLoading="isLoadingGroup"
-                    v-for="i in 10"
-                    :key="'A' + i"
+                    v-for="i in 7"
+                    :key="'Ske-Group-' + i"
                 ></sk-item-group>
                 <hr class="d-block d-lg-none mt-1 mb-0" />
             </div>
@@ -202,45 +202,18 @@ export default {
         };
     },
     created() {
-        this.setUsers;
-        this.setGroups;
+        this.setUsers();
+        this.setGroups();
     },
-
     computed: {
-        async requestsJoinGroup() {
-            await this.$store
-                .dispatch("users/getRequestsJoinGroup")
-                .then((req) => {})
-                .catch((err) => {});
+        listGroup() {
+            return this.$store.getters["users/groups"];
         },
-        async setUsers() {
-            this.isLoadingUsers = true;
-            await this.$store
-                .dispatch("users/getUsers")
-                .then((req) => {
-                    this.isLoadingUsers = false;
-                })
-                .catch((err) => {
-                    this.isLoadingUsers = false;
-                });
-        },
-
-        async setGroups() {
-            this.isLoadingGroup = true;
-            await this.$store
-                .dispatch("users/getGroups")
-                .then((req) => {
-                    this.isLoadingGroup = false;
-                })
-                .catch((err) => {
-                    this.isLoadingGroup = false;
-                });
+        myGroups() {
+            return this.$store.getters["users/myGroups"];
         },
         listUser() {
             return this.$store.getters["users/users"];
-        },
-        listGroup() {
-            return this.$store.getters["users/groups"];
         },
         listUsersOnline() {
             return this.$store.getters["users/usersOnline"];
@@ -281,6 +254,35 @@ export default {
                     this.isLoadingGroup = false;
                 });
         }, 400),
+        async requestsJoinGroup() {
+            await this.$store
+                .dispatch("users/getRequestsJoinGroup")
+                .then((req) => {})
+                .catch((err) => {});
+        },
+        async setUsers() {
+            this.isLoadingUsers = true;
+            await this.$store
+                .dispatch("users/getUsers")
+                .then((req) => {
+                    this.isLoadingUsers = false;
+                })
+                .catch((err) => {
+                    this.isLoadingUsers = false;
+                });
+        },
+
+        async setGroups() {
+            this.isLoadingGroup = true;
+            await this.$store
+                .dispatch("users/getGroups")
+                .then((req) => {
+                    this.isLoadingGroup = false;
+                })
+                .catch((err) => {
+                    this.isLoadingGroup = false;
+                });
+        },
         open() {},
         close() {},
         active(id) {

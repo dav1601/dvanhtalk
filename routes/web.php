@@ -15,6 +15,7 @@ use App\Events\SendMessageGroup;
 use App\Events\SenRqJoinGr;
 use App\Models\MembersGroup;
 use App\Models\RequestJoinGroup;
+use App\Repositories\Groups\GroupsInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -38,7 +39,10 @@ Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 });
-
+Route::group(['middleware' => ['guest']], function () {
+    Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
+    Route::post('/register', 'DavAuthController@register')->name('register.perform');
+});
 Route::get('message_unseen', function (Request $request) {
     $count = UserMessage::where('seen', false)->where('rcv_id', Auth::id())->where('sd_id', $request->sd_id)->count();
     return response()->json(['count' => $count], 200);
@@ -88,14 +92,14 @@ Route::get('groups', function (Request $request) {
     return response()->json(['groups' => $groups, 'my_groups_joined' => $my_groups_joined, 'my_groups' => $my_groups], 200);
 });
 
-Route::get('user/{id}', function ($id, Request $request) {
+Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
     if ($request->type == 0) {
-        $user = User::where('id', $id)->firstOrFail();
+        $receiver = User::where('id', $id)->firstOrFail();
     } else {
-        $user = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->where('id', $id)->firstOrFail();
+        $receiver = $hle_gr->group($id);
     }
-    return response()->json($user, 200);
-});
+    return response()->json($receiver, 200);
+})->name('get.receiver');
 Route::get('messages/{to}', function ($to, Request $request) {
     $type = $request->type;
     $item_page = 20;
@@ -184,7 +188,7 @@ Route::post('saveMessage', function (Request $request) {
         return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
     }
 });
-Route::post('saveGroup', function (Request $request) {
+Route::post('saveGroup', function (Request $request, GroupsInterface $hrl_gr) {
     $rqMembers = array();
     if (!empty($request->members)) {
         foreach ($request->members as $member) {
@@ -217,7 +221,7 @@ Route::post('saveGroup', function (Request $request) {
                     ]
                 );
             }
-            $group = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->where('id', $group->id)->firstOrFail();
+            $group = $hrl_gr->group($group->id);
             broadcast(new NewGroup($group))->toOthers();
             return response()->json(['data' => $group], 200);
         } catch (\Exception $e) {
@@ -229,13 +233,14 @@ Route::post('saveGroup', function (Request $request) {
         return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
     }
 });
-Route::post('saveRequest', function (Request $request) {
+Route::post('saveRequest', function (Request $request, GroupsInterface $hle_gr) {
     Carbon::setLocale('vi');
     $reqJG = new RequestJoinGroup();
     $reqJG->users_id = Auth::id();
     $reqJG->groups_id = $request->group_id;
     if ($reqJG->save()) {
         $reqJG = RequestJoinGroup::with(['sender', 'group'])->where('id', $reqJG->id)->firstOrFail();
+        $reqJG->newestGr = $hle_gr->group($request->group_id);
         $mod = MembersGroup::where('role', 1)->where('groups_id', $reqJG->groups_id)->get();
         broadcast(new SenRqJoinGr($reqJG, $reqJG->group->users_id))->toOthers();
         if ($mod) {
@@ -251,13 +256,12 @@ Route::post('saveRequest', function (Request $request) {
 });
 Route::prefix('handle/')->group(function () {
     Route::prefix('group/')->group(function () {
-        Route::post('request', function (Request $request) {
+        Route::post('request/join', function (Request $request, GroupsInterface $hle_gr) {
             $req = json_decode($request->req);
-            $req->group = Groups::where('id', $req->groups_id)->first();
             $status = $request->status == 'approved' ? 1 : 2;
             $data = (object) [];
-            $data->request = $req;
             $data->status = $status;
+            $data->action = "joinGr";
             $message = new Message();
             $user_message = new UserMessage();
             $create_member = new MembersGroup();
@@ -280,11 +284,12 @@ Route::prefix('handle/')->group(function () {
                         if ($user_message->save()) {
                             $user_message->message = $message;
                             $user_message->sender = User::where('id',  $user_message->sd_id)->first();
+                            RequestJoinGroup::where('id', $req->id)->delete();
+                            $req->newestGr = $hle_gr->group($req->groups_id);
+                            $data->request = $req;
                             broadcast(new SendMessageGroup($user_message));
                             broadcast(new HandleRequest($data, 'group-chat-' . $req->groups_id));
                             broadcast(new HandleRequest($data, 'notify-' . $req->users_id));
-                            RequestJoinGroup::where('id', $req->id)->delete();
-                            $data->user_message = $user_message;
                             return response()->json($data, 200);
                         } else {
                             $user_message->delete();
@@ -299,14 +304,85 @@ Route::prefix('handle/')->group(function () {
                     return response()->json(['error' => "save data member"], 500);
                 }
             } else {
+                RequestJoinGroup::where('id', $req->id)->delete();
+                $req->newestGr = $hle_gr->group($req->groups_id);
+                $data->request = $req;
                 broadcast(new HandleRequest($data, 'group-chat-' . $req->groups_id));
                 broadcast(new HandleRequest($data, 'notify-' . $req->users_id));
-                RequestJoinGroup::where('id', $req->id)->delete();
                 return response()->json($data, 200);
             }
-        })->name('handle.gr.req');
+        })->name('handle.gr.req.join');
         // end handle request join group of user
-
+        Route::post('request/actions', function (Request $request, GroupsInterface $hle_gr) {
+            $data = (object) [];
+            $data->action = $request->action;
+            $data->group_action = "reqActions";
+            $hasUsersId = $request->has('users_id') ? $request->has('users_id') : false;
+            if ($hasUsersId) {
+                $data->users_id = $request->users_id;
+            }
+            $data->groups_id = $request->groups_id;
+            if ($request->action == "setMod") {
+                $updated =  MembersGroup::where('users_id', $request->users_id)->where('groups_id', $request->groups_id)->update(['role' => 1]);
+                if (!$updated) {
+                    return response()->json(['error' => "Update that bai"], 500);
+                }
+                $data->role = 1;
+            } else if ($request->action == "kick") {
+                $deleted = MembersGroup::where('users_id', $request->users_id)->where('groups_id', $request->groups_id)->delete();
+                if (!$deleted) {
+                    return response()->json(['error' => "Update that bai"], 500);
+                }
+            } else if ($request->action == "removeMod") {
+                $updated =  MembersGroup::where('users_id', $request->users_id)->where('groups_id', $request->groups_id)->update(['role' => 2]);
+                if (!$updated) {
+                    return response()->json(['error' => "Update that bai"], 500);
+                }
+                $data->role = 2;
+            }
+            $data->newestGr = $hle_gr->group($request->groups_id);
+            broadcast(new HandleRequest($data, 'group-chat-' . $request->groups_id));
+            if ($hasUsersId) {
+                broadcast(new HandleRequest($data, 'notify-' . $request->users_id));
+            }
+            return response()->json($data, 200);
+        })->name('handle.gr.req.actions');
+        // end actions group add + remove mod + kick member
+        Route::post('save/data', function (Request $request, GroupsInterface $hle_group) {
+            $data = (object) [];
+            $data->group_action = "reqSaveData";
+            $data->groups_id = (int) $request->groups_id;
+            $rqMembers = array();
+            if (Groups::where('id', '!=', $request->groups_id)->where('name', 'LIKE', $request->name)->first()) {
+                return response()->json(['exist' => true], 400);
+            }
+            Groups::where('id',  $request->groups_id)->update(['name' => $request->name]);
+            try {
+                if (!empty($request->members)) {
+                    foreach ($request->members as $member) {
+                        $rqMembers[] = json_decode($member);
+                    }
+                }
+                if (!empty($rqMembers)) {
+                    foreach ($rqMembers as $mem) {
+                        MembersGroup::create([
+                            'users_id' => $mem->id,
+                            'groups_id' => $request->groups_id,
+                            'role' => 2,
+                        ]);
+                    }
+                }
+                $newestGroup = $hle_group->group($request->groups_id);
+                $data->newestGr = $newestGroup;
+                foreach ($newestGroup->members as $notify) {
+                    broadcast(new HandleRequest($data, 'notify-' . $notify->users_id));
+                }
+                broadcast(new HandleRequest($data, 'group-chat-' . $request->groups_id));
+                return response()->json($data, 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+        })->name('handle.gr.req.saveData');
     });
 });
 Route::get('update_offline/{id}', function ($id) {

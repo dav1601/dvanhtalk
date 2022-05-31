@@ -24,12 +24,6 @@ export default {
         isGroup() {
             return this.$route.name == "group";
         },
-        groups() {
-            return this.$store.getters["users/groups"];
-        },
-        myGroups() {
-            return this.$store.getters["users/myGroups"];
-        },
 
     },
     methods: {
@@ -41,6 +35,15 @@ export default {
         },
         formatTime($time) {
             return this.$moment($time).fromNow();
+        },
+        compareRoleMember(a, b) {
+            if (a.role < b.role) {
+                return -1;
+            }
+            if (a.role > b.role) {
+                return 1;
+            }
+            return 0;
         },
     },
 };

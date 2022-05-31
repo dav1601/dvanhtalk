@@ -47,25 +47,6 @@ const mutations = {
     pushMessage(s, p) {
         return s.messages.push(p);
     },
-    updateReqJoin(s, p) {
-        if (s.receiver.requests_join) {
-            if (s.receiver.id == p.groups_id) {
-                return s.receiver.requests_join.push(p);
-            }
-        }
-        return;
-    },
-    removeReqJoin(s, p) {
-        if (s.receiver.requests_join) {
-            if (s.receiver.id == p.groups_id) {
-                const newReqJoin = s.receiver.requests_join.filter((req) => {
-                    return req.id != p.id;
-                });
-                s.receiver.requests_join = newReqJoin;
-            }
-        }
-        return;
-    },
     pushMember(s, p) {
         if (s.receiver.members) {
             if (s.receiver.id == p.request.groups_id) {
@@ -80,6 +61,9 @@ const mutations = {
 };
 
 const actions = {
+    handleActions(c, p) {
+        c.commit("setReceiver", p.newestGr);
+    },
     getTyping(c, p) {
         console.log(p);
         c.commit("setTyping", p);
@@ -90,7 +74,9 @@ const actions = {
     getReceiver(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("/user/" + p.contactId, { params: { type: p.type } })
+                .get(route("get.receiver", [p.contactId]), {
+                    params: { type: p.type },
+                })
                 .then((req) => {
                     c.commit("setReceiver", req.data);
                     c.commit("setHaveReceiver");
@@ -138,15 +124,18 @@ const actions = {
         }
     },
     updateSeen(c, p) {
-        axios
-            .all([
-                axios.post("/update_seen", {
+        return new Promise((rs, rj) => {
+            axios;
+
+            axios
+                .post("/update_seen", {
                     receiver: p.receiver,
-                }),
-            ])
-            .then((req) => {})
-            .catch((err) => {});
+                })
+                .then((req) => {})
+                .catch((err) => {});
+        });
     },
+
     sendMessage(c, p) {
         const config = {
             headers: {

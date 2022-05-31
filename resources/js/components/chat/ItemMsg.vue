@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :class="'msg-' + data.message.id">
         <div
             class="pb-4"
             v-if="data.message.type != 4"
@@ -116,6 +116,7 @@ export default {
         type() {
             return this.data.message.type;
         },
+
         getUser() {
             const user = this.receiver.members.find(
                 (user) => user.users_id == this.data.sd_id
@@ -133,7 +134,11 @@ export default {
             return;
         },
         role() {
-            return this.getUser.role;
+            if (this.getUser) {
+                return this.getUser.role;
+            } else {
+                return 1;
+            }
         },
     },
     methods: {

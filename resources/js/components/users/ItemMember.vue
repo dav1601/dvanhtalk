@@ -17,7 +17,27 @@
             </div>
             <div class="flex-grow-1 d-flex justify-content-end">
                 <the-role v-if="!isSetting" :role="member.role"></the-role>
-                <v-btn v-if="member.role == 1 && isAdmin">Gỡ Mod</v-btn>
+                <v-btn
+                    @click="handleActions('removeMod')"
+                    color="#d63031"
+                    :loading="handling"
+                    v-if="member.role == 1 && isAdmin && isSetting"
+                    >Gỡ Mod</v-btn
+                >
+                <v-btn
+                    color="#e17055"
+                    class="mr-2"
+                    :loading="handling"
+                    @click="handleActions('setMod')"
+                    v-if="member.role == 2 && isAdmin && isSetting"
+                    >Set Mod</v-btn
+                >
+                <v-btn
+                    @click="handleActions('kick')"
+                    :loading="handling"
+                    v-if="member.role == 2 && isManage && isSetting"
+                    >Kick</v-btn
+                >
             </div>
         </div>
     </div>
@@ -39,6 +59,7 @@ export default {
     data() {
         return {
             text: "user",
+            handling: false,
         };
     },
     async created() {
@@ -58,7 +79,35 @@ export default {
             }
         },
     },
-    methods: {},
+    methods: {
+        async handleActions(action) {
+            this.handling = true;
+            if (action == "setMod") {
+                this.title = "Bạn có chắc muốn set mod cho thành viên này";
+            } else if (action == "removeMod") {
+                this.title = "Bạn có chắc muốn xoá mod của thành viên này";
+            } else {
+                this.title =
+                    "Bạn có chắc muốn kick thành viên này ra khỏi nhóm";
+            }
+            if (confirm(this.title)) {
+                await this.$store
+                    .dispatch("users/handleActionsGroup", {
+                        users_id: this.member.users_id,
+                        groups_id: this.member.groups_id,
+                        action: action,
+                    })
+                    .then((req) => {
+                        this.handling = false;
+                    })
+                    .catch((err) => {
+                        this.handling = false;
+                    });
+            } else {
+                this.handling = false;
+            }
+        },
+    },
 };
 </script>
 <style lang="scss" scpoed>

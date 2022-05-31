@@ -22,6 +22,7 @@
                 <v-btn
                     color="primary"
                     v-if="isManage"
+                    :loading="handling"
                     @click="handleRequest('approved')"
                     >Phê Duyệt</v-btn
                 >
@@ -30,6 +31,7 @@
                     @click="handleRequest('reject')"
                     v-if="isManage"
                     class="ml-3"
+                    :loading="handling"
                     >Từ Chối</v-btn
                 >
             </div>

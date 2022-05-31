@@ -1,4 +1,5 @@
 import axios from "axios";
+import Vue from "vue";
 const state = () => ({
     users: [],
     myGroupsJoined: [],
@@ -10,6 +11,25 @@ const state = () => ({
     usersGroupCurrent: [],
     usersGroupCurrentOnline: [],
 });
+function getIndexGroupById(group, id) {
+    let index = -1;
+    if (Array.isArray(group)) {
+        index = group.findIndex((g) => {
+            return g.id == id;
+        });
+    }
+    return index;
+}
+function getIndexMemberByGroupId(group, groupId, userId) {
+    let indexMember = -1;
+    let indexGroup = getIndexGroupById(group, groupId);
+    if (indexGroup != -1) {
+        indexMember = group[indexGroup].members.findIndex((mem) => {
+            return mem.users_id == userId;
+        });
+    }
+    return indexMember;
+}
 
 const getters = {
     users(s) {
@@ -84,30 +104,21 @@ const mutations = {
         s.myGroups.push(p);
     },
     async pushRequestJoinGroup(s, p) {
-        const index_1 = s.groups.findIndex((g) => {
-            return g.id == p.groups_id;
-        });
+        const index_1 = getIndexGroupById(s.groups, p.groups_id);
         if (index_1 != -1) {
             await s.groups[index_1].requests_join.push(p);
         }
-        const index_2 = s.myGroups.findIndex((g2) => {
-            return g2.id == p.groups_id;
-        });
+        const index_2 = getIndexGroupById(s.myGroups, p.groups_id);
         if (index_2 != -1) {
             await s.myGroups[index_2].requests_join.push(p);
         }
-        const index_3 = s.myGroupsJoined.findIndex((g3) => {
-            return g3.id == p.groups_id;
-        });
+        const index_3 = getIndexGroupById(s.myGroupsJoined, p.groups_id);
         if (index_3 != -1) {
             await s.myGroupsJoined[index_3].requests_join.push(p);
         }
-        console.log(index_1, index_2, index_3);
     },
     async removeRequestJoinGroup(s, p) {
-        const index_1 = s.groups.findIndex((g) => {
-            return g.id == p.groups_id;
-        });
+        const index_1 = getIndexGroupById(s.groups, p.groups_id);
         if (index_1 != -1) {
             const newGroup = s.groups[index_1].requests_join.filter((e) => {
                 return e.id != p.id;
@@ -115,9 +126,7 @@ const mutations = {
             s.groups[index_1].requests_join = newGroup;
         }
         // //////
-        const index_2 = s.myGroups.findIndex((g2) => {
-            return g2.id == p.groups_id;
-        });
+        const index_2 = getIndexGroupById(s.myGroups, p.groups_id);
         if (index_2 != -1) {
             const newGroup2 = s.myGroups[index_2].requests_join.filter((e) => {
                 return e.id != p.id;
@@ -125,9 +134,7 @@ const mutations = {
             s.myGroups[index_2].requests_join = newGroup2;
         }
         // //////////////////
-        const index_3 = s.myGroupsJoined.findIndex((g3) => {
-            return g3.id == p.groups_id;
-        });
+        const index_3 = getIndexGroupById(s.myGroupsJoined, p.groups_id);
         if (index_3 != -1) {
             const newGroup3 = s.myGroupsJoined[index_3].requests_join.filter(
                 (e) => {
@@ -138,33 +145,37 @@ const mutations = {
         }
     },
     async pushMemberGroup(s, p) {
-        const index_1 = s.groups.findIndex((g) => {
-            return g.id == p.request.groups_id;
-        });
+        const index_1 = getIndexGroupById(s.groups, p.request.groups_id);
         if (index_1 != -1) {
             await s.groups[index_1].members.push(p.member);
         }
         // /////
-        const index_2 = s.myGroups.findIndex((g2) => {
-            return g2.id == p.request.groups_id;
-        });
+        const index_2 = getIndexGroupById(s.myGroups, p.request.groups_id);
         if (index_2 != -1) {
             await s.myGroups[index_2].members.push(p.member);
         }
         // ////////////////
-        const index_3 = s.myGroupsJoined.findIndex((g3) => {
-            return g3.id == p.request.groups_id;
-        });
+        const index_3 = getIndexGroupById(
+            s.myGroupsJoined,
+            p.request.groups_id
+        );
         if (index_3 != -1) {
             await s.myGroupsJoined[index_3].members.push(p.member);
         }
     },
-
-    setCurrentGroup(s, p) {},
-    pushUserOnlineGroup(s, p) {},
-    deleteGroup(s, p) {},
-    kickUser(s, p) {},
-    banUser(s, p) {},
+    async pushNewUser(s, p) {
+        await s.users.push(p);
+    },
+    async updateGroup(s, p) {
+        const index_1 = getIndexGroupById(s.groups, p.id);
+        const index_2 = getIndexGroupById(s.myGroupsJoined, p.id);
+        if (index_1 != -1) {
+            await Vue.set(s.groups, index_1, p);
+        }
+        if (index_2 != -1) {
+            await Vue.set(s.myGroupsJoined, index_2, p);
+        }
+    },
 };
 
 const actions = {
@@ -199,6 +210,9 @@ const actions = {
                     rj(err);
                 });
         });
+    },
+    getHandleActions(c, p) {
+        c.dispatch("updateGroupAndReceiver", p.newestGr);
     },
     pushUsersOnline(c, p) {
         c.commit("pushUserOnline", p);
@@ -290,9 +304,7 @@ const actions = {
             axios
                 .post("/saveRequest", data)
                 .then((req) => {
-                    let data = req.data.data;
-                    delete data.group;
-                    c.commit("pushRequestJoinGroup", data);
+                    c.commit("updateGroup", req.data.data.newestGr);
                     rs(req);
                 })
                 .catch((err) => {
@@ -300,26 +312,63 @@ const actions = {
                 });
         });
     },
+    updateGroupAndReceiver(c, p) {
+        c.commit("updateGroup", p);
+        c.commit("message/setReceiver", p, { root: true });
+    },
     getReq(c, p) {
-        c.commit("pushRequestJoinGroup", p);
-        c.commit("message/updateReqJoin", p, { root: true });
+        c.dispatch("updateGroupAndReceiver", p.newestGr);
     },
     getDataHandleRequest(c, p) {
-        c.commit("removeRequestJoinGroup", p.request);
-        c.commit("message/removeReqJoin", p.request, { root: true });
-        if (p.status == 1) {
-            c.commit("pushMemberGroup", p);
-            c.commit("message/pushMember", p, { root: true });
-        }
+        c.dispatch("updateGroupAndReceiver", p.request.newestGr);
+    },
+    getDataGroupSave(c, p) {
+        c.dispatch("updateGroupAndReceiver", p);
     },
     handleRequest(c, p) {
-        console.log(p);
         let data = new FormData();
         data.append("req", JSON.stringify(p.req));
         data.append("status", p.status);
         return new Promise((rs, rj) => {
             axios
-                .post(route("handle.gr.req"), data)
+                .post(route("handle.gr.req.join"), data)
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    console.log(err);
+                    rj(err);
+                });
+        });
+    },
+    saveDataGroup(c, p) {
+        let data = new FormData();
+        data.append("groups_id", p.groups_id);
+        data.append("name", p.name);
+        for (let i = 0; i < p.selected.length; i++) {
+            data.append("members[]", JSON.stringify(p.selected[i]));
+        }
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("handle.gr.req.saveData"), data)
+                .then((req) => {
+                    console.log(req);
+                    rs(req);
+                })
+                .catch((err) => {
+                    console.log(err);
+                    rj(err);
+                });
+        });
+    },
+    handleActionsGroup(c, p) {
+        let data = new FormData();
+        data.append("users_id", p.users_id);
+        data.append("groups_id", p.groups_id);
+        data.append("action", p.action);
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("handle.gr.req.actions"), data)
                 .then((req) => {
                     rs(req);
                 })
@@ -332,6 +381,9 @@ const actions = {
     addUserGroup(c, p) {},
     deleteUserGroup(c, p) {},
     banUserGroup(c, p) {},
+    getNewUser(c, p) {
+        c.commit("pushNewUser", p);
+    },
 };
 
 export default {

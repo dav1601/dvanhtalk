@@ -15,19 +15,34 @@ import Multiselect from "vue-multiselect";
 import "bootstrap";
 import Notifications from "vue-notification";
 import moment from "moment";
-import VueCryptojs from "vue-cryptojs";
+import PerfectScrollbar from "vue2-perfect-scrollbar";
+import "vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue";
 import BaseLoading from "./components/ui/BaseLoading";
 import "@mdi/font/css/materialdesignicons.css";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 Vue.use(Vuetify);
 Vue.use(Notifications);
+Vue.use(PerfectScrollbar);
 Vue.use(ZiggyVue);
-Vue.use(VueCryptojs);
 moment.locale("vi");
 Vue.prototype.$moment = moment;
 Vue.component("multiselect", Multiselect);
 Vue.component("base-loading", BaseLoading);
+Vue.directive("click-outside", {
+    bind: function (el, binding, vnode) {
+        window.event = function (event) {
+            if (!(el == event.target || el.contains(event.target))) {
+                vnode.context[binding.expression](event);
+            }
+        };
+        document.body.addEventListener("click", window.event);
+    },
+    unbind: function (el) {
+        document.body.removeEventListener("click", window.event);
+    },
+});
+
 const app = new Vue({
     router,
     store,

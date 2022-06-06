@@ -16,7 +16,7 @@
                 ></item-req>
             </template>
         </notifications>
-        <v-app-bar app>
+        <v-app-bar app class="b-b">
             <v-container class="d-flex justify-content-end">
                 <v-menu
                     v-model="menu"
@@ -75,7 +75,7 @@
                             </v-btn>
                             <form
                                 id="logout-form"
-                                action="/logout"
+                                :action="route('logout.perform')"
                                 method="POST"
                                 style="display: none"
                             >
@@ -93,23 +93,19 @@
         <!-- Sizes your content based upon application components -->
         <v-main>
             <!-- Provides the application the proper gutter -->
-            <v-container :class="{ full: !isHome }">
+            <v-container :class="{ full: !isHome }" class="p-0 h-100">
                 <!-- <div class="card" :class="{ fix1: isHome }">
           <v-slide-x-transition mode="out-in">
             <router-view></router-view>
           </v-slide-x-transition>
         </div> -->
-                <v-card :class="{ fix1: isHome }">
+                <v-card :class="{ fix1: isHome }" class="p-0 h-100">
                     <v-slide-x-transition mode="out-in">
                         <router-view></router-view>
                     </v-slide-x-transition>
                 </v-card>
             </v-container>
         </v-main>
-
-        <v-footer app>
-            <!-- -->
-        </v-footer>
     </v-app>
 </template>
 
@@ -159,6 +155,9 @@ export default {
                         })
                         .listen("NewUser", (e) => {
                             this.$store.dispatch("users/getNewUser", e.user);
+                        })
+                        .listen("HandleUser", (e) => {
+                            console.log(e);
                         });
                     this.myServer();
                 })
@@ -180,19 +179,82 @@ $roles: 0, 1, 2;
         }
     }
 }
+:root {
+    scrollbar-color: var(--bs-gray-dark) #3e4042 !important;
+    scrollbar-width: auto !important;
+}
+html {
+    overflow: hidden;
+    height: 100vh;
+}
+#app {
+    height: 100%;
+}
+html::-webkit-scrollbar {
+    display: none;
+}
+.text-overflow {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.listUser.col-xl-3 {
+    flex: 0 0 20% !important;
+    max-width: 20% !important;
+}
+.wrapper__layout--chat.col-xl-9 {
+    flex: 0 0 80% !important;
+    max-width: 80% !important;
+}
+.cursor-pointer {
+    cursor: pointer !important;
+}
 .chat-item {
     max-width: 55% !important;
 }
+.chat-item.haveLink {
+    max-width: 300px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    .name-sender,
+    .text-chat {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    .text-chat {
+        margin-bottom: 5px !important;
+    }
+    .in4__website {
+        display: block;
+        text-decoration: none;
+        z-index: 100;
+        background: var(--bs-gray-900) !important;
+        width: 300px !important;
+        span {
+            color: #fff;
+            display: block;
+            font-weight: 600;
+        }
+    }
+}
+
 .list-group-item {
     border-radius: 8px !important;
 }
-
+.v-main {
+    padding: 0 !important;
+    height: calc(100vh - 64px);
+}
 .request__group {
     bottom: 30px !important;
     right: 20px !important;
     width: 400px !important;
 }
-
+header {
+    position: unset !important;
+}
 .fix1 {
     border: none;
     .border-right {
@@ -205,6 +267,20 @@ $roles: 0, 1, 2;
 .full {
     max-width: 100% !important;
 }
+.br-0 {
+    border-radius: 0 !important;
+}
+.f-14 {
+    font-size: 14px;
+}
+.f-10 {
+    font-size: 10px;
+}
+.center-start {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+}
 .me-chat {
     background: #ff7675;
     color: #fff;
@@ -213,8 +289,8 @@ $roles: 0, 1, 2;
     background: #a29bfe;
     color: #fff;
 }
-.listUser {
-    max-height: 748px;
+.davList {
+    height: 100vh;
     overflow: auto;
 }
 .list-group-item.active {
@@ -230,7 +306,7 @@ $roles: 0, 1, 2;
 .list-group-item {
     background: $bg-user;
     color: #fff !important;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 .chat-online {
     color: #34ce57;
@@ -280,28 +356,33 @@ $roles: 0, 1, 2;
     flex-grow: 0 !important;
 }
 .border-top {
-    border-top: 1px solid #dee2e6 !important;
+    border-top: 1px solid $b-c !important;
+}
+.b-b {
+    border-bottom: 1px solid $b-c !important;
+}
+.b-r {
+    border-right: 1px solid $b-c !important;
+}
+.b-l {
+    border-left: 1px solid $b-c !important;
+}
+.lazy-image {
+    overflow: unset !important;
 }
 .scroll-custom::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
-    background-color: #f5f5f5;
-    border-radius: 10px;
+    background-color: #3e4042;
+    opacity: 0.3;
 }
 
 .scroll-custom::-webkit-scrollbar {
-    width: 6px;
+    width: 10px;
     background-color: #f5f5f5;
 }
 
 .scroll-custom::-webkit-scrollbar-thumb {
     border-radius: 10px;
-    background-image: -webkit-gradient(
-        linear,
-        left bottom,
-        left top,
-        color-stop(0.44, rgb(122, 153, 217)),
-        color-stop(0.72, rgb(73, 125, 189)),
-        color-stop(0.86, rgb(28, 58, 148))
-    );
+    background: var(--bs-gray-dark);
 }
 </style>

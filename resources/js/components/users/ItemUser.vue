@@ -27,16 +27,16 @@
                 height="45"
             />
             <div class="flex-grow-1 ml-3">
-                {{ user.name }}
-                <div class="small">
+                <span class="name text-overflow">{{ user.name }}</span>
+                <div class="small center-start">
                     <span
-                        class="fas fa-circle"
+                        class="fas fa-circle f-10"
                         :class="{
                             'chat-online': isOnline,
                             'chat-offline': !isOnline,
                         }"
                     ></span>
-                    {{ textStatus }}
+                    <span class="f-14 ml-2">{{ textStatus }}</span>
                 </div>
             </div>
         </div>
@@ -51,12 +51,6 @@ export default {
         return {
             count: 0,
         };
-    },
-    async updated() {
-        await this.getMessagesUnseen;
-    },
-    async created() {
-        await this.getMessagesUnseen;
     },
     computed: {
         encryptedId() {
@@ -75,15 +69,9 @@ export default {
         classQueue() {
             return "queue-" + this.user.id;
         },
-        async getMessagesUnseen() {
-            await axios
-                .get("/message_unseen", { params: { sd_id: this.user.id } })
-                .then((req) => {
-                    this.count = req.data.count;
-                })
-                .catch((err) => {
-                    this.count = 0;
-                });
+
+        getMessagesUnseen() {
+            return (this.count = this.user.count.length);
         },
     },
     methods: {

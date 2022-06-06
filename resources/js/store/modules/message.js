@@ -78,7 +78,7 @@ const actions = {
                     params: { type: p.type },
                 })
                 .then((req) => {
-                    c.commit("setReceiver", req.data);
+                    c.commit("setReceiver", req.data.receiver);
                     c.commit("setHaveReceiver");
                     rs(req);
                 })
@@ -94,6 +94,7 @@ const actions = {
                     params: { type: p.type, page: p.page },
                 })
                 .then((req) => {
+                    console.log(req);
                     const data = req.data.data;
                     const messages = [];
                     if (data != null) {

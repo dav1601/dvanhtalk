@@ -2,21 +2,23 @@ import { toInteger } from "lodash";
 
 export default {
     methods: {
-        scrollEnd(foc = false) {
+        scrollEnd(foc = false, deleteSaveScroll = false) {
             const el = document.getElementById("chatLayout");
+            if (deleteSaveScroll) {
+                localStorage.setItem("saveScrollHeight", 0);
+            }
             const saveScrollHeight = localStorage.getItem("saveScrollHeight");
             if (el) {
                 let scroll = el.scrollHeight;
                 let sum = Number(scroll - saveScrollHeight);
-                if (!this.blockSroll || foc) {
-                    return el.scrollTo({
+                if (!this.blockScroll || foc) {
+                    el.scrollTo({
                         top: sum,
-                        behavior: "smooth",
                     });
                 }
             }
         },
-        isPointBlockScroll(minus = 100, returnBack = false) {
+        isPointBlockScroll(minus = 300, returnBackForNot = false) {
             const elLayoutChat = document.getElementById("chatLayout");
             if (!elLayoutChat) {
                 return false;
@@ -29,7 +31,7 @@ export default {
             if (sum <= pointShowBtn) {
                 return true;
             }
-            return returnBack;
+            return returnBackForNot;
         },
         serverGroup(idReceiver) {
             Echo.join(`group-chat-${idReceiver}`)
@@ -132,8 +134,8 @@ export default {
                 .leaving((user) => {
                     this.$store.commit("users/deleteUserMyRoom", user);
                 })
-                .listen("SendMessage", (e) => {
-                    this.$store.dispatch("message/getTyping", false);
+                .listen("SendMessage", async (e) => {
+                    await this.$store.dispatch("message/getTyping", false);
                     if (e.user_message.seen == 0) {
                         let el = document.getElementById(
                             "queue-" + e.user_message.sd_id
@@ -146,8 +148,11 @@ export default {
                             el.style.display = "";
                         }
                     }
-                    this.$store.dispatch("message/getMessage", e.user_message);
-                    this.isPointBlockScroll(100, this.scrollEnd(true));
+                    await this.$store.dispatch(
+                        "message/getMessage",
+                        e.user_message
+                    );
+                    this.scrollEnd();
                 });
         },
         async updateSeen(friendId) {

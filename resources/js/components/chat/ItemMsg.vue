@@ -1,5 +1,5 @@
 <template>
-    <div :class="'msg-' + data.message.id">
+    <div class="package__msg">
         <div
             class="pb-4"
             v-if="data.message.type != 4"
@@ -23,7 +23,11 @@
 
             <div
                 class="flex-shrink-1 bg-light rounded px-3 py-2 mr-2 chat-item d-flex flex-column position-relative"
-                :class="[renderClass, isGroup ? ['royal-role-' + role] : '']"
+                :class="[
+                    renderClass,
+                    isGroup ? ['royal-role-' + role] : '',
+                    ['msg-' + data.message.id],
+                ]"
                 v-if="type == 1"
             >
                 <div v-if="!isGroup" class="font-weight-bold mb-1 name-sender">
@@ -48,25 +52,38 @@
                 <div
                     class="text-chat"
                     ref="myMsgText"
-                    v-html="
-                        replaceURLWithHTMLLinks(
-                            data.message.message,
-                            data.message.id
-                        )
-                    "
+                    v-html="MakeMessage(data.message.message, data.message.id)"
                 ></div>
+                <!-- <a href="" v-if="metaData && !isGroup" class="in4__website">
+                    <img
+                        :src="
+                            metaData.images.length > 0
+                                ? metaData.images[0]
+                                : 'https://occ-0-116-114.1.nflxso.net/dnm/api/v6/U6_eu_lw5TPOkLCYXBHQsUANDp0/AAAABWiz2QNaiC4pMM8J-uWx6IgnT_1SJrbbdRycS0kRYaH-i1yiIg_ew7wZHuKZ0AfrRSK1PSh9.png'
+                        "
+                        width="300"
+                        height="auto"
+                        alt=""
+                        @load="loaded"
+                    />
+                    <span class="px-3 py-4">
+                        {{ metaData.title ? metaData.title : metaData.domain }}
+                    </span>
+                </a> -->
             </div>
-            <div
-                class="flex-shrink-1 bg-light rounded px-2 py-2 mr-3"
-                :style="createBackgroundImage"
-                v-if="type == 2"
+
+            <a
+                href=""
+                v-if="data.message.type == 2"
+                style="height: 250px; width: 250px"
             >
-                <img
+                <v-img
+                    max-width="100%"
+                    max-height="250"
                     :src="data.message.message"
-                    alt="message image"
-                    @load="loaded"
-                />
-            </div>
+                    style="border-radius: 8px"
+                ></v-img>
+            </a>
             <div
                 :style="createBgAudio"
                 class="flex-shrink-1 bg-light rounded px-1 py-1 mr-3"
@@ -89,14 +106,57 @@
 import user from "../../mixin/user";
 import TheRole from "../role/TheRole.vue";
 export default {
-    props: ["data", "receiver", "typeUserMsg"],
+    props: ["data", "receiver", "typeUserMsg", "cOrW"],
     mixins: [user],
     components: {
         VuetifyAudio: () => import("vuetify-audio"),
         TheRole,
     },
-    mounted() {},
+    data() {
+        return {
+            interval: null,
+            metaData: false,
+            links: [],
+        };
+    },
+    created() {
+        this.created_at = this.data.message.created_at;
+    },
+    async updated() {
+        // if (!this.isGroup) {
+        //     await this.setHaveLink;
+        // }
+    },
+    async mounted() {
+        // this.interval = setInterval(() => this.$forceUpdate(), 1000);
+        // if (!this.isGroup) {
+        //     await this.setHaveLink;
+        // }
+    },
+    // beforeDestroy() {
+    //     clearInterval(this.interval);
+    // },
     computed: {
+        setHaveLink() {
+            const links = document.getElementsByClassName(
+                "msg__link--" + this.data.message.id
+            );
+            if (links.length > 0) {
+                document
+                    .getElementsByClassName("msg-" + this.data.message.id)[0]
+                    .classList.add("haveLink");
+                console.log(links[0].getAttribute("data-url-fetch"));
+                const url = links[0].getAttribute("data-url-fetch");
+                this.fetchMeataData(url);
+            }
+        },
+        getArray() {
+            return this.MakeMessage(
+                this.data.message.message,
+                this.data.message.id,
+                "id"
+            );
+        },
         createBackgroundImage() {
             return (
                 "background-image: radial-gradient(circle, rgba(0, 0, 0, 0) 25%, rgba(24, 24, 24, 1) 75%),url(" +
@@ -142,6 +202,20 @@ export default {
         },
     },
     methods: {
+        async fetchMeataData(url) {
+            await axios
+                .get("https://jsonlink.io/api/extract", {
+                    params: { url: url },
+                })
+                .then((req) => {
+                    console.log(req);
+                    return (this.metaData = req.data);
+                })
+                .catch((err) => {
+                    console.log(err);
+                    return (this.metaData = false);
+                });
+        },
         loaded() {
             return this.$emit("loaded");
         },
@@ -156,32 +230,49 @@ export default {
                 return false;
             }
         },
-        replaceURLWithHTMLLinks(message, id) {
+        createElement(url, goUrl) {
+            var a = document.createElement("a");
+            var linkText = document.createTextNode(url);
+            a.appendChild(linkText);
+            a.title = url;
+            a.href = goUrl;
+            a.target = "_blank";
+            a.classList.add("chat__text--link");
+            return a;
+        },
+        MakeMessage(message, id) {
             let urls,
                 lastURL,
                 checkURL = "",
-                output = "";
+                goUrl = "",
+                fetchDataUrl = "";
             let url = /((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi;
             let startWith = /^((http|https|ftp):\/\/)/;
-            while ((urls = url.exec(message)) !== null) {
-                output += urls[0];
-            }
-            if (!startWith.test(output)) {
-                output = "//" + output;
-            }
-            if (message != "" && message != null) {
-                return message.replace(
-                    url,
-                    `<a href="${output}" target="_blank" class="chat__text--link chat__link--${id}">
-                        $1
-                    </a>`
-                );
-            }
+            return message.replace(url, function ($1) {
+                goUrl = $1;
+                fetchDataUrl = $1;
+                if (!startWith.test(goUrl)) {
+                    fetchDataUrl = "http://" + goUrl;
+                    goUrl = "//" + goUrl;
+                }
+                this.links.push(fetchDataUrl);
+                let a = document.createElement("a");
+                let linkText = document.createTextNode($1);
+                a.appendChild(linkText);
+                a.title = $1;
+                a.href = goUrl;
+                a.target = "_blank";
+                a.setAttribute("data-url-fetch", fetchDataUrl);
+                a.classList.add("chat__text--link");
+                a.classList.add("msg__link--" + id);
+                a.classList.add("mr-1");
+                return a.outerHTML;
+            });
         },
     },
 };
 </script>
-<style>
+<style lang="scss">
 .msg-time-left {
     padding-left: 50px;
 }
@@ -196,9 +287,27 @@ export default {
     font-weight: 600;
     text-decoration: underline;
 }
-img {
+.lazy-image-wrapper {
+    padding: 0 !important;
+}
+.lazy-image-main {
     max-width: 350px;
     max-height: 350px;
+    position: unset !important;
+}
+.message__type {
+    &--image {
+        height: 20% !important;
+        width: 18%;
+        background: none !important;
+        img {
+            border-radius: inherit;
+        }
+    }
+}
+.info__website {
+    width: 300px;
+    background: #b0b3b8;
 }
 .chat-item {
     border-radius: 8px !important;

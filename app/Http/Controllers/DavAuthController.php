@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Events\NewUser;
+use App\Events\HandleUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterRequest;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
 class DavAuthController extends Controller
@@ -38,5 +40,12 @@ class DavAuthController extends Controller
         } else {
             return redirect()->back()->with('login_fail', true);
         }
+    }
+    public function logout_perform()
+    {
+        broadcast(new HandleUser("lobby", Auth::user(), "user.loggout"))->toOthers();
+        Session::flush();
+        Auth::logout();
+        return redirect()->route('login');
     }
 }

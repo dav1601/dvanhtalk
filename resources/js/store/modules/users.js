@@ -11,6 +11,7 @@ const state = () => ({
     usersGroupCurrent: [],
     usersGroupCurrentOnline: [],
 });
+
 function getIndexGroupById(group, id) {
     let index = -1;
     if (Array.isArray(group)) {
@@ -20,15 +21,12 @@ function getIndexGroupById(group, id) {
     }
     return index;
 }
-function getIndexMemberByGroupId(group, groupId, userId) {
-    let indexMember = -1;
-    let indexGroup = getIndexGroupById(group, groupId);
-    if (indexGroup != -1) {
-        indexMember = group[indexGroup].members.findIndex((mem) => {
-            return mem.users_id == userId;
-        });
-    }
-    return indexMember;
+function getIndexUserById(users, userId) {
+    let index = -1;
+    index = users.findIndex((user) => {
+        return user.id == userId;
+    });
+    return index;
 }
 
 const getters = {
@@ -87,9 +85,11 @@ const mutations = {
         s.usersMyRoom.push(p);
     },
     deleteUser(s, p) {
+        console.log(p);
         let updateUsers = s.usersOnline.filter(function (item) {
             return item.id != p.id;
         });
+        console.log(updateUsers);
         s.usersOnline = updateUsers;
     },
     deleteUserMRoom(s, p) {},
@@ -176,6 +176,12 @@ const mutations = {
             await Vue.set(s.myGroupsJoined, index_2, p);
         }
     },
+    async updateUser(s, p) {
+        const index = getIndexUserById(s.users, p.id);
+        if (index != -1) {
+            await Vue.set(s.users, index, p);
+        }
+    },
 };
 
 const actions = {
@@ -191,6 +197,9 @@ const actions = {
                     rj(err);
                 });
         });
+    },
+    getHandleUser(c, p) {
+        c.commit("updateUser", p);
     },
     getGroups(c) {
         return new Promise((rs, rj) => {
@@ -228,18 +237,27 @@ const actions = {
     },
     deleteUser(c, p) {
         axios
-            .all([axios.get("/update_offline/" + p.id)])
+            .all([
+                axios.get(
+                    route("update.offline", {
+                        id: p.id,
+                    })
+                ),
+            ])
             .then((req) => {
-                c.commit("deleteUser", p);
+                req.forEach((rq) => {
+                    console.log(rq);
+                    c.commit("deleteUser", rq.data);
+                    c.commit("updateUser", rq.data);
+                });
             })
             .catch((err) => {});
     },
     searchUser(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("users", { params: { keyword: p } })
+                .get(route("users"), { params: { keyword: p } })
                 .then((req) => {
-                    console.log(req);
                     c.commit("setUsers", req.data);
                     rs(req);
                 })

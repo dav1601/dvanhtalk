@@ -1,5 +1,5 @@
 <template>
-    <div :class="[isHome ? ['row'] : '']">
+    <div :class="[isHome ? ['row'] : '']" class="h-100">
         <v-snackbar v-model="notValid" timeout="3500" color="error" top>
             {{ errorText }}
         </v-snackbar>
@@ -63,68 +63,40 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="blue darken-1" text @click="dialog = false">
+                    <v-btn
+                        color="blue darken-1"
+                        text
+                        @click.stop="dialog = false"
+                    >
                         Đóng
                     </v-btn>
-                    <v-btn color="blue darken-1" @click="saveGroup" text>
+                    <v-btn color="blue darken-1" @click.stop="saveGroup" text>
                         Lưu
                     </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
         <!-- end dialog -->
-        <div class="row g-0" :class="[isHome ? ['col-6'] : 'col-12']">
-            <div
-                class="col-12 col-lg-5 border-right listUser scroll-custom"
-                :class="[
-                    isHome ? ['col-xl-12', 'position-relative'] : 'col-xl-3',
-                ]"
-                v-if="!isGroup"
-            >
-                <div class="d-none d-md-block" v-if="!isGroup">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <input
-                                type="text"
-                                class="form-control my-3"
-                                v-on:keyup="debounceSearchUser"
-                                placeholder="Tìm 1 ai đó..."
-                            />
-                        </div>
-                    </div>
-                </div>
-                <div v-if="!isGroup">
-                    <item-user
-                        v-for="(user, key) in listUser"
-                        :key="'Lobby-User-' + key"
-                        :user="user"
-                        :active="active(user.id)"
-                        :link="true"
-                        :isOnline="isOnline(user.id)"
-                        :isLoading="isLoadingUsers"
-                    ></item-user>
-                    <sk-item-user
-                        v-for="i in 10"
-                        :key="'Ske-User-' + i"
-                        :isLoading="isLoadingUsers"
-                    ></sk-item-user>
-                </div>
+        <div
+            class="row g-0 mx-0 p-0 h-100"
+            :class="[isHome ? ['col-6'] : 'col-12']"
+        >
+            <list-user :isLoadingUser="isLoadingUsers"></list-user>
 
-                <hr class="d-block d-lg-none mt-1 mb-0" />
-            </div>
+            <!--  -->
             <v-slide-x-transition mode="out-in">
                 <router-view></router-view>
             </v-slide-x-transition>
         </div>
         <!-- ----------------------- -->
         <div
-            class="row g-0 mt-0"
+            class="row g-0 mt-0 py-0"
             v-if="isHome"
             :class="[isHome ? ['col-6'] : 'col-12']"
             id="listGroup"
         >
             <div
-                class="col-12 col-lg-5 border-right listUser scroll-custom"
+                class="col-12 col-lg-5 border-right listGroup davList scroll-custom"
                 :class="[
                     isHome ? ['col-xl-12', 'position-relative'] : 'col-xl-3',
                 ]"
@@ -142,28 +114,31 @@
                         </div>
                         <v-btn
                             ref="addGroup"
-                            @click="dialog = true"
+                            @click.stop="dialog = true"
                             class="mx-2"
                             fab
                             dark
                             color="indigo"
+                            small
                         >
                             <v-icon dark> mdi-plus </v-icon>
                         </v-btn>
                     </div>
                 </div>
                 <!-- --------------- -->
-                <item-group
-                    v-for="(group, key) in listGroup"
-                    :key="'Lobby-Group-' + key"
-                    :group="group"
-                    :isLoading="isLoadingGroup"
-                ></item-group>
-                <sk-item-group
-                    :isLoading="isLoadingGroup"
-                    v-for="i in 7"
-                    :key="'Ske-Group-' + i"
-                ></sk-item-group>
+                <div class="wrapper__list--group">
+                    <item-group
+                        v-for="(group, key) in listGroup"
+                        :key="'Lobby-Group-' + key"
+                        :group="group"
+                        :isLoading="isLoadingGroup"
+                    ></item-group>
+                    <sk-item-group
+                        :isLoading="isLoadingGroup"
+                        v-for="i in 7"
+                        :key="'Ske-Group-' + i"
+                    ></sk-item-group>
+                </div>
                 <hr class="d-block d-lg-none mt-1 mb-0" />
             </div>
             <v-slide-x-transition mode="out-in">
@@ -179,11 +154,17 @@ import SkItemUser from "../components/skeleton/SkItemUser.vue";
 import ItemGroup from "../components/users/ItemGroup.vue";
 import ItemSelect from "../components/users/ItemSelect.vue";
 import ItemUser from "../components/users/ItemUser.vue";
+import ListUser from "../components/users/ListUser.vue";
 import user from "../mixin/user";
-import { debounce } from "debounce";
-
 export default {
-    components: { ItemUser, ItemSelect, ItemGroup, SkItemGroup, SkItemUser },
+    components: {
+        ItemUser,
+        ItemSelect,
+        ItemGroup,
+        SkItemGroup,
+        SkItemUser,
+        ListUser,
+    },
     mixins: [user],
     data() {
         return {
@@ -197,8 +178,6 @@ export default {
             selected: [],
             adding: false,
             successRequest: false,
-            isLoadingGroup: false,
-            isLoadingUsers: false,
         };
     },
     created() {
@@ -211,12 +190,6 @@ export default {
         },
         myGroups() {
             return this.$store.getters["users/myGroups"];
-        },
-        listUser() {
-            return this.$store.getters["users/users"];
-        },
-        listUsersOnline() {
-            return this.$store.getters["users/usersOnline"];
         },
         bindClass() {
             return this.isHome ? "col-xl-6" : "col-xl-3";
@@ -232,28 +205,6 @@ export default {
     },
 
     methods: {
-        debounceSearchUser: debounce(function (e) {
-            this.isLoadingUsers = true;
-            this.$store
-                .dispatch("users/searchUser", e.target.value)
-                .then((req) => {
-                    this.isLoadingUsers = false;
-                })
-                .catch((err) => {
-                    this.isLoadingUsers = false;
-                });
-        }, 400),
-        debounceSearchGroup: debounce(function (e) {
-            this.isLoadingGroup = true;
-            this.$store
-                .dispatch("users/searchGroup", e.target.value)
-                .then((req) => {
-                    this.isLoadingGroup = false;
-                })
-                .catch((err) => {
-                    this.isLoadingGroup = false;
-                });
-        }, 400),
         async requestsJoinGroup() {
             await this.$store
                 .dispatch("users/getRequestsJoinGroup")
@@ -285,12 +236,6 @@ export default {
         },
         open() {},
         close() {},
-        active(id) {
-            return id == this.$route.query.uid;
-        },
-        isOnline(id) {
-            return this.listUsersOnline.find((user) => user.id == id);
-        },
         saveGroup() {
             let file = document.getElementById("imageGroup").files[0];
             if (file != "undefined" && this.nameGroup != "") {
@@ -331,6 +276,9 @@ export default {
 }
 .multiselect__content {
     padding-left: 0 !important;
+}
+.wrapper__list--group {
+    margin-bottom: 84px;
 }
 .multiselect__option {
     border-radius: 8px !important;

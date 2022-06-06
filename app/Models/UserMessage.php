@@ -15,14 +15,19 @@ class UserMessage extends Model
         'rcv_group_id',
         'msg_id',
         'type',
+        'type_msg',
         'seen',
     ];
     public function message()
     {
-        return $this->belongsTo('App\Models\Message', 'msg_id');
+        return $this->belongsTo('App\Models\Message',  'msg_id');
     }
     public function sender()
     {
         return $this->belongsTo('App\Models\User', 'sd_id');
+    }
+    public function images()
+    {
+        return $this->message()->where('type', 2);
     }
 }

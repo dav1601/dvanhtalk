@@ -8,6 +8,7 @@ $line-height-base: 1.6;
 $bg-user: #121212;
 $bg-admin: yellow;
 $bg-mod: green;
+$b-c: #dee2e6;
 @mixin designRole($role) {
     @if $role == 0 {
         background: #636363 important !important; /* fallback for old browsers */

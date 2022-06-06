@@ -1,5 +1,6 @@
 <template>
     <div
+        class="wrapper__layout--chat pl-0 py-0 h-100"
         :class="[
             !isGroup
                 ? [
@@ -9,8 +10,9 @@
                       'position-relative',
                       'row',
                       'g-0',
+                      'mx-0',
                   ]
-                : ['col-12', 'row', 'g-0'],
+                : ['col-12', 'row', 'mx-0', 'g-0'],
         ]"
     >
         <v-dialog
@@ -30,7 +32,7 @@
             ></the-setting>
         </v-dialog>
         <div
-            class="col-3 border-right listUser scroll-custom"
+            class="col-3 border-right davList scroll-custom"
             v-if="isGroup && !checking"
         >
             <item-member
@@ -59,7 +61,7 @@
         </div>
         <!--  -->
         <div
-            class="position-relative"
+            class="position-relative d-flex flex-column justify-between px-0 py-0 h-100 chat__layout"
             :class="[!isGroup ? ['col-12'] : ['col-9']]"
             v-if="!checking"
         >
@@ -67,8 +69,10 @@
                 {{ text }}
             </v-snackbar>
             <base-loading :isLoading="isLoading"></base-loading>
-            <div class="px-4 border-bottom d-none d-lg-block">
-                <div class="d-flex align-items-center py-1">
+            <div
+                class="px-4 py-4 border-bottom d-none d-lg-block chat__layout--header"
+            >
+                <div class="d-flex align-items-center">
                     <div class="position-relative">
                         <img
                             :src="makeAvatar(receiver.avatar)"
@@ -85,46 +89,12 @@
                         <v-btn
                             :loading="setting"
                             :disabled="setting"
-                            @click="uploadFile"
-                            color="blue-grey"
-                            class="ma-2 white--text"
-                            fab
-                        >
-                            <v-icon dark>mdi-file</v-icon>
-                        </v-btn>
-                        <v-btn
-                            :loading="setting"
-                            :disabled="setting"
-                            @click="upload"
-                            color="blue-grey"
-                            class="ma-2 white--text"
-                            fab
-                        >
-                            <v-icon dark>mdi-image</v-icon>
-                        </v-btn>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            class="d-none"
-                            ref="messageImage"
-                            @change="changeToSendMessage"
-                            :data-image="image"
-                        />
-                        <input
-                            type="file"
-                            accept="audio/*"
-                            class="d-none"
-                            ref="messageAudio"
-                            @change="changeAudioToSendMessage"
-                        />
-                        <v-btn
-                            :loading="setting"
-                            :disabled="setting"
                             v-if="isManage"
-                            color="blue-grey"
+                            color="primary"
                             class="ma-2 white--text"
                             fab
-                            @click="dialog = true"
+                            small
+                            @click.stop="dialog = true"
                         >
                             <v-icon dark>mdi-cog</v-icon>
                         </v-btn>
@@ -132,7 +102,7 @@
                 </div>
             </div>
 
-            <div class="position-relative">
+            <div class="position-relative wrapperChatLayout">
                 <div
                     class="position-absolute w-100 btn__chat--end d-flex justify-center align-items-center"
                 >
@@ -143,7 +113,9 @@
                         class="ma-2 white--text"
                         fab
                         small
-                        outlined
+                        v-if="btnGoEndChat"
+                        style="z-index: 200"
+                        @click="handleClickToBot()"
                     >
                         <v-icon dark color="primary"
                             >mdi-arrow-down-thin</v-icon
@@ -151,7 +123,7 @@
                     </v-btn>
                 </div>
                 <div
-                    class="chat-messages p-4 scroll-custom"
+                    class="chat-messages p-4 scroll-custom chat__layout--body"
                     id="chatLayout"
                     ref="layoutChat"
                     @scroll="handleScroll"
@@ -162,7 +134,7 @@
                         :data="message"
                         :receiver="receiver"
                         :typeUserMsg="type"
-                        @loaded="loaded"
+                        @loaded="loaded()"
                     ></item-msg>
                     <item-tying
                         :receiver="receiver"
@@ -171,9 +143,98 @@
                     ></item-tying>
                 </div>
             </div>
-            <div class="flex-grow-0 py-3 px-4 border-top">
-                <div class="input-group">
+            <div
+                class="flex-grow-0 flex-1 d-flex position-relative chat__layout--footer"
+            >
+                <v-btn
+                    :loading="setting"
+                    :disabled="setting"
+                    color="primary"
+                    class="ma-2 white--text positon-ralative"
+                    fab
+                    small
+                    @click.stop="toggleFormatMessage()"
+                    style="z-index: 100000"
+                >
+                    <v-scroll-y-transition>
+                        <div
+                            class="group__message position-absolute"
+                            ref="group__message"
+                            v-show="showFormatMessage"
+                            v-click-outside="closeEvent"
+                        >
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                class="d-none"
+                                ref="messageImage"
+                                @change="changeToSendMessage"
+                                :data-image="image"
+                            />
+                            <input
+                                type="file"
+                                accept="audio/*"
+                                class="d-none"
+                                ref="messageAudio"
+                                @change="changeAudioToSendMessage"
+                            />
+                            <div
+                                class="position-relative w-100 h-100 center-start flex-column"
+                            >
+                                <div
+                                    class="group__message--format --image center-start"
+                                    @click.stop="uploadFileImage"
+                                >
+                                    <v-icon
+                                        color="primary"
+                                        style="font-size: 30px"
+                                        class="cursor-pointer"
+                                        dark
+                                        >mdi-image</v-icon
+                                    >
+                                    <span class="gmf__name">Gửi file ảnh</span>
+                                </div>
+                                <div
+                                    class="group__message--format --image center-start"
+                                    @click.stop="uploadFileAudio"
+                                >
+                                    <v-icon
+                                        color="primary"
+                                        style="font-size: 30px"
+                                        class="cursor-pointer"
+                                        dark
+                                        >mdi-music</v-icon
+                                    >
+                                    <span class="gmf__name"
+                                        >Gửi file audio</span
+                                    >
+                                </div>
+
+                                <div class="arrow-down position-absolute"></div>
+                            </div>
+                        </div>
+                    </v-scroll-y-transition>
+                    <v-icon dark>mdi-plus</v-icon>
+                </v-btn>
+
+                <div style="flex: 1" class="dav__wp-chat--input">
+                    <div class="preview__images--wp w-100 p-3">
+                        <div
+                            class="d-flex justify-content-start align-items-center flex-wrap w-100"
+                        >
+                            <div class="img__item">
+                                <img
+                                    width="100%"
+                                    height="100%"
+                                    src="https://res.cloudinary.com/vanh-tech/image/upload/v1652075156/rs.jpg"
+                                    alt=""
+                                />
+                            </div>
+                        </div>
+                    </div>
                     <v-textarea
+                        id="input__message"
                         filled
                         auto-grow
                         :placeholder="placeHolder"
@@ -219,7 +280,7 @@ export default {
     data() {
         return {
             message: "",
-            image: "",
+            images: [],
             parent_id: null,
             isLoading: false,
             seen: false,
@@ -234,10 +295,13 @@ export default {
             page: 1,
             endPage: null,
             blockSroll: false,
+            btnGoEndChat: false,
             forcusScroll: false,
             dialog: false,
             setting: false,
-            btnGoEndChat: false,
+            showFormatMessage: false,
+            arrayImages: [],
+            arrayFileAudio: [],
         };
     },
     beforeCreate() {
@@ -249,7 +313,7 @@ export default {
         this.setType();
         this.setReceiver();
         if (this.type == 0) {
-            this.updateSeen(this.friendId);
+            await this.updateSeen(this.friendId);
             Echo.leave(`group-chat-${this.friendId}`);
             Echo.leave(`chat-${this.friendId}`);
             this.server(this.friendId);
@@ -260,6 +324,7 @@ export default {
         }
     },
     async mounted() {
+        this.setHeightChatLayoutBody(false, true);
         this.getMessages(false);
     },
     computed: {
@@ -270,9 +335,6 @@ export default {
         },
         typing() {
             return this.$store.getters["message/isTyping"];
-        },
-        test() {
-            console.log("test computed");
         },
         isGroup() {
             return this.$route.name == "group";
@@ -299,7 +361,6 @@ export default {
             }
             return false;
         },
-
         usersMyRoom() {
             return this.$store.getters["users/usersMyRoom"];
         },
@@ -314,6 +375,41 @@ export default {
         },
     },
     methods: {
+        handleClickToBot() {
+            localStorage.setItem("saveScrollHeight", 0);
+            return this.scrollEnd(true);
+        },
+        setHeightChatLayoutBody(watch = false, start = false) {
+            let elMain = document.getElementsByClassName("chat__layout")[0];
+            let elBody =
+                document.getElementsByClassName("chat__layout--body")[0];
+            let el1 = document.getElementsByClassName(
+                "chat__layout--header"
+            )[0];
+            let el2 = document.getElementsByClassName(
+                "chat__layout--footer"
+            )[0];
+            let hEl1 = parseInt(
+                el1.offsetHeight -
+                    (parseInt(window.getComputedStyle(el1).paddingTop) +
+                        parseInt(window.getComputedStyle(el1).paddingBottom))
+            );
+            let hEl2 = parseInt(
+                el2.offsetHeight -
+                    (parseInt(window.getComputedStyle(el2).paddingTop) +
+                        parseInt(window.getComputedStyle(el2).paddingBottom))
+            );
+            if (watch && !start) {
+                hEl1 += 11;
+                hEl2 += 10;
+            }
+            let sum =
+                parseInt(elMain.clientHeight - parseInt(hEl1 + hEl2)) + "px";
+            elBody.style.height = sum;
+        },
+        toggleFormatMessage() {
+            return (this.showFormatMessage = !this.showFormatMessage);
+        },
         closeDialog(close) {
             console.log(close);
             this.dialog = false;
@@ -340,7 +436,6 @@ export default {
         endSetup() {
             this.disableChat = false;
             this.setting = false;
-            console.log("end setup");
         },
         async setReceiver() {
             if (this.type == 1) {
@@ -407,26 +502,7 @@ export default {
                 return;
             }
         },
-        resetLoad() {
-            this.message = "";
-            this.image = "";
-            this.parent_id = null;
-            this.isLoading = false;
-            this.seen = false;
-            this.sending = false;
-            this.disableChat = false;
-            this.audio = "";
-            this.timeout = 4000;
-            this.notification = false;
-            this.text = "";
-            this.type = 0;
-            this.checking = false;
-            this.page = 1;
-            this.endPage = null;
-            this.blockSroll = false;
-            this.typing = false;
-            console.log("reseted");
-        },
+
         handleScroll(e) {
             const elLayoutChat = document.getElementById("chatLayout");
             const scrollTop = elLayoutChat.scrollTop;
@@ -459,7 +535,7 @@ export default {
             }
         },
         loaded() {
-            return this.scrollEnd();
+            this.scrollEnd(true);
         },
 
         resetAll() {
@@ -468,10 +544,10 @@ export default {
             this.message = "";
             this.image = "";
         },
-        upload() {
+        uploadFileImage() {
             this.$refs.messageImage.click();
         },
-        uploadFile() {
+        uploadFileAudio() {
             this.$refs.messageAudio.click();
         },
         changeAudioToSendMessage(e) {
@@ -479,8 +555,8 @@ export default {
             this.sendMessage(3);
         },
         changeToSendMessage(e) {
-            this.image = e.target.files[0];
-            this.sendMessage(2);
+            // this.images = e.target.files[0];
+            // this.sendMessage(2);
         },
         sendMessage(type) {
             let seen = 0;
@@ -508,13 +584,37 @@ export default {
                     })
                     .then((req) => {
                         this.resetAll();
-                        this.scrollEnd(true);
+                        this.scrollEnd(true, true);
                     })
                     .catch((err) => {
                         this.resetAll();
                         this.scrollEnd(true);
                     });
             }
+        },
+        closeEvent() {
+            this.showFormatMessage = false;
+        },
+        resetLoad() {
+            this.message = "";
+            this.images = [];
+            this.parent_id = null;
+            this.isLoading = false;
+            this.seen = false;
+            this.sending = false;
+            this.disableChat = false;
+            this.audio = "";
+            this.timeout = 4000;
+            this.notification = false;
+            this.text = "";
+            this.type = 0;
+            this.checking = false;
+            this.page = 1;
+            this.endPage = null;
+            this.blockSroll = false;
+            this.btnGoEndChat = false;
+            this.isLoadingGroup = false;
+            this.isLoadingUsers = false;
         },
     },
     watch: {
@@ -544,10 +644,80 @@ export default {
                 this.getMessages(true);
             }
         },
+        message(newVal) {
+            this.setHeightChatLayoutBody(true);
+        },
+        images: {
+            handler: function (val, oldVal) {
+                console.log(val);
+            },
+            deep: true,
+        },
     },
 };
 </script>
 <style lang="scss">
+#chatLayout {
+    height: 100%;
+}
+
+.group__message {
+    z-index: 20;
+    &--format {
+        margin-top: 5px;
+        margin-bottom: 5px;
+        padding: 5px;
+        border-radius: 5px;
+        width: 100%;
+        margin-left: 2px;
+        margin-right: 2px;
+        cursor: pointer;
+        &:hover {
+            background: #999;
+        }
+        .gmf__name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            line-height: 1.3333;
+            color: #e4e6eb;
+            font-size: 14px;
+            margin-left: 5px;
+            text-transform: capitalize;
+        }
+    }
+}
+.chat__layout {
+    &--footer {
+        flex: 1;
+    }
+}
+.arrow-down {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #121212;
+    bottom: -6px;
+    left: 6px;
+}
+.dav__wp-chat--input {
+    .preview__images {
+        background: hsla(0, 0%, 100%, 0.08);
+        border-radius: 4px 4px 0 0 !important;
+        .img__item {
+            flex: 0 0 48px;
+            max-width:48px;
+        }
+    }
+}
+
+.group__message {
+    bottom: 45px;
+    left: 15px;
+    background: #121212;
+    border-radius: 5px;
+    
+}
 .ske-layout-left-chat {
     .v-skeleton-loader__image {
         height: 100vh !important;
@@ -556,6 +726,9 @@ export default {
 .btn__chat--end {
     bottom: 0;
     left: 0;
+}
+.v-main {
+    padding: 64px 0 0 0 !important;
 }
 .va__setting--group {
     .v-toolbar__content {

@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -46,10 +47,14 @@ class User extends Authenticatable
     ];
     public function messages_unseen()
     {
-        return $this->hasMany('App\Models\UserMessage', 'rcv_id');
+        return $this->hasMany('App\Models\UserMessage', 'sd_id');
     }
     public function requestsJoin()
     {
         return $this->hasMany('App\Models\RequestjoinGroup', 'users_id');
+    }
+    public function count()
+    {
+        return $this->messages_unseen()->where('seen', 0)->where('rcv_id', Auth::id());
     }
 }

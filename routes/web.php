@@ -1,6 +1,7 @@
 <?php
 
 use App\Events\HandleRequest;
+use App\Events\HandleUser;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Events\Lobby;
@@ -39,18 +40,23 @@ Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 });
+Route::get('update', function () {
+    $messages = Message::all();
+    foreach ($messages as $msg) {
+        UserMessage::where('msg_id', $msg->id)->update(['type_msg' => $msg->type]);
+    }
+});
 Route::group(['middleware' => ['guest']], function () {
     Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
     Route::post('/register', 'DavAuthController@register')->name('register.perform');
 });
-Route::get('message_unseen', function (Request $request) {
-    $count = UserMessage::where('seen', false)->where('rcv_id', Auth::id())->where('sd_id', $request->sd_id)->count();
-    return response()->json(['count' => $count], 200);
+Route::group(['middleware' => ['auth']], function () {
+    Route::get('/logout', 'DavAuthController@logout_perform')->name('logout.perform');
 });
 Route::get('users', function (Request $request) {
     Carbon::setLocale('vi');
     $seen = 0;
-    $query = User::when($request->has('keyword'), function ($q) {
+    $query = User::with('count')->when($request->has('keyword'), function ($q) {
         return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
     })->get()->except(Auth::id());
     $users = collect($query);
@@ -58,31 +64,8 @@ Route::get('users', function (Request $request) {
         return $item->offline_at = Carbon::create($item->offline_at)->diffForHumans();
     });
     return response()->json($users, 200);
-});
-Route::get('fake_data', function () {
-    $message = new Message();
-    $user_message = new UserMessage();
-    $message->message = "fake 1";
-    $message->parent_id = NULL;
-    $message->type = (int) 1;
-    if ($message->save()) {
-        try {
-            $user_message->msg_id = (int)$message->id;
-            $user_message->sd_id = (int) 12;
-            $user_message->rcv_id = (int) 4;
-            $user_message->seen = (int) 1;
-            $user_message->type = 1;
-            $user_message->save();
-            return response()->json(['data' => $user_message], 200);
-        } catch (\Exception $e) {
-            $message->delete();
-            return response()->json(['error' => $e->getMessage()]);
-        }
-    } else {
-        $message->delete();
-        return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
-    }
-});
+})->name('users');
+
 Route::get('groups', function (Request $request) {
     $groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->when($request->has('keyword'), function ($q) {
         return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
@@ -98,7 +81,7 @@ Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hl
     } else {
         $receiver = $hle_gr->group($id);
     }
-    return response()->json($receiver, 200);
+    return response()->json(['receiver' => $receiver], 200);
 })->name('get.receiver');
 Route::get('messages/{to}', function ($to, Request $request) {
     $type = $request->type;
@@ -107,11 +90,11 @@ Route::get('messages/{to}', function ($to, Request $request) {
     $page =  $request->has('page') && $request->page != null ? $request->page : 1;
     $limit = $page * $item_page;
     if ($type == 0) {
-        $queryMsg = UserMessage::with('message')->where(function ($q) use ($to) {
+        $queryMsg = UserMessage::where(function ($q) use ($to) {
             $q->where('sd_id', '=', Auth::id())
                 ->where('rcv_id', '=', $to)
                 ->where('type', 0);
-        })->orWhere(function ($q) use ($to, $type) {
+        })->orWhere(function ($q) use ($to) {
             $q->where('sd_id', '=', $to)
                 ->where('rcv_id', '=', Auth::id())
                 ->where('type', 0);
@@ -119,10 +102,10 @@ Route::get('messages/{to}', function ($to, Request $request) {
         $count = $queryMsg->count();
         if ($limit >= $count) {
             $end_page = 1;
-            $messages = $queryMsg->get();
+            $messages = $queryMsg->with('message')->get();
         } else {
             $offset = $count - $limit;
-            $messages = $queryMsg->offset($offset)->limit($limit)->get();
+            $messages = $queryMsg->with('message')->offset($offset)->limit($limit)->get();
         }
         $messages->page = $page;
     } else {
@@ -136,7 +119,7 @@ Route::get('messages/{to}', function ($to, Request $request) {
             $messages = $queryMsg->offset($offset)->limit($limit)->get();
         }
     }
-    return response()->json(['data' => $messages, 'page' => $page, 'endPage' => $end_page], 200);
+    return response()->json(['data' => $messages,   'page' => $page, 'endPage' => $end_page], 200);
 });
 Route::post('saveMessage', function (Request $request) {
     $message = new Message();
@@ -170,6 +153,7 @@ Route::post('saveMessage', function (Request $request) {
             }
             $user_message->seen = (int) $request->seen;
             $user_message->type = $request->for;
+            $user_message->type_msg = (int) $request->type;
             $user_message->save();
             $user_message->message = $message;
             if ($request->for == 0) {
@@ -281,6 +265,7 @@ Route::prefix('handle/')->group(function () {
                         $user_message->rcv_group_id = (int) $req->groups_id;
                         $user_message->seen = 0;
                         $user_message->type = 1;
+                        $user_message->type_msg = 4;
                         if ($user_message->save()) {
                             $user_message->message = $message;
                             $user_message->sender = User::where('id',  $user_message->sd_id)->first();
@@ -390,12 +375,13 @@ Route::get('update_offline/{id}', function ($id) {
         $updated = User::where('id', $id)->update([
             'offline_at' => Carbon::now()
         ]);
-
-        return response()->json(['offline' => true], 200);
+        $user = User::where('id',  $id)->first();
+        $user->offline_at = Carbon::create($user->offline_at)->diffForHumans();
+        return response()->json($user);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()]);
     }
-});
+})->name('update.offline');
 Route::post('update_seen', function (Request $request) {
     try {
         $updated = UserMessage::where('sd_id', $request->receiver)->where('rcv_id', Auth::id())->where('seen', false)->update(['seen' => true]);

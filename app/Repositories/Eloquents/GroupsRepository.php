@@ -2,7 +2,10 @@
 
 namespace App\Repositories\Eloquents;
 
+use App\Models\User;
 use App\Models\Groups;
+use App\Models\Message;
+use App\Models\UserMessage;
 use App\Repositories\Groups\GroupsInterface;
 
 
@@ -17,4 +20,5 @@ class GroupsRepository implements GroupsInterface
     {
         return Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->where('id', $group_id)->firstOrFail();
     }
+   
 }

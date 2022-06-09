@@ -5,7 +5,9 @@
             v-if="data.message.type != 4"
             :class="[itMe ? ['chat-message-right'] : ['chat-message-left']]"
         >
-            <div class="d-flex flex-column align-items-center">
+            <div
+                class="d-flex flex-column align-items-center justify-content-end"
+            >
                 <img
                     :src="itMe ? avatar : makeAvatar(receiver.avatar)"
                     class="rounded-circle mr-1"
@@ -72,18 +74,49 @@
                 </a> -->
             </div>
 
-            <a
-                href=""
+            <div
+                class="message__image"
                 v-if="data.message.type == 2"
-                style="height: 250px; width: 250px"
+                :class="[itMe ? ['mr-2'] : ['ml-2'], images ? ['images'] : '']"
             >
-                <v-img
-                    max-width="100%"
-                    max-height="250"
-                    :src="data.message.message"
-                    style="border-radius: 8px"
-                ></v-img>
-            </a>
+                <router-link v-if="!images" to="/">
+                    <img
+                        @load="loaded"
+                        :src="data.message.message"
+                        class="img__obj--cover img__obj"
+                        style="
+                            border-radius: 8px;
+                            max-width: 250px;
+                            max-height: 250px;
+                        "
+                    />
+                </router-link>
+                <div
+                    v-else
+                    class="d-flex message__image--images align-items-center flex-wrap w-100 h-100"
+                    :class="
+                        itMe ? 'justify-content-end' : 'justify-content-start'
+                    "
+                >
+                    <div
+                        v-for="(image, index) in arrayImage"
+                        :key="'image-' + index"
+                        class="message__image--item"
+                    >
+                        <router-link to="/">
+                            <img
+                                @load="loaded"
+                                :src="image"
+                                width="100%"
+                                height="100%"
+                                style="border-radius: 8px"
+                                class="img__obj--cover img__obj"
+                            />
+                        </router-link>
+                    </div>
+                </div>
+            </div>
+
             <div
                 :style="createBgAudio"
                 class="flex-shrink-1 bg-light rounded px-1 py-1 mr-3"
@@ -116,10 +149,14 @@ export default {
         return {
             interval: null,
             metaData: false,
-            links: [],
+            arrayFetch: [],
+            arrayImage: [],
         };
     },
     created() {
+        if (this.data.type_msg == 2) {
+            this.arrayImage = this.data.message.message.split(",");
+        }
         this.created_at = this.data.message.created_at;
     },
     async updated() {
@@ -137,6 +174,9 @@ export default {
     //     clearInterval(this.interval);
     // },
     computed: {
+        images() {
+            return this.arrayImage.length > 1;
+        },
         setHaveLink() {
             const links = document.getElementsByClassName(
                 "msg__link--" + this.data.message.id
@@ -145,7 +185,6 @@ export default {
                 document
                     .getElementsByClassName("msg-" + this.data.message.id)[0]
                     .classList.add("haveLink");
-                console.log(links[0].getAttribute("data-url-fetch"));
                 const url = links[0].getAttribute("data-url-fetch");
                 this.fetchMeataData(url);
             }
@@ -208,11 +247,9 @@ export default {
                     params: { url: url },
                 })
                 .then((req) => {
-                    console.log(req);
                     return (this.metaData = req.data);
                 })
                 .catch((err) => {
-                    console.log(err);
                     return (this.metaData = false);
                 });
         },
@@ -241,13 +278,12 @@ export default {
             return a;
         },
         MakeMessage(message, id) {
-            let urls,
-                lastURL,
-                checkURL = "",
-                goUrl = "",
+            let goUrl = "",
                 fetchDataUrl = "";
-            let url = /((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi;
-            let startWith = /^((http|https|ftp):\/\/)/;
+            // let url = /((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi;
+            let url =
+                /((?:(http|https|Http|Https|rtsp|Rtsp):\/\/(?:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,64}(?:\:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,25})?\@)?)?((?:(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|(?:jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\:\d{1,5})?)(\/(?:(?:[a-zA-Z0-9\;\/\?\:\@\&\=\#\~\-\.\+\!\*\'\(\)\,\_])|(?:\%[a-fA-F0-9]{2}))*)?(?:\b|$)/gi;
+            let startWith = /^((http|https|Http|Https|rtsp|Rtsp):\/\/)/;
             return message.replace(url, function ($1) {
                 goUrl = $1;
                 fetchDataUrl = $1;
@@ -255,7 +291,6 @@ export default {
                     fetchDataUrl = "http://" + goUrl;
                     goUrl = "//" + goUrl;
                 }
-                this.links.push(fetchDataUrl);
                 let a = document.createElement("a");
                 let linkText = document.createTextNode($1);
                 a.appendChild(linkText);
@@ -276,6 +311,27 @@ export default {
 .msg-time-left {
     padding-left: 50px;
 }
+.message__image {
+    max-width: 250px;
+    max-height: 250px;
+    &--item {
+        flex: 0 0 125.31px;
+        max-width: 125.31px;
+        height: 125.31px;
+        max-height: 125.31px;
+        margin-bottom: 5px;
+        margin-right: 5px;
+        a {
+            display: block;
+            height: 100%;
+        }
+    }
+}
+.message__image.images {
+    max-width: 400px !important;
+    width: 400px !important;
+    max-height: 100% !important;
+}
 .text-muted {
     font-size: 12.99999px;
 }
@@ -287,14 +343,7 @@ export default {
     font-weight: 600;
     text-decoration: underline;
 }
-.lazy-image-wrapper {
-    padding: 0 !important;
-}
-.lazy-image-main {
-    max-width: 350px;
-    max-height: 350px;
-    position: unset !important;
-}
+
 .message__type {
     &--image {
         height: 20% !important;

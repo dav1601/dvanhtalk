@@ -8,13 +8,13 @@
             query: { uid: user.id },
         }"
         :class="{ classUser, active: active }"
-        @click.native="resetSeen()"
     >
         <div
             class="badge bg-success float-right"
             v-show="count != 0"
             :id="classQueue"
             :data-count="count"
+            :ref="'user-' + user.id"
         >
             {{ count }}
         </div>
@@ -52,6 +52,9 @@ export default {
             count: 0,
         };
     },
+    updated() {
+        this.resetSeen();
+    },
     computed: {
         encryptedId() {
             return this.$CryptoJS.AES.encrypt(
@@ -78,7 +81,6 @@ export default {
         resetSeen() {
             this.count = 0;
             let el = document.getElementById("queue-" + this.user.id);
-            let countQueue = 0;
             el.setAttribute("data-count", 0);
             el.innerHTML = 0;
             el.style.display = "none";

@@ -17,6 +17,10 @@ class AppServiceProvider extends ServiceProvider
             'App\Repositories\Groups\GroupsInterface',
             'App\Repositories\Eloquents\GroupsRepository'
         );
+        $this->app->bind(
+            'App\Repositories\Messages\MessagesInterface',
+            'App\Repositories\Eloquents\MessagesRepository'
+        );
     }
 
     /**

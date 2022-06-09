@@ -1,6 +1,11 @@
 import { toInteger } from "lodash";
 
 export default {
+    data() {
+        return {
+            blockSroll: false,
+        };
+    },
     methods: {
         scrollEnd(foc = false, deleteSaveScroll = false) {
             const el = document.getElementById("chatLayout");
@@ -11,14 +16,14 @@ export default {
             if (el) {
                 let scroll = el.scrollHeight;
                 let sum = Number(scroll - saveScrollHeight);
-                if (!this.blockScroll || foc) {
+                if (!this.isPointBlockScroll() || foc) {
                     el.scrollTo({
                         top: sum,
                     });
                 }
             }
         },
-        isPointBlockScroll(minus = 300, returnBackForNot = false) {
+        isPointBlockScroll(limit = 300, returnBackForNot = false) {
             const elLayoutChat = document.getElementById("chatLayout");
             if (!elLayoutChat) {
                 return false;
@@ -27,21 +32,20 @@ export default {
             const height = elLayoutChat.clientHeight;
             const scroll = elLayoutChat.scrollHeight;
             const sum = Number(scrollTop + height);
-            const pointShowBtn = Number(scroll - minus);
-            if (sum <= pointShowBtn) {
+            const poinBlockScroll = Number(scroll - limit);
+            if (sum <= poinBlockScroll) {
                 return true;
             }
             return returnBackForNot;
         },
         serverGroup(idReceiver) {
             Echo.join(`group-chat-${idReceiver}`)
-                .here((users) => {
-                    console.log(users);
-                })
+                .here((users) => {})
                 .joining((user) => {})
                 .leaving((user) => {})
                 .listen("SendMessageGroup", (e) => {
                     this.$store.dispatch("message/getMessage", e.user_message);
+                    this.scrollEnd();
                 })
                 .listen("HandleRequest", (e) => {
                     if (e.data.action == "joinGr") {
@@ -71,16 +75,12 @@ export default {
             await Echo.private(`chat-${this.id}`).listenForWhisper(
                 "typing",
                 (e) => {
-                    console.log(e);
                     this.$store.dispatch("message/getTyping", e.typing);
                 }
             );
             await Echo.join(`notify-${this.id}`)
-                .here((users) => {
-                    console.log(users);
-                })
+                .here((users) => {})
                 .listen("SenRqJoinGr", (e) => {
-                    console.log(e);
                     this.$notify({
                         group: "request__group",
                         data: {
@@ -125,7 +125,6 @@ export default {
                 });
             await Echo.join(`chat-${this.id}`)
                 .here((users) => {
-                    console.log(users);
                     this.$store.dispatch("users/getUsersMyRoom", users);
                 })
                 .joining((user) => {
@@ -140,11 +139,15 @@ export default {
                         let el = document.getElementById(
                             "queue-" + e.user_message.sd_id
                         );
+                        let plus = 1;
+                        if (e.user_message.message_images) {
+                            plus = 2;
+                        }
                         let countQueue =
-                            Number(el.getAttribute("data-count")) + 1;
+                            Number(el.getAttribute("data-count")) + plus;
                         el.setAttribute("data-count", countQueue);
                         el.innerHTML = countQueue;
-                        if (countQueue == 1) {
+                        if (countQueue > 0) {
                             el.style.display = "";
                         }
                     }
@@ -152,7 +155,9 @@ export default {
                         "message/getMessage",
                         e.user_message
                     );
-                    this.scrollEnd();
+                    if (e.user_message.rcv_id == this.id) {
+                        this.scrollEnd(true);
+                    }
                 });
         },
         async updateSeen(friendId) {

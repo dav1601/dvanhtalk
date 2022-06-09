@@ -115,7 +115,6 @@ export default {
     },
     methods: {
         closeDialog() {
-            console.log("ok");
             this.$emit("close-dialog", true);
         },
         saveDataGroup() {

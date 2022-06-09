@@ -63,11 +63,9 @@ export default {
                 .dispatch("users/handleRequest", data)
                 .then((req) => {
                     this.handling = false;
-                    console.log(req);
                 })
                 .catch((err) => {
                     this.handling = false;
-                    console.log(err);
                 });
         },
     },

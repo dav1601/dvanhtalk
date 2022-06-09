@@ -21,6 +21,7 @@
             v-model="dialog"
             :dark="true"
             style="z-index: 90000"
+            v-if="isGroup"
         >
             <the-setting
                 :receiver="receiver"
@@ -154,7 +155,7 @@
                     fab
                     small
                     @click.stop="toggleFormatMessage()"
-                    style="z-index: 100000"
+                    style="z-index: 5000"
                 >
                     <v-scroll-y-transition>
                         <div
@@ -170,7 +171,6 @@
                                 class="d-none"
                                 ref="messageImage"
                                 @change="changeToSendMessage"
-                                :data-image="image"
                             />
                             <input
                                 type="file"
@@ -219,21 +219,26 @@
                 </v-btn>
 
                 <div style="flex: 1" class="dav__wp-chat--input">
-                    <div class="preview__images--wp w-100 p-3">
+                    <div
+                        class="preview__images--wp w-100 p-2"
+                        v-show="showPreviewImg"
+                    >
                         <div
-                            class="d-flex justify-content-start align-items-center flex-wrap w-100"
+                            class="wp__item d-flex justify-content-start align-items-center flex-wrap w-100"
                         >
-                            <div class="img__item">
-                                <img
-                                    width="100%"
-                                    height="100%"
-                                    src="https://res.cloudinary.com/vanh-tech/image/upload/v1652075156/rs.jpg"
-                                    alt=""
-                                />
-                            </div>
+                            <item-pre-img
+                                v-for="(image, index) in images"
+                                :key="'imagePreview-' + index"
+                                :index="index"
+                                :image="image"
+                                :icon="false"
+                                @delete-img-preview="deleteImgPreview"
+                            ></item-pre-img>
+                            <item-pre-img :icon="true"></item-pre-img>
                         </div>
                     </div>
                     <v-textarea
+                        @hook:updated="setHeightChatLayoutBody(true)"
                         id="input__message"
                         filled
                         auto-grow
@@ -273,8 +278,16 @@ import ItemUser from "../components/users/ItemUser.vue";
 import ItemMember from "../components/users/ItemMember.vue";
 import ItemTying from "../components/chat/ItemTying.vue";
 import TheSetting from "../components/users/group/TheSetting.vue";
+import ItemPreImg from "../components/chat/ItemPreImg.vue";
 export default {
-    components: { ItemMsg, ItemUser, ItemMember, ItemTying, TheSetting },
+    components: {
+        ItemMsg,
+        ItemUser,
+        ItemMember,
+        ItemTying,
+        TheSetting,
+        ItemPreImg,
+    },
     mixins: [user, chat],
     props: ["friendId"],
     data() {
@@ -294,14 +307,14 @@ export default {
             checking: false,
             page: 1,
             endPage: null,
-            blockSroll: false,
             btnGoEndChat: false,
             forcusScroll: false,
             dialog: false,
             setting: false,
             showFormatMessage: false,
-            arrayImages: [],
+            arrayImages: ["1", "2"],
             arrayFileAudio: [],
+            showPreviewImg: false,
         };
     },
     beforeCreate() {
@@ -313,10 +326,10 @@ export default {
         this.setType();
         this.setReceiver();
         if (this.type == 0) {
-            await this.updateSeen(this.friendId);
             Echo.leave(`group-chat-${this.friendId}`);
             Echo.leave(`chat-${this.friendId}`);
             this.server(this.friendId);
+            this.updateSeen(this.friendId);
         } else {
             Echo.leave(`chat-${this.friendId}`);
             Echo.leave(`group-chat-${this.friendId}`);
@@ -324,8 +337,11 @@ export default {
         }
     },
     async mounted() {
-        this.setHeightChatLayoutBody(false, true);
         this.getMessages(false);
+        this.setHeightChatLayoutBody(false, true);
+    },
+    updated() {
+        this.setHeightChatLayoutBody(true);
     },
     computed: {
         members() {
@@ -355,6 +371,7 @@ export default {
             }
             return false;
         },
+
         isManage() {
             if (this.isAdmin || this.isMod) {
                 return true;
@@ -375,43 +392,80 @@ export default {
         },
     },
     methods: {
+        updateSrcImg() {
+            for (let i = 0; i < this.images.length; i++) {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    const el = document.getElementsByClassName(
+                        "image__preview--" + i
+                    );
+                    if (el.length == 1) {
+                        el[0].src = reader.result;
+                    }
+                };
+
+                reader.readAsDataURL(this.images[i]);
+            }
+        },
+        deleteImgPreview(index) {
+            this.images.splice(index, 1);
+            if (this.images.length <= 0) {
+                this.showPreviewImg = false;
+            }
+            this.updateSrcImg();
+        },
         handleClickToBot() {
             localStorage.setItem("saveScrollHeight", 0);
             return this.scrollEnd(true);
         },
         setHeightChatLayoutBody(watch = false, start = false) {
             let elMain = document.getElementsByClassName("chat__layout")[0];
-            let elBody =
+            const elTextInput = document.querySelector(
+                ".dav__wp-chat--input .v-textarea"
+            );
+
+            if (this.showPreviewImg == true) {
+                elTextInput.classList.add("br-0");
+            } else {
+                elTextInput.classList.remove("br-0");
+            }
+
+            const elBody =
                 document.getElementsByClassName("chat__layout--body")[0];
-            let el1 = document.getElementsByClassName(
+            const el1 = document.getElementsByClassName(
                 "chat__layout--header"
             )[0];
-            let el2 = document.getElementsByClassName(
+            const el2 = document.getElementsByClassName(
                 "chat__layout--footer"
             )[0];
-            let hEl1 = parseInt(
+            let hEl1 = 0,
+                hEl2 = 0,
+                sum = 0;
+
+            hEl1 = parseInt(
                 el1.offsetHeight -
                     (parseInt(window.getComputedStyle(el1).paddingTop) +
                         parseInt(window.getComputedStyle(el1).paddingBottom))
             );
-            let hEl2 = parseInt(
+
+            hEl2 = parseInt(
                 el2.offsetHeight -
                     (parseInt(window.getComputedStyle(el2).paddingTop) +
                         parseInt(window.getComputedStyle(el2).paddingBottom))
             );
+
             if (watch && !start) {
-                hEl1 += 11;
+                hEl1 += 10;
                 hEl2 += 10;
             }
-            let sum =
-                parseInt(elMain.clientHeight - parseInt(hEl1 + hEl2)) + "px";
+
+            sum = parseInt(elMain.clientHeight - parseInt(hEl1 + hEl2)) + "px";
             elBody.style.height = sum;
         },
         toggleFormatMessage() {
             return (this.showFormatMessage = !this.showFormatMessage);
         },
         closeDialog(close) {
-            console.log(close);
             this.dialog = false;
         },
         setType() {
@@ -483,7 +537,7 @@ export default {
                         this.endPage = req.data.endPage;
                         this.isLoading = false;
                         this.$nextTick(() => {
-                            this.scrollEnd(!this.blockSroll);
+                            this.scrollEnd(true);
                             this.endSetup();
                         });
                     })
@@ -494,7 +548,7 @@ export default {
                         this.text =
                             "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
                         this.$nextTick(() => {
-                            this.scrollEnd(!this.blockSroll);
+                            this.scrollEnd(true);
                             this.endSetup();
                         });
                     });
@@ -510,6 +564,7 @@ export default {
                 this.blockSroll = true;
                 this.btnGoEndChat = true;
             } else {
+                localStorage.setItem("saveScrollHeight", 0);
                 this.blockSroll = false;
                 this.btnGoEndChat = false;
             }
@@ -535,14 +590,14 @@ export default {
             }
         },
         loaded() {
-            this.scrollEnd(true);
+            this.scrollEnd();
         },
 
         resetAll() {
             this.sending = false;
             this.disableChat = false;
             this.message = "";
-            this.image = "";
+            this.images = [];
         },
         uploadFileImage() {
             this.$refs.messageImage.click();
@@ -555,19 +610,31 @@ export default {
             this.sendMessage(3);
         },
         changeToSendMessage(e) {
-            // this.images = e.target.files[0];
-            // this.sendMessage(2);
+            let selectedFiles = e.target.files;
+            for (let i = 0; i < selectedFiles.length; i++) {
+                this.images.push(selectedFiles[i]);
+            }
+            if (this.images.length > 0) {
+                this.showPreviewImg = true;
+            }
+            this.updateSrcImg();
+            this.setHeightChatLayoutBody(true);
         },
         sendMessage(type) {
             let seen = 0;
             if (this.inRoom()) {
                 seen = 1;
             }
-            if (this.message == "" && this.image == "" && this.audio == "") {
+            if (
+                this.message == "" &&
+                this.images.length <= 0 &&
+                this.audio == ""
+            ) {
                 this.resetAll();
             } else {
                 this.sending = true;
                 this.disableChat = true;
+                this.showPreviewImg = false;
                 this.$store
                     .dispatch("message/sendMessage", {
                         to: this.friendId,
@@ -577,7 +644,7 @@ export default {
                         seen: seen,
                         // this type for text,file,audio message
                         type: type,
-                        file: this.image,
+                        images: this.images,
                         audio: this.audio,
                         // that type for 1: pers 2: group
                         for: this.type,
@@ -644,14 +711,15 @@ export default {
                 this.getMessages(true);
             }
         },
-        message(newVal) {
-            this.setHeightChatLayoutBody(true);
-        },
-        images: {
-            handler: function (val, oldVal) {
-                console.log(val);
-            },
-            deep: true,
+        showPreviewImg(newVal) {
+            const el = document.querySelector(
+                ".dav__wp-chat--input .v-textarea"
+            );
+            if (newVal == true && el) {
+                el.classList.add("br-0");
+            } else {
+                el.classList.remove("br-0");
+            }
         },
     },
 };
@@ -660,7 +728,15 @@ export default {
 #chatLayout {
     height: 100%;
 }
-
+.wp__item {
+    span {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: start;
+        align-items: center;
+        display: flex;
+    }
+}
 .group__message {
     z-index: 20;
     &--format {
@@ -702,11 +778,9 @@ export default {
 }
 .dav__wp-chat--input {
     .preview__images {
-        background: hsla(0, 0%, 100%, 0.08);
-        border-radius: 4px 4px 0 0 !important;
-        .img__item {
-            flex: 0 0 48px;
-            max-width:48px;
+        &--wp {
+            background: hsla(0, 0%, 100%, 0.08);
+            border-radius: 4px 4px 0 0 !important;
         }
     }
 }
@@ -716,7 +790,6 @@ export default {
     left: 15px;
     background: #121212;
     border-radius: 5px;
-    
 }
 .ske-layout-left-chat {
     .v-skeleton-loader__image {

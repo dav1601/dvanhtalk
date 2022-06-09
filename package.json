@@ -21,10 +21,13 @@
         "sass": "^1.32.11",
         "sass-loader": "^11.0.1",
         "vue": "^2.6.12",
+        "vue-agile": "^2.0.0",
         "vue-cryptojs": "^2.2.1",
+        "vue-gallery": "^2.0.1",
         "vue-lazy-image-loading": "^1.2.1",
         "vue-loader": "^15.9.8",
         "vue-template-compiler": "^2.6.12",
+        "vueperslides": "^2.15.2",
         "vuetify": "^2.6.5"
     },
     "dependencies": {
@@ -32,7 +35,9 @@
         "html-metadata-parser": "^2.0.4",
         "laravel-echo": "^1.11.7",
         "moment": "^2.29.3",
+        "swiper": "^8.2.2",
         "url-metadata": "^2.5.0",
+        "vue-awesome-swiper": "^5.0.1",
         "vue-chat-scroll": "^2.0.0-alpha.4",
         "vue-chat-scroll-image": "^1.0.3",
         "vue-confirm-dialog": "^1.1.0",

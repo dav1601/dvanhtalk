@@ -16,7 +16,7 @@
                 ></item-req>
             </template>
         </notifications>
-        <v-app-bar app class="b-b">
+        <v-app-bar app class="b-b" v-if="!isMedia">
             <v-container class="d-flex justify-content-end">
                 <v-menu
                     v-model="menu"
@@ -134,6 +134,9 @@ export default {
         isNotFound() {
             return this.$route.name == "404";
         },
+        isMedia() {
+            return this.$route.name == "messengerMedia";
+        },
     },
     methods: {
         async setMe() {
@@ -156,9 +159,7 @@ export default {
                         .listen("NewUser", (e) => {
                             this.$store.dispatch("users/getNewUser", e.user);
                         })
-                        .listen("HandleUser", (e) => {
-                            console.log(e);
-                        });
+                        .listen("HandleUser", (e) => {});
                     this.myServer();
                 })
                 .catch((err) => {
@@ -179,6 +180,9 @@ $roles: 0, 1, 2;
         }
     }
 }
+// .v-responsive__sizer {
+//     padding-bottom: 100% !important;
+// }
 :root {
     scrollbar-color: var(--bs-gray-dark) #3e4042 !important;
     scrollbar-width: auto !important;
@@ -186,6 +190,18 @@ $roles: 0, 1, 2;
 html {
     overflow: hidden;
     height: 100vh;
+}
+.img__obj {
+    &--cover {
+        object-fit: cover;
+    }
+    &--fill {
+        object-fit: fill;
+    }
+    &--contain {
+        object-fit: contain;
+    }
+    object-position: 50% 50%;
 }
 #app {
     height: 100%;
@@ -321,6 +337,7 @@ header {
     flex-direction: column;
     height: 590px;
     overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 .chat-message-left,
@@ -371,7 +388,7 @@ header {
     overflow: unset !important;
 }
 .scroll-custom::-webkit-scrollbar-track {
-    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    // -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
     background-color: #3e4042;
     opacity: 0.3;
 }

@@ -31,6 +31,9 @@ export default {
         isGroup() {
             return this.$route.name == "group";
         },
+        isLobby(){
+            return this.$route.name == "home";
+        },
         listUser() {
             return this.$store.getters["users/users"];
         },

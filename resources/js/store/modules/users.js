@@ -85,11 +85,9 @@ const mutations = {
         s.usersMyRoom.push(p);
     },
     deleteUser(s, p) {
-        console.log(p);
         let updateUsers = s.usersOnline.filter(function (item) {
             return item.id != p.id;
         });
-        console.log(updateUsers);
         s.usersOnline = updateUsers;
     },
     deleteUserMRoom(s, p) {},
@@ -246,7 +244,6 @@ const actions = {
             ])
             .then((req) => {
                 req.forEach((rq) => {
-                    console.log(rq);
                     c.commit("deleteUser", rq.data);
                     c.commit("updateUser", rq.data);
                 });
@@ -271,7 +268,6 @@ const actions = {
             axios
                 .get("/groups", { params: { keyword: p } })
                 .then((req) => {
-                    console.log(req);
                     c.commit("setGroups", req.data);
                     rs(req);
                 })
@@ -354,7 +350,6 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
-                    console.log(err);
                     rj(err);
                 });
         });
@@ -370,11 +365,9 @@ const actions = {
             axios
                 .post(route("handle.gr.req.saveData"), data)
                 .then((req) => {
-                    console.log(req);
                     rs(req);
                 })
                 .catch((err) => {
-                    console.log(err);
                     rj(err);
                 });
         });
@@ -391,7 +384,6 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
-                    console.log(err);
                     rj(err);
                 });
         });

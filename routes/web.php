@@ -14,9 +14,12 @@ use App\Models\UserMessage;
 use App\Events\QueueMessage;
 use App\Events\SendMessageGroup;
 use App\Events\SenRqJoinGr;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\MessagesController;
 use App\Models\MembersGroup;
 use App\Models\RequestJoinGroup;
 use App\Repositories\Groups\GroupsInterface;
+use App\Repositories\Messages\MessagesInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -40,11 +43,8 @@ Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 });
-Route::get('update', function () {
-    $messages = Message::all();
-    foreach ($messages as $msg) {
-        UserMessage::where('msg_id', $msg->id)->update(['type_msg' => $msg->type]);
-    }
+Route::get('update', function (MessagesInterface $dav2_message) {
+    return $dav2_message->createMessageSystemGroup(20, 9, "add");
 });
 Route::group(['middleware' => ['guest']], function () {
     Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
@@ -66,15 +66,12 @@ Route::get('users', function (Request $request) {
     return response()->json($users, 200);
 })->name('users');
 
-Route::get('groups', function (Request $request) {
-    $groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->when($request->has('keyword'), function ($q) {
-        return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
-    })->get();
-    $my_groups_joined = MembersGroup::with(['group', 'group.members', 'group.founder', 'group.requestsJoin', 'group.requestsJoin.sender', 'group.members.info'])->where('users_id', Auth::id())->get();
-    $my_groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->where('users_id', Auth::id())->get();
-    return response()->json(['groups' => $groups, 'my_groups_joined' => $my_groups_joined, 'my_groups' => $my_groups], 200);
+Route::controller(GroupController::class)->group(function () {
+    Route::get('groups', 'index');
 });
-
+Route::controller(MessagesController::class)->group(function () {
+   
+});
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
     if ($request->type == 0) {
         $receiver = User::where('id', $id)->firstOrFail();
@@ -123,25 +120,45 @@ Route::get('messages/{to}', function ($to, Request $request) {
 });
 Route::post('saveMessage', function (Request $request) {
     $message = new Message();
+    $message_images = new Message();
     $user_message = new UserMessage();
-    if ($request->type == 2) {
-        $file = $request->file;
-        $urlImgUploaded =  $file->storeOnCloudinary("user-" . $request->from)->getSecurePath();
-        $message->message = $urlImgUploaded;
-    } elseif ($request->type == 1) {
-        $message->message = $request->message;
-    } elseif ($request->type == 3) {
+    $haveImages = $request->has('images') ? true : false;
+    $haveMessageText = $request->message != null && $request->message != "" ? true : false;
+    $parent_id = $request->parent_id == 'null' || $request->parent_id == null ? NULL : (int) $request->parent_id;
+    if ($request->type == 1) {
+        if ($haveMessageText && !$haveImages) {
+            $message->message = $request->message;
+            $message->type = 1;
+        } elseif ($haveImages && !$haveMessageText) {
+            $images = $request->images;
+            $arrayImages = [];
+            foreach ($images as $image) {
+                $urlImgUploaded =  $image->storeOnCloudinary("user-" . $request->from)->getSecurePath();
+                $arrayImages[] = $urlImgUploaded;
+            }
+            $message->message = implode(",", $arrayImages);
+            $message->type = 2;
+        } elseif ($haveImages && $haveMessageText) {
+            $message->message = $request->message;
+            $message->type = 1;
+            $images = $request->images;
+            $arrayImages = [];
+            foreach ($images as $image) {
+                $urlImgUploaded =  $image->storeOnCloudinary("user-" . $request->from)->getSecurePath();
+                $arrayImages[] = $urlImgUploaded;
+            }
+            $message_images->message = implode(",", $arrayImages);
+            $message_images->parent_id =  $parent_id;
+            $message_images->type = 2;
+        }
+    }
+    if ($request->type == 3) {
         $audio = $request->audio;
         $urlAudioUploaded =  $audio->storeOnCloudinary("user-" . $request->from)->getSecurePath();
         $message->message = $urlAudioUploaded;
+        $message->type = 3;
     }
-    if ($request->parent_id == 'null' || $request->parent_id == null) {
-        $request->parent_id = NULL;
-    } else {
-        $message->parent_id = (int) $request->parent_id;
-    }
-
-    $message->type = (int) $request->type;
+    $message->parent_id = $parent_id;
     if ($message->save()) {
         try {
             $user_message->msg_id = (int)$message->id;
@@ -153,9 +170,26 @@ Route::post('saveMessage', function (Request $request) {
             }
             $user_message->seen = (int) $request->seen;
             $user_message->type = $request->for;
-            $user_message->type_msg = (int) $request->type;
+            $user_message->type_msg = $message->type;
             $user_message->save();
             $user_message->message = $message;
+            if ($haveMessageText && $haveImages) {
+                $user_message_images = new UserMessage();
+                $message_images->save();
+                $user_message_images->msg_id = (int) $message_images->id;
+                $user_message_images->sd_id = (int)$request->from;
+                if ($request->for == 0) {
+                    $user_message_images->rcv_id = (int) $request->to;
+                } else {
+                    $user_message_images->rcv_group_id = (int) $request->to;
+                }
+                $user_message_images->seen = (int) $request->seen;
+                $user_message_images->type = $request->for;
+                $user_message_images->type_msg = 2;
+                $user_message_images->save();
+                $user_message_images->message = $message_images;
+                $user_message->message_images = $user_message_images;
+            }
             if ($request->for == 0) {
                 broadcast(new SendMessage($user_message))->toOthers();
             } else {
@@ -165,6 +199,7 @@ Route::post('saveMessage', function (Request $request) {
             return response()->json(['data' => $user_message], 200);
         } catch (\Exception $e) {
             $message->delete();
+            $message_images->delete();
             return response()->json(['error' => $e->getMessage()]);
         }
     } else {

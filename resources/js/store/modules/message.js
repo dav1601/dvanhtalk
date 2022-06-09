@@ -1,5 +1,6 @@
 const state = () => ({
     messages: [],
+    messager_media: [],
     receiver: {},
     haveReceiver: false,
     typing: false,
@@ -44,8 +45,8 @@ const mutations = {
     setReceiver(s, p) {
         s.receiver = { ...s.receiver, ...p };
     },
-    pushMessage(s, p) {
-        return s.messages.push(p);
+    async pushMessage(s, p) {
+        await s.messages.push(p);
     },
     pushMember(s, p) {
         if (s.receiver.members) {
@@ -65,7 +66,6 @@ const actions = {
         c.commit("setReceiver", p.newestGr);
     },
     getTyping(c, p) {
-        console.log(p);
         c.commit("setTyping", p);
     },
     reset(c) {
@@ -94,7 +94,6 @@ const actions = {
                     params: { type: p.type, page: p.page },
                 })
                 .then((req) => {
-                    console.log(req);
                     const data = req.data.data;
                     const messages = [];
                     if (data != null) {
@@ -117,11 +116,17 @@ const actions = {
                 c.getters.receiver.id == p.sd_id
             ) {
                 c.commit("pushMessage", p);
+                if (p.message_images) {
+                    c.commit("pushMessage", p.message_images);
+                }
             } else {
                 return;
             }
         } else {
             c.commit("pushMessage", p);
+            if (p.message_images) {
+                c.commit("pushMessage", p.message_images);
+            }
         }
     },
     updateSeen(c, p) {
@@ -150,7 +155,9 @@ const actions = {
         data.append("parent_id", p.parent_id);
         data.append("seen", p.seen);
         data.append("type", p.type);
-        data.append("file", p.file);
+        for (let index = 0; index < p.images.length; index++) {
+            data.append("images[" + index + "]", p.images[index]);
+        }
         data.append("audio", p.audio);
         data.append("for", p.for);
         return new Promise((rs, rj) => {
@@ -158,7 +165,14 @@ const actions = {
                 .post("/saveMessage", data, config)
                 .then((req) => {
                     if (req.data.data.sd_id == c.rootGetters["auth/id"]) {
-                        c.commit("pushMessage", req.data.data);
+                        let data = req.data.data;
+                        c.commit("pushMessage", data);
+                        if (req.data.data.message_images) {
+                            c.commit(
+                                "pushMessage",
+                                req.data.data.message_images
+                            );
+                        }
                     }
                     rs(req);
                 })

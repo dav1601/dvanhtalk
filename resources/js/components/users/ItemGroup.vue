@@ -14,7 +14,7 @@
             >
                 <img
                     :src="makeAvatar(group.group_image)"
-                    class="group-image mr-1"
+                    class="group-image mr-1 img__obj--cover"
                     alt="Vanessa Tucker"
                     width="120"
                     height="120"

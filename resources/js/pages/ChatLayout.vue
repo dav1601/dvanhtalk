@@ -135,13 +135,14 @@
                         :data="message"
                         :receiver="receiver"
                         :typeUserMsg="type"
-                        @loaded="loaded()"
+                        @loaded="loaded"
                     ></item-msg>
-                    <item-tying
-                        :receiver="receiver"
-                        :typing="typing"
-                        v-if="!isGroup"
-                    ></item-tying>
+                    <v-slide-y-reverse-transition mode="out-in">
+                        <tying-chat
+                            :receiver="receiver"
+                            v-show="typing && !isGroup"
+                        ></tying-chat>
+                    </v-slide-y-reverse-transition>
                 </div>
             </div>
             <div
@@ -238,7 +239,7 @@
                         </div>
                     </div>
                     <v-textarea
-                        @hook:updated="setHeightChatLayoutBody(true)"
+                        @hook:updated="setHeightChatLayoutBody()"
                         id="input__message"
                         filled
                         auto-grow
@@ -279,6 +280,7 @@ import ItemMember from "../components/users/ItemMember.vue";
 import ItemTying from "../components/chat/ItemTying.vue";
 import TheSetting from "../components/users/group/TheSetting.vue";
 import ItemPreImg from "../components/chat/ItemPreImg.vue";
+import TyingChat from "../components/ui/TyingChat.vue";
 export default {
     components: {
         ItemMsg,
@@ -287,6 +289,7 @@ export default {
         ItemTying,
         TheSetting,
         ItemPreImg,
+        TyingChat,
     },
     mixins: [user, chat],
     props: ["friendId"],
@@ -315,6 +318,8 @@ export default {
             arrayImages: ["1", "2"],
             arrayFileAudio: [],
             showPreviewImg: false,
+            windowHeight: document.documentElement.clientHeight,
+            windowWidth: document.documentElement.clientWidth,
         };
     },
     beforeCreate() {
@@ -324,25 +329,29 @@ export default {
         this.$store.dispatch("message/reset");
         this.setup();
         this.setType();
-        this.setReceiver();
-        if (this.type == 0) {
-            Echo.leave(`group-chat-${this.friendId}`);
-            Echo.leave(`chat-${this.friendId}`);
-            this.server(this.friendId);
-            this.updateSeen(this.friendId);
-        } else {
-            Echo.leave(`chat-${this.friendId}`);
-            Echo.leave(`group-chat-${this.friendId}`);
-            this.serverGroup(this.friendId);
-        }
+        this.$nextTick(async () => {
+            this.setReceiver();
+            if (this.type == 0) {
+                Echo.leave(`group-chat-${this.friendId}`);
+                Echo.leave(`chat-${this.friendId}`);
+                this.server(this.friendId);
+                this.updateSeen(this.friendId);
+            } else {
+                Echo.leave(`chat-${this.friendId}`);
+                Echo.leave(`group-chat-${this.friendId}`);
+                this.serverGroup(this.friendId);
+            }
+        });
     },
     async mounted() {
         this.getMessages(false);
-        this.setHeightChatLayoutBody(false, true);
+        this.setHeightChatLayoutBody();
+        window.addEventListener("resize", this.getDimensions);
     },
     updated() {
-        this.setHeightChatLayoutBody(true);
+        this.setHeightChatLayoutBody();
     },
+
     computed: {
         members() {
             if (this.receiver.members) {
@@ -390,8 +399,16 @@ export default {
         messages() {
             return this.$store.getters["message/messages"];
         },
+        isChatting() {
+            return this.$store.getters["message/isChatting"];
+        },
     },
     methods: {
+        getDimensions() {
+            this.windowHeight = document.documentElement.clientHeight;
+            this.windowWidth = document.documentElement.clientWidth;
+            console.log("header: " + this.$refs.dAppBar);
+        },
         updateSrcImg() {
             for (let i = 0; i < this.images.length; i++) {
                 let reader = new FileReader();
@@ -418,18 +435,28 @@ export default {
             localStorage.setItem("saveScrollHeight", 0);
             return this.scrollEnd(true);
         },
-        setHeightChatLayoutBody(watch = false, start = false) {
-            let elMain = document.getElementsByClassName("chat__layout")[0];
+        getAbsoluteHeight(el) {
+            // Get the DOM Node if you pass in a string
+
+            var styles = window.getComputedStyle(el);
+            var margin =
+                parseFloat(styles["marginTop"]) +
+                parseFloat(styles["marginBottom"]);
+
+            return Math.ceil(el.offsetHeight + margin);
+        },
+        setHeightChatLayoutBody(height = 0, width = 0) {
+            const elMain = this.windowHeight - 60;
             const elTextInput = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
             );
-
-            if (this.showPreviewImg == true) {
-                elTextInput.classList.add("br-0");
-            } else {
-                elTextInput.classList.remove("br-0");
+            if (elTextInput != null) {
+                if (this.showPreviewImg == true) {
+                    elTextInput.classList.add("br-0");
+                } else {
+                    elTextInput.classList.remove("br-0");
+                }
             }
-
             const elBody =
                 document.getElementsByClassName("chat__layout--body")[0];
             const el1 = document.getElementsByClassName(
@@ -442,25 +469,24 @@ export default {
                 hEl2 = 0,
                 sum = 0;
 
-            hEl1 = parseInt(
-                el1.offsetHeight -
-                    (parseInt(window.getComputedStyle(el1).paddingTop) +
-                        parseInt(window.getComputedStyle(el1).paddingBottom))
-            );
-
-            hEl2 = parseInt(
-                el2.offsetHeight -
-                    (parseInt(window.getComputedStyle(el2).paddingTop) +
-                        parseInt(window.getComputedStyle(el2).paddingBottom))
-            );
-
-            if (watch && !start) {
-                hEl1 += 10;
-                hEl2 += 10;
+            if (el1 != null) {
+                hEl1 = this.getAbsoluteHeight(el1);
+            }
+            if (el2 != null) {
+                hEl2 = this.getAbsoluteHeight(el2);
             }
 
-            sum = parseInt(elMain.clientHeight - parseInt(hEl1 + hEl2)) + "px";
-            elBody.style.height = sum;
+            if (elMain != null) {
+                sum = elMain - (hEl1 + hEl2);
+                sum = sum + "px";
+                elBody.style.height = sum;
+            }
+            console.log({
+                hEl1: hEl1,
+                hEl2: hEl2,
+                sum: sum,
+                main: elMain,
+            });
         },
         toggleFormatMessage() {
             return (this.showFormatMessage = !this.showFormatMessage);
@@ -578,11 +604,15 @@ export default {
         isTyping() {
             if (this.type == 0) {
                 let typing = false;
-                if (this.message != "") {
+                if (
+                    this.message != "" &&
+                    this.messages != null &&
+                    this.messages
+                ) {
                     typing = true;
                 }
                 Echo.private(`chat-${this.receiver.id}`).whisper("typing", {
-                    sender: this.id,
+                    sender_id: this.id,
                     typing: typing,
                 });
             } else {
@@ -590,7 +620,11 @@ export default {
             }
         },
         loaded() {
-            this.scrollEnd();
+            if (this.isChatting) {
+                this.scrollEnd();
+            } else {
+                this.scrollEnd(true);
+            }
         },
 
         resetAll() {
@@ -618,7 +652,7 @@ export default {
                 this.showPreviewImg = true;
             }
             this.updateSrcImg();
-            this.setHeightChatLayoutBody(true);
+            this.setHeightChatLayoutBody();
         },
         sendMessage(type) {
             let seen = 0;
@@ -693,18 +727,20 @@ export default {
             this.disableChat = true;
             this.checking = false;
             this.setType();
-            this.setReceiver();
-            if (this.type == 0) {
-                await Echo.leave(`group-chat-${oldVal}`);
-                await Echo.leave(`chat-${oldVal}`);
-                this.server(newVal);
-                this.updateSeen(newVal);
-            } else {
-                await Echo.leave(`chat-${oldVal}`);
-                await Echo.leave(`group-chat-${oldVal}`);
-                this.serverGroup(newVal);
-            }
-            this.getMessages(false);
+            this.$nextTick(async () => {
+                this.setReceiver();
+                if (this.type == 0) {
+                    Echo.leave(`group-chat-${oldVal}`);
+                    Echo.leave(`chat-${oldVal}`);
+                    this.server(newVal);
+                    this.updateSeen(newVal);
+                } else {
+                    Echo.leave(`chat-${oldVal}`);
+                    Echo.leave(`group-chat-${oldVal}`);
+                    this.serverGroup(newVal);
+                }
+                this.getMessages(false);
+            });
         },
         page(newVal) {
             if (newVal > 1) {
@@ -715,11 +751,20 @@ export default {
             const el = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
             );
-            if (newVal == true && el) {
+            if (newVal == true && el != null) {
                 el.classList.add("br-0");
+                this.scrollEnd();
             } else {
                 el.classList.remove("br-0");
             }
+        },
+        windowHeight(newVal) {
+            this.setHeightChatLayoutBody();
+            this.scrollEnd();
+        },
+        windowWidth(newVal) {
+            this.setHeightChatLayoutBody();
+            this.scrollEnd();
         },
     },
 };
@@ -732,7 +777,7 @@ export default {
     span {
         width: 100%;
         flex-wrap: wrap;
-        justify-content: start;
+        justify-content: flex-start;
         align-items: center;
         display: flex;
     }
@@ -1020,49 +1065,49 @@ export default {
     height: 0;
 }
 
-@media only screen and (max-width: 767px) {
-    .chat-app .people-list {
-        height: 465px;
-        width: 100%;
-        overflow-x: auto;
-        background: #fff;
-        left: -400px;
-        display: none;
-    }
-    .chat-app .people-list.open {
-        left: 0;
-    }
-    .chat-app .chat {
-        margin: 0;
-    }
-    .chat-app .chat .chat-header {
-        border-radius: 0.55rem 0.55rem 0 0;
-    }
-    .chat-app .chat-history {
-        height: 300px;
-        overflow-x: auto;
-    }
-}
+// @media only screen and (max-width: 767px) {
+//     .chat-app .people-list {
+//         height: 465px;
+//         width: 100%;
+//         overflow-x: auto;
+//         background: #fff;
+//         left: -400px;
+//         display: none;
+//     }
+//     .chat-app .people-list.open {
+//         left: 0;
+//     }
+//     .chat-app .chat {
+//         margin: 0;
+//     }
+//     .chat-app .chat .chat-header {
+//         border-radius: 0.55rem 0.55rem 0 0;
+//     }
+//     .chat-app .chat-history {
+//         height: 300px;
+//         overflow-x: auto;
+//     }
+// }
 
-@media only screen and (min-width: 768px) and (max-width: 992px) {
-    .chat-app .chat-list {
-        height: 650px;
-        overflow-x: auto;
-    }
-    .chat-app .chat-history {
-        height: 600px;
-        overflow-x: auto;
-    }
-}
+// @media only screen and (min-width: 768px) and (max-width: 992px) {
+//     .chat-app .chat-list {
+//         height: 650px;
+//         overflow-x: auto;
+//     }
+//     .chat-app .chat-history {
+//         height: 600px;
+//         overflow-x: auto;
+//     }
+// }
 
-@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: landscape) and (-webkit-min-device-pixel-ratio: 1) {
-    .chat-app .chat-list {
-        height: 480px;
-        overflow-x: auto;
-    }
-    .chat-app .chat-history {
-        height: calc(100vh - 350px);
-        overflow-x: auto;
-    }
-}
+// @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: landscape) and (-webkit-min-device-pixel-ratio: 1) {
+//     .chat-app .chat-list {
+//         height: 480px;
+//         overflow-x: auto;
+//     }
+//     .chat-app .chat-history {
+//         height: calc(100vh - 350px);
+//         overflow-x: auto;
+//     }
+// }
 </style>

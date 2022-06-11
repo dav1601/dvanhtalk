@@ -2,6 +2,7 @@
     <router-link
         v-if="!isLoading && link"
         class="list-group-item list-group-item-action border-0"
+        @click.native="resetSeen()"
         :to="{
             name: 'chat',
             params: { friendId: user.id },
@@ -21,12 +22,12 @@
         <div class="d-flex align-items-start">
             <img
                 :src="makeAvatar(user.avatar)"
-                class="rounded-circle mr-1"
+                class="rounded-circle mr-1 img__obj--cover"
                 alt="Vanessa Tucker"
                 width="45"
                 height="45"
             />
-            <div class="flex-grow-1 ml-3">
+            <div class="flex-grow-1 ml-3" style="overflow: hidden">
                 <span class="name text-overflow">{{ user.name }}</span>
                 <div class="small center-start">
                     <span
@@ -49,11 +50,8 @@ export default {
     mixins: [user],
     data() {
         return {
-            count: 0,
+            count: this.user.count.length,
         };
-    },
-    updated() {
-        this.resetSeen();
     },
     computed: {
         encryptedId() {
@@ -77,7 +75,27 @@ export default {
             return (this.count = this.user.count.length);
         },
     },
+    mounted() {
+        if (this.isChat) {
+            this.scrollElement();
+        }
+    },
     methods: {
+        findPos(obj) {
+            var curtop = 0;
+            if (obj.offsetParent) {
+                do {
+                    curtop += obj.offsetTop;
+                } while ((obj = obj.offsetParent));
+                return [curtop];
+            }
+        },
+        scrollElement() {
+            const el = document.getElementsByClassName("router-link-active")[0];
+            return document
+                .getElementsByClassName("listUser")[0]
+                .scroll(0, this.findPos(el) - 120);
+        },
         resetSeen() {
             this.count = 0;
             let el = document.getElementById("queue-" + this.user.id);
@@ -92,5 +110,8 @@ export default {
 .userActive {
     color: #fff;
     background-color: #007bff;
+}
+.list-group-item {
+    margin: 10px !important;
 }
 </style>

@@ -1,12 +1,12 @@
 <template>
     <div
-        class="col-12 col-lg-5 border-right listUser davList scroll-custom"
+        class="fl-1 border-right listUser davList scroll-custom overflow-x-hidden"
         @mouseover="toggleScroll('over')"
         @mouseleave="toggleScroll('leave')"
         :class="[
             isHome
-                ? ['col-xl-12', 'position-relative', 'overflow-auto']
-                : ['col-xl-3', 'overflow-hidden'],
+                ? ['position-relative', 'overflow-y-auto']
+                : ['overflow-y-auto'],
         ]"
         v-if="!isGroup"
     >
@@ -57,18 +57,22 @@ export default {
     },
     components: { SkItemUser, ItemUser },
     mixins: [user],
+    mounted() {
+        
+    },
     methods: {
+
         toggleScroll(type) {
             if (!this.isHome) {
                 const el = document.getElementsByClassName("listUser")[0];
                 if (type == "over") {
-                    el.classList.remove("overflow-hidden");
+                    el.classList.remove("overflow-y-hidden");
                     el.classList.remove("border-right");
-                    el.classList.add("overflow-auto");
+                    el.classList.add("overflow-y-auto");
                 } else {
-                    el.classList.remove("overflow-auto");
+                    el.classList.remove("overflow-y-auto");
                     el.classList.add("border-right");
-                    el.classList.add("overflow-hidden");
+                    el.classList.add("overflow-y-hidden");
                 }
             }
         },
@@ -81,4 +85,8 @@ export default {
     },
 };
 </script>
-<style lang="scss"></style>
+<style lang="scss">
+.ps__rail-x {
+    display: none !important;
+}
+</style>

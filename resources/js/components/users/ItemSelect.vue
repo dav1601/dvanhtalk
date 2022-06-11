@@ -3,7 +3,7 @@
     <div class="position-relative">
       <img
         :src="makeAvatar(user.avatar)"
-        class="rounded-circle mr-1"
+        class="rounded-circle mr-1 img__obj--cover"
         :alt="user.name"
         :width="width"
         :height="height"

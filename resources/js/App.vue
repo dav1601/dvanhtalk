@@ -194,14 +194,19 @@ html {
 .img__obj {
     &--cover {
         object-fit: cover;
+        object-position: 50% 50%;
     }
     &--fill {
         object-fit: fill;
+        object-position: 50% 50%;
     }
     &--contain {
         object-fit: contain;
+        object-position: 50% 50%;
     }
-    object-position: 50% 50%;
+}
+.fl-1 {
+    flex: 1 !important;
 }
 #app {
     height: 100%;
@@ -229,6 +234,7 @@ html::-webkit-scrollbar {
 .chat-item {
     max-width: 55% !important;
 }
+
 .chat-item.haveLink {
     max-width: 300px !important;
     padding-left: 0 !important;
@@ -294,7 +300,7 @@ header {
 }
 .center-start {
     display: flex;
-    justify-content: start;
+    justify-content: flex-start;
     align-items: center;
 }
 .me-chat {

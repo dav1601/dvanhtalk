@@ -1,22 +1,22 @@
 <template>
-        <div class="img__item mb-3" :class="{ iconAdd: icon }">
-            <img
-                width="100%"
-                height="100%"
-                :class="'image__preview--' + index"
-                alt=""
-                v-if="!icon"
-                class="rounded"
-            />
-            <div
-                class="img__item--delete position-absolute"
-                v-if="!icon"
-                @click="deleteImg()"
-            >
-                <v-icon dark>mdi-close</v-icon>
-            </div>
-            <v-icon v-if="icon" size="32" dark>mdi-file-image-plus</v-icon>
+    <div class="img__item mb-3 rounded-2" :class="{ iconAdd: icon }">
+        <img
+            width="100%"
+            height="100%"
+            class="img__obj--cover"
+            :class="'image__preview--' + index"
+            alt=""
+            v-if="!icon"
+        />
+        <div
+            class="img__item--delete position-absolute"
+            v-if="!icon"
+            @click="deleteImg()"
+        >
+            <v-icon dark>mdi-close</v-icon>
         </div>
+        <v-icon v-if="icon" size="32" dark>mdi-file-image-plus</v-icon>
+    </div>
 </template>
 <script>
 export default {

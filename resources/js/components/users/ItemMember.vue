@@ -7,7 +7,7 @@
         <div class="d-flex align-items-center">
             <img
                 :src="makeAvatar(member.info.avatar)"
-                class="rounded-circle mr-1"
+                class="rounded-circle mr-1 img__obj--cover"
                 alt="Vanessa Tucker"
                 width="45"
                 height="45"

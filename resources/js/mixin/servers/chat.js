@@ -1,5 +1,3 @@
-import { toInteger } from "lodash";
-
 export default {
     data() {
         return {
@@ -7,16 +5,21 @@ export default {
         };
     },
     methods: {
-        scrollEnd(foc = false, deleteSaveScroll = false) {
+        scrollEnd(
+            foc = false,
+            deleteSavedScroll = false,
+            limit = 300,
+            returnBackForNot = false
+        ) {
             const el = document.getElementById("chatLayout");
-            if (deleteSaveScroll) {
+            if (deleteSavedScroll) {
                 localStorage.setItem("saveScrollHeight", 0);
             }
             const saveScrollHeight = localStorage.getItem("saveScrollHeight");
             if (el) {
                 let scroll = el.scrollHeight;
                 let sum = Number(scroll - saveScrollHeight);
-                if (!this.isPointBlockScroll() || foc) {
+                if (!this.isPointBlockScroll(limit, returnBackForNot) || foc) {
                     el.scrollTo({
                         top: sum,
                     });
@@ -74,8 +77,17 @@ export default {
         async myServer() {
             await Echo.private(`chat-${this.id}`).listenForWhisper(
                 "typing",
-                (e) => {
-                    this.$store.dispatch("message/getTyping", e.typing);
+                async (e) => {
+                    if (
+                        this.$store.getters["message/receiver"].id ==
+                        e.sender_id
+                    ) {
+                        await this.$store.dispatch(
+                            "message/getTyping",
+                            e.typing
+                        );
+                        this.scrollEnd(false, false, 100, false);
+                    }
                 }
             );
             await Echo.join(`notify-${this.id}`)
@@ -155,8 +167,17 @@ export default {
                         "message/getMessage",
                         e.user_message
                     );
-                    if (e.user_message.rcv_id == this.id) {
-                        this.scrollEnd(true);
+                    if (
+                        e.user_message.rcv_id == this.id &&
+                        this.$store.getters["message/receiver"].id == e.sd_id
+                    ) {
+                        await this.$store.dispatch(
+                            "message/getIsChatting",
+                            true
+                        );
+                        this.$nextTick(() => {
+                            this.scrollEnd();
+                        });
                     }
                 });
         },

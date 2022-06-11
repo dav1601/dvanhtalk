@@ -1,128 +1,95 @@
 <template>
-    <div class="d-flex flex-column justify-between" id="messagerMedia">
-        <div class="topMedia">
-            <agile
-                class="mainMedia"
-                ref="main"
-                style="height: 100%"
-                :options="options1"
-                :as-nav-for="asNavFor1"
-            >
-                <div
-                    class="slide"
-                    v-for="(slide, index) in slides"
-                    :key="index"
-                    :class="`slide--${index}`"
-                >
-                    <img :src="slide" />
-                </div>
-            </agile>
-        </div>
-        <div class="bottomMedia mt-4">
-            <agile
-                class="thumbnailsMedia"
-                ref="thumbnails"
-                :options="options2"
-                :as-nav-for="asNavFor2"
-                style="height: 40px"
-            >
-                <div
-                    class="slide slide--thumbniail"
-                    v-for="(slide, index) in slides"
-                    :key="index"
-                    :class="`slide--${index}`"
-                    @click="$refs.thumbnails.goTo(index)"
-                >
-                    <img :src="slide" height="100%" width="100%" />
-                </div>
-            </agile>
-        </div>
-    </div>
+    <dav-gallery-slide-show
+        @hook:updated="updateSlide"
+        :images="slides"
+        :index="start"
+        @close="close"
+        v-show="!loading"
+    ></dav-gallery-slide-show>
 </template>
 
 <script>
+import davGallerySlideShow from "../components/davGallerySlideshow/davGallerySlideShow.vue";
 export default {
+    components: {
+        davGallerySlideShow,
+    },
     data() {
         return {
-            asNavFor1: [],
-            asNavFor2: [],
-            options1: {
-                dots: false,
-                fade: true,
-                navButtons: false,
-
-            },
-
-            options2: {
-                autoplay: false,
-                centerMode: true,
-                dots: false,
-                navButtons: false,
-                responsive: [
-                    {
-                        breakpoint: 600,
-                        settings: {
-    
-                        },
-                    },
-
-                    {
-                        breakpoint: 1000,
-                        settings: {
-                            navButtons: true,
-                        },
-                    },
-                ],
-            },
-
-            slides: [
-                "https://res.cloudinary.com/vanh-tech/image/upload/v1651931247/zz.png",
-                "https://images.unsplash.com/photo-1496412705862-e0088f16f791?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600&fit=max&ixid=eyJhcHBfaWQiOjE0NTg5fQ",
-                "https://images.unsplash.com/photo-1506354666786-959d6d497f1a?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600&fit=max&ixid=eyJhcHBfaWQiOjE0NTg5fQ",
-                "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600&fit=max&ixid=eyJhcHBfaWQiOjE0NTg5fQ",
-                "https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600&fit=max&ixid=eyJhcHBfaWQiOjE0NTg5fQ",
-                "https://images.unsplash.com/photo-1472926373053-51b220987527?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600&fit=max&ixid=eyJhcHBfaWQiOjE0NTg5fQ",
-                "https://images.unsplash.com/photo-1497534547324-0ebb3f052e88?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600&fit=max&ixid=eyJhcHBfaWQiOjE0NTg5fQ",
-            ],
+            rcvId: this.$route.query.thread_id,
+            msgId: this.$route.query.message_id,
+            index: this.$route.query.attachment_id,
+            type: this.$route.query.type,
+            transform: 0,
+            updated: 0,
+            loading: false,
         };
     },
+    created() {
+        this.getMessengerMedia();
+    },
+
     mounted() {
-        this.asNavFor1.push(this.$refs.thumbnails);
-        this.asNavFor2.push(this.$refs.main);
+        console.log("app mounted");
+    },
+    computed: {
+        slides() {
+            return this.$store.getters["message/messengerMedia"];
+        },
+        start() {
+            return this.$store.getters["message/startMessengerMedia"];
+        },
+    },
+    methods: {
+        updateSlide() {
+            this.updated += 1;
+            if (this.updated == 1) {
+                const el = document.getElementsByClassName(
+                    "vgs__gallery__container"
+                )[0];
+                console.log(this.transform);
+            }
+        },
+        close() {
+            return this.$router.push({
+                name: "chat",
+                params: { friendId: this.rcvId },
+                query: { uid: this.rcvId },
+            });
+        },
+        async getMessengerMedia() {
+            this.loading = true;
+            await this.$store
+                .dispatch("message/getMessengerMedia", {
+                    receiverId: this.rcvId,
+                    index: this.index,
+                    msgId: this.$CryptoJS.AES.decrypt(
+                        this.msgId,
+                        "Secret ID"
+                    ).toString(this.CryptoJS.enc.Utf8),
+                    type: this.type,
+                })
+                .then((req) => {
+                    this.loading = false;
+                    this.transform = Math.floor(req.data.start / 8);
+                })
+                .catch((err) => {});
+        },
     },
 };
 </script>
 
 <style lang="scss">
-#messagerMedia {
-    height: 100vh !important;
-}
-.slide--thumbniail {
-    height: 60px !important;
-}
-
-.mainMedia {
-    .agile__list {
-        height: 100%;
-    }
-    .agile__track {
-        height: 100%;
-    }
-    .slide {
-        display: flex;
-        justify-content: center;
+.vgs__container {
+    height: 80vh !important;
+    background: none !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    img {
+        width: auto;
         height: auto;
         max-height: 100%;
-        img {
-            height: auto;
-        }
     }
-}
-.topMedia {
-    flex: 0 0 90%;
-    height: 90%;
-}
-.bottomMedia {
-    flex: 1;
 }
 </style>

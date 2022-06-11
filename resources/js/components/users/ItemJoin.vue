@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex justify-content-start align-items-center item-join" >
         <div class="d-flex justify-content-start align-items-center">
-            <img :src="avatar" class="rounded-circle" alt="">
+            <img :src="avatar" class="rounded-circle img__obj--cover" alt="">
             <span class="join-name">{{ user.name }}</span>
         </div>
         <the-role type="join" :width="250" :height="250" :role="0"></the-role>

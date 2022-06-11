@@ -44,7 +44,25 @@ Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 });
 Route::get('update', function (MessagesInterface $dav2_message) {
-    return $dav2_message->createMessageSystemGroup(20, 9, "add");
+    $test =   UserMessage::where(function ($q) {
+        $q->where('sd_id', '=', Auth::id())
+            ->where('rcv_id', '=', 2)
+            ->where('type_msg', '=', 2)
+            ->where('type', 0);
+    })->orWhere(function ($q) {
+        $q->where('sd_id', '=', 2)
+            ->where('rcv_id', '=', Auth::id())
+            ->where('type_msg', '=', 2)
+            ->where('type', 0);
+    })->get();
+    $arrayImage = array();
+    foreach ($test as $msg) {
+        $array = explode(",", $msg->message->message);
+        foreach ($array as $key => $value) {
+            $arrayImage[] = ["image" => $value, "index" => $key, "msg_id" => $msg->message->id];
+        }
+    }
+    return response()->json($arrayImage);
 });
 Route::group(['middleware' => ['guest']], function () {
     Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
@@ -67,10 +85,10 @@ Route::get('users', function (Request $request) {
 })->name('users');
 
 Route::controller(GroupController::class)->group(function () {
-    Route::get('groups', 'index');
+    Route::get('groups', 'index')->name('group.list');
 });
 Route::controller(MessagesController::class)->group(function () {
-   
+    Route::get('media', 'messenger_media')->name('messages.media');
 });
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
     if ($request->type == 0) {

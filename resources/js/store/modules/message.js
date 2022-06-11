@@ -1,14 +1,22 @@
 const state = () => ({
     messages: [],
-    messager_media: [],
+    messengerMedia: [],
+    startMessengerMedia: 0,
     receiver: {},
     haveReceiver: false,
     typing: false,
+    isChatting: false,
 });
 
 const getters = {
     messages(s) {
         return s.messages;
+    },
+    messengerMedia(s) {
+        return s.messengerMedia;
+    },
+    startMessengerMedia(s) {
+        return s.startMessengerMedia;
     },
     receiver: (s) => s.receiver,
     haveReceiver(s) {
@@ -24,6 +32,9 @@ const getters = {
     isTyping(s) {
         return s.typing;
     },
+    isChatting(s) {
+        return s.isChatting;
+    },
 };
 
 const mutations = {
@@ -32,15 +43,22 @@ const mutations = {
             (s.receiver = {}),
             (s.haveReceiver = false),
             (s.typing = false);
+        s.isChatting = false;
     },
     setTyping(s, p) {
         s.typing = p;
+    },
+    setIsChatting(s, p) {
+        s.isChatting = p;
     },
     setUnseenMessage(s, p) {
         return (s.unSeenMessage.id = p);
     },
     setMessages(s, p) {
         return (s.messages = p);
+    },
+    setMessemgerMedia(s, p) {
+        (s.messengerMedia = p.arrayImage), (s.startMessengerMedia = p.start);
     },
     setReceiver(s, p) {
         s.receiver = { ...s.receiver, ...p };
@@ -68,6 +86,9 @@ const actions = {
     getTyping(c, p) {
         c.commit("setTyping", p);
     },
+    getIsChatting(c, p) {
+        c.commit("setIsChatting", p);
+    },
     reset(c) {
         c.commit("reset");
     },
@@ -83,6 +104,28 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    getMessengerMedia(c, p) {
+        console.log(p);
+        return new Promise((rs, rj) => {
+            axios
+                .get(
+                    route("messages.media", {
+                        thread_id: p.receiverId,
+                        attachment_id: p.index,
+                        message_id: p.msgId,
+                        type: p.type,
+                    })
+                )
+                .then((req) => {
+                    c.commit("setMessemgerMedia", req.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    console.log(err);
                     rj(err);
                 });
         });

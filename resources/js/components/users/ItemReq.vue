@@ -4,10 +4,11 @@
         <div class="d-flex mb-2 justify-content-center p-2 align-items-center">
             <img
                 :src="request.newestGr.group_image"
-                class="mr-3"
+                class="mr-3 img__obj--cover"
                 width="120"
                 height="120"
                 :alt="request.newestGr.name"
+
             />
             <div class="noti-caption">
                 <span class="dtnotify1">

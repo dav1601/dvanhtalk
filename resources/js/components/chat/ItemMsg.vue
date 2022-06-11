@@ -79,11 +79,22 @@
                 v-if="data.message.type == 2"
                 :class="[itMe ? ['mr-2'] : ['ml-2'], images ? ['images'] : '']"
             >
-                <router-link v-if="!images" to="/">
+                <router-link
+                    v-if="!images"
+                    :to="{
+                        name: 'messengerMedia',
+                        query: {
+                            thread_id: receiver.id,
+                            message_id: encryptedId,
+                            attachment_id: 0,
+                            type: 0,
+                        },
+                    }"
+                >
                     <img
                         @load="loaded"
                         :src="data.message.message"
-                        class="img__obj--cover img__obj"
+                        class="img__obj--cover"
                         style="
                             border-radius: 8px;
                             max-width: 250px;
@@ -103,14 +114,24 @@
                         :key="'image-' + index"
                         class="message__image--item"
                     >
-                        <router-link to="/">
+                        <router-link
+                            :to="{
+                                name: 'messengerMedia',
+                                query: {
+                                    thread_id: receiver.id,
+                                    message_id: encryptedId,
+                                    attachment_id: index,
+                                    type: 0,
+                                },
+                            }"
+                        >
                             <img
                                 @load="loaded"
                                 :src="image"
                                 width="100%"
                                 height="100%"
                                 style="border-radius: 8px"
-                                class="img__obj--cover img__obj"
+                                class="img__obj--cover"
                             />
                         </router-link>
                     </div>
@@ -159,21 +180,20 @@ export default {
         }
         this.created_at = this.data.message.created_at;
     },
-    async updated() {
-        // if (!this.isGroup) {
-        //     await this.setHaveLink;
-        // }
-    },
     async mounted() {
         // this.interval = setInterval(() => this.$forceUpdate(), 1000);
         // if (!this.isGroup) {
         //     await this.setHaveLink;
         // }
     },
-    // beforeDestroy() {
-    //     clearInterval(this.interval);
-    // },
+
     computed: {
+        encryptedId() {
+            return this.$CryptoJS.AES.encrypt(
+                this.data.message.id + "",
+                "Secret ID"
+            ).toString();
+        },
         images() {
             return this.arrayImage.length > 1;
         },
@@ -192,8 +212,7 @@ export default {
         getArray() {
             return this.MakeMessage(
                 this.data.message.message,
-                this.data.message.id,
-                "id"
+                this.data.message.id
             );
         },
         createBackgroundImage() {

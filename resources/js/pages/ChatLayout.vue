@@ -15,13 +15,14 @@
                 : ['col-12', 'row', 'mx-0', 'g-0'],
         ]"
     >
+        <!-- start dialog setting for group -->
         <v-dialog
             :fullscreen="true"
             content-class="dialog__setting--group"
             v-model="dialog"
             :dark="true"
             style="z-index: 90000"
-            v-if="isGroup"
+            v-if="isGroup && !isLoading"
         >
             <the-setting
                 :receiver="receiver"
@@ -30,8 +31,16 @@
                 :isManage="isManage"
                 :members="members"
                 @close-dialog="closeDialog"
+                v-if="!isLoading"
             ></the-setting>
         </v-dialog>
+        <!-- end dialog setting for group -->
+        <!-- start gllImage  -->
+        <dav-gallery-slide-show
+            :images="media"
+            :index="startImage"
+        ></dav-gallery-slide-show>
+        <!-- end gllImage -->
         <div
             class="col-3 border-right davList scroll-custom"
             v-if="isGroup && !checking"
@@ -135,6 +144,7 @@
                         :data="message"
                         :receiver="receiver"
                         :typeUserMsg="type"
+                        @open-gll="openGll"
                         @loaded="loaded"
                     ></item-msg>
                     <v-slide-y-reverse-transition mode="out-in">
@@ -281,6 +291,7 @@ import ItemTying from "../components/chat/ItemTying.vue";
 import TheSetting from "../components/users/group/TheSetting.vue";
 import ItemPreImg from "../components/chat/ItemPreImg.vue";
 import TyingChat from "../components/ui/TyingChat.vue";
+import DavGallerySlideShow from "../components/davGallerySlideshow/davGallerySlideShow.vue";
 export default {
     components: {
         ItemMsg,
@@ -290,6 +301,7 @@ export default {
         TheSetting,
         ItemPreImg,
         TyingChat,
+        DavGallerySlideShow,
     },
     mixins: [user, chat],
     props: ["friendId"],
@@ -320,6 +332,8 @@ export default {
             showPreviewImg: false,
             windowHeight: document.documentElement.clientHeight,
             windowWidth: document.documentElement.clientWidth,
+            initialHeight: 0,
+            startImage: null,
         };
     },
     beforeCreate() {
@@ -329,7 +343,7 @@ export default {
         this.$store.dispatch("message/reset");
         this.setup();
         this.setType();
-        this.$nextTick(async () => {
+        this.$nextTick(function () {
             this.setReceiver();
             if (this.type == 0) {
                 Echo.leave(`group-chat-${this.friendId}`);
@@ -344,15 +358,20 @@ export default {
         });
     },
     async mounted() {
-        this.getMessages(false);
-        this.setHeightChatLayoutBody();
-        window.addEventListener("resize", this.getDimensions);
+        this.$nextTick(function () {
+            this.getMessages(false);
+            this.setHeightChatLayoutBody();
+            window.addEventListener("resize", this.getDimensions);
+        });
     },
     updated() {
         this.setHeightChatLayoutBody();
     },
 
     computed: {
+        media() {
+            return this.$store.getters["message/messengerMedia"];
+        },
         members() {
             if (this.receiver.members) {
                 return this.receiver.members.sort(this.compareRoleMember);
@@ -404,6 +423,14 @@ export default {
         },
     },
     methods: {
+        openGll(e) {
+            const index = this.media.findIndex((image) => {
+                return image.msg_id == e.msgId && image.index == e.index;
+            });
+            if (index != -1) {
+                this.startImage = Number(index);
+            }
+        },
         getDimensions() {
             this.windowHeight = document.documentElement.clientHeight;
             this.windowWidth = document.documentElement.clientWidth;
@@ -479,14 +506,10 @@ export default {
             if (elMain != null) {
                 sum = elMain - (hEl1 + hEl2);
                 sum = sum + "px";
-                elBody.style.height = sum;
+                if (elBody != null) {
+                    elBody.style.height = sum;
+                }
             }
-            console.log({
-                hEl1: hEl1,
-                hEl2: hEl2,
-                sum: sum,
-                main: elMain,
-            });
         },
         toggleFormatMessage() {
             return (this.showFormatMessage = !this.showFormatMessage);
@@ -555,7 +578,7 @@ export default {
                 }
                 await this.$store
                     .dispatch("message/getMessages", {
-                        to: this.friendId,
+                        conversationId: this.friendId,
                         type: this.type,
                         page: this.page,
                     })
@@ -586,6 +609,8 @@ export default {
         handleScroll(e) {
             const elLayoutChat = document.getElementById("chatLayout");
             const scrollTop = elLayoutChat.scrollTop;
+            this.initialHeight = scrollTop;
+            console.log(this.initialHeight);
             if (this.isPointBlockScroll()) {
                 this.blockSroll = true;
                 this.btnGoEndChat = true;
@@ -716,6 +741,7 @@ export default {
             this.btnGoEndChat = false;
             this.isLoadingGroup = false;
             this.isLoadingUsers = false;
+            this.startImage = null;
         },
     },
     watch: {

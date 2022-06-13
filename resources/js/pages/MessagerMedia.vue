@@ -1,6 +1,5 @@
 <template>
     <dav-gallery-slide-show
-        @hook:updated="updateSlide"
         :images="slides"
         :index="start"
         @close="close"
@@ -51,11 +50,12 @@ export default {
             }
         },
         close() {
-            return this.$router.push({
-                name: "chat",
-                params: { friendId: this.rcvId },
-                query: { uid: this.rcvId },
-            });
+            // return this.$router.push({
+            //     name: "chat",
+            //     params: { friendId: this.rcvId },
+            //     query: { uid: this.rcvId },
+            // });
+            return this.$router.back();
         },
         async getMessengerMedia() {
             this.loading = true;

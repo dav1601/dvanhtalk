@@ -15,20 +15,17 @@ const getters = {
     messengerMedia(s) {
         return s.messengerMedia;
     },
-    startMessengerMedia(s) {
-        return s.startMessengerMedia;
-    },
     receiver: (s) => s.receiver,
     haveReceiver(s) {
         return s.haveReceiver;
     },
-    meIsAdminGroup(s, gts, rS, rGts) {
-        return !!(
-            s.receiver &&
-            s.receiver.founder.id &&
-            s.receiver.founder.id == rGts["auth/id"]
-        );
-    },
+    // meIsAdminGroup(s, gts, rS, rGts) {
+    //     return !!(
+    //         s.receiver &&
+    //         s.receiver.founder.id &&
+    //         s.receiver.founder.id == rGts["auth/id"]
+    //     );
+    // },
     isTyping(s) {
         return s.typing;
     },
@@ -58,7 +55,7 @@ const mutations = {
         return (s.messages = p);
     },
     setMessemgerMedia(s, p) {
-        (s.messengerMedia = p.arrayImage), (s.startMessengerMedia = p.start);
+        s.messengerMedia = p;
     },
     setReceiver(s, p) {
         s.receiver = { ...s.receiver, ...p };
@@ -133,9 +130,15 @@ const actions = {
     getMessages(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("/messages/" + p.to, {
-                    params: { type: p.type, page: p.page },
-                })
+                .get(
+                    route("messages.index", {
+                        conversationId: p.conversationId,
+                        type: p.type,
+                        _query: {
+                            page: p.page,
+                        },
+                    })
+                )
                 .then((req) => {
                     const data = req.data.data;
                     const messages = [];
@@ -145,6 +148,7 @@ const actions = {
                         });
                     }
                     c.commit("setMessages", messages);
+                    c.commit("setMessemgerMedia", req.data.messenger_media);
                     rs(req);
                 })
                 .catch((err) => {

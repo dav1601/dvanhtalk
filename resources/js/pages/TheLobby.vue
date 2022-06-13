@@ -84,9 +84,7 @@
             <list-user :isLoadingUser="isLoadingUsers"></list-user>
 
             <!--  -->
-            <v-slide-x-transition mode="out-in">
-                <router-view></router-view>
-            </v-slide-x-transition>
+            <router-view></router-view>
         </div>
         <!-- ----------------------- -->
         <div
@@ -141,9 +139,8 @@
                 </div>
                 <hr class="d-block d-lg-none mt-1 mb-0" />
             </div>
-            <v-slide-x-transition mode="out-in">
-                <router-view></router-view>
-            </v-slide-x-transition>
+
+            <router-view></router-view>
         </div>
     </div>
 </template>

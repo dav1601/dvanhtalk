@@ -100,9 +100,7 @@
           </v-slide-x-transition>
         </div> -->
                 <v-card :class="{ fix1: isHome }" class="p-0 h-100">
-                    <v-slide-x-transition mode="out-in">
-                        <router-view></router-view>
-                    </v-slide-x-transition>
+                    <router-view></router-view>
                 </v-card>
             </v-container>
         </v-main>

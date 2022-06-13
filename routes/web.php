@@ -88,6 +88,7 @@ Route::controller(GroupController::class)->group(function () {
     Route::get('groups', 'index')->name('group.list');
 });
 Route::controller(MessagesController::class)->group(function () {
+    Route::get('messages/{type}/{conversationId}', 'index')->name('messages.index');
     Route::get('media', 'messenger_media')->name('messages.media');
 });
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
@@ -98,44 +99,6 @@ Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hl
     }
     return response()->json(['receiver' => $receiver], 200);
 })->name('get.receiver');
-Route::get('messages/{to}', function ($to, Request $request) {
-    $type = $request->type;
-    $item_page = 20;
-    $end_page = 0;
-    $page =  $request->has('page') && $request->page != null ? $request->page : 1;
-    $limit = $page * $item_page;
-    if ($type == 0) {
-        $queryMsg = UserMessage::where(function ($q) use ($to) {
-            $q->where('sd_id', '=', Auth::id())
-                ->where('rcv_id', '=', $to)
-                ->where('type', 0);
-        })->orWhere(function ($q) use ($to) {
-            $q->where('sd_id', '=', $to)
-                ->where('rcv_id', '=', Auth::id())
-                ->where('type', 0);
-        });
-        $count = $queryMsg->count();
-        if ($limit >= $count) {
-            $end_page = 1;
-            $messages = $queryMsg->with('message')->get();
-        } else {
-            $offset = $count - $limit;
-            $messages = $queryMsg->with('message')->offset($offset)->limit($limit)->get();
-        }
-        $messages->page = $page;
-    } else {
-        $queryMsg = UserMessage::with(['message', 'sender'])->where('rcv_group_id', $to)->where('type', 1);
-        $count = $queryMsg->count();
-        if ($limit >= $count) {
-            $end_page = 1;
-            $messages = $queryMsg->get();
-        } else {
-            $offset = $count - $limit;
-            $messages = $queryMsg->offset($offset)->limit($limit)->get();
-        }
-    }
-    return response()->json(['data' => $messages,   'page' => $page, 'endPage' => $end_page], 200);
-});
 Route::post('saveMessage', function (Request $request) {
     $message = new Message();
     $message_images = new Message();

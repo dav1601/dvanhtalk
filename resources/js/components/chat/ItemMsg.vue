@@ -79,17 +79,10 @@
                 v-if="data.message.type == 2"
                 :class="[itMe ? ['mr-2'] : ['ml-2'], images ? ['images'] : '']"
             >
-                <router-link
+                <a
                     v-if="!images"
-                    :to="{
-                        name: 'messengerMedia',
-                        query: {
-                            thread_id: receiver.id,
-                            message_id: encryptedId,
-                            attachment_id: 0,
-                            type: 0,
-                        },
-                    }"
+                    class="dav__gll--item"
+                    @click.stop="openGll(0)"
                 >
                     <img
                         @load="loaded"
@@ -101,7 +94,7 @@
                             max-height: 250px;
                         "
                     />
-                </router-link>
+                </a>
                 <div
                     v-else
                     class="d-flex message__image--images align-items-center flex-wrap w-100 h-100"
@@ -112,19 +105,10 @@
                     <div
                         v-for="(image, index) in arrayImage"
                         :key="'image-' + index"
-                        class="message__image--item"
+                        @click.stop="openGll(index)"
+                        class="message__image--item dav__gll--item"
                     >
-                        <router-link
-                            :to="{
-                                name: 'messengerMedia',
-                                query: {
-                                    thread_id: receiver.id,
-                                    message_id: encryptedId,
-                                    attachment_id: index,
-                                    type: 0,
-                                },
-                            }"
-                        >
+                        <a>
                             <img
                                 @load="loaded"
                                 :src="image"
@@ -133,7 +117,7 @@
                                 style="border-radius: 8px"
                                 class="img__obj--cover"
                             />
-                        </router-link>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -260,6 +244,13 @@ export default {
         },
     },
     methods: {
+        openGll(index) {
+            const data = {
+                index: index,
+                msgId: this.data.message.id,
+            };
+             this.$emit('open-gll' , data);
+        },
         async fetchMeataData(url) {
             await axios
                 .get("https://jsonlink.io/api/extract", {

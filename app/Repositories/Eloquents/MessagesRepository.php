@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Groups;
 use App\Models\Message;
 use App\Models\UserMessage;
+use Illuminate\Support\Facades\Auth;
 use App\Repositories\Messages\MessagesInterface;
 
 class MessagesRepository implements MessagesInterface
@@ -44,5 +45,33 @@ class MessagesRepository implements MessagesInterface
         $user_message->message = $message;
         $user_message->sender = $group->founder;
         return $user_message;
+    }
+    public function getAllMessageMedia($partnerId = 0, $type = 0)
+    {
+        try {
+            $rcv_id = $partnerId;
+            $type = $type;
+            $media =   UserMessage::where(function ($q) use ($rcv_id, $type) {
+                $q->where('sd_id', '=', Auth::id())
+                    ->where('rcv_id', '=', $rcv_id)
+                    ->where('type_msg', '=', 2)
+                    ->where('type', $type);
+            })->orWhere(function ($q) use ($rcv_id, $type) {
+                $q->where('sd_id', '=', $rcv_id)
+                    ->where('rcv_id', '=', Auth::id())
+                    ->where('type_msg', '=', 2)
+                    ->where('type', $type);
+            })->get();
+            $arrayImage = array();
+            foreach ($media as $msg) {
+                $array = explode(",", $msg->message->message);
+                foreach ($array as $key => $value) {
+                    $arrayImage[] = ["url" => $value, "alt" => "image message", "msg_id" => $msg->message->id, "index" => $key];
+                }
+            }
+            return $arrayImage;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

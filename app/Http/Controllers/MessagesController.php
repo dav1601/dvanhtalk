@@ -14,8 +14,8 @@ class MessagesController extends Controller
 {
     public function __construct(GroupsInterface $dav2_gr, MessagesInterface $dav2_msg)
     {
-        $this->dav2_gr = $dav2_gr;
-        $this->dav2_msg = $dav2_msg;
+        $this->dav2_group = $dav2_gr;
+        $this->dav2_messages = $dav2_msg;
     }
     public function messenger_media(Request $request)
     {
@@ -63,6 +63,50 @@ class MessagesController extends Controller
             return response()->json(['arrayImage' => $arrayImage, 'start' => $start], 200);
         } catch (\Exception $e) {
             return response()->json($e->getMessage(), 500);
+        }
+    }
+    public function index($type, $conversationId, Request $request)
+    {
+        try {
+            $type = $type;
+            $item_page = 20;
+            $end_page = 0;
+            $page =  $request->has('page') && $request->page != null ? $request->page : 1;
+            $limit = $page * $item_page;
+            if ($type == 0) {
+                $queryMsg = UserMessage::where(function ($q) use ($conversationId) {
+                    $q->where('sd_id', '=', Auth::id())
+                        ->where('rcv_id', '=', $conversationId)
+                        ->where('type', 0);
+                })->orWhere(function ($q) use ($conversationId) {
+                    $q->where('sd_id', '=', $conversationId)
+                        ->where('rcv_id', '=', Auth::id())
+                        ->where('type', 0);
+                });
+                $count = $queryMsg->count();
+                if ($limit >= $count) {
+                    $end_page = 1;
+                    $messages = $queryMsg->with('message')->get();
+                } else {
+                    $offset = $count - $limit;
+                    $messages = $queryMsg->with('message')->offset($offset)->limit($limit)->get();
+                }
+                $messages->page = $page;
+            } else {
+                $queryMsg = UserMessage::with(['message', 'sender'])->where('rcv_group_id', $conversationId)->where('type', 1);
+                $count = $queryMsg->count();
+                if ($limit >= $count) {
+                    $end_page = 1;
+                    $messages = $queryMsg->get();
+                } else {
+                    $offset = $count - $limit;
+                    $messages = $queryMsg->offset($offset)->limit($limit)->get();
+                }
+            }
+            $messenger_media = $this->dav2_messages->getAllMessageMedia($conversationId, $type);
+            return response()->json(['data' => $messages,   'page' => $page, 'endPage' => $end_page, 'messenger_media' => $messenger_media], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }

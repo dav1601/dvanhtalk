@@ -29,8 +29,9 @@ const routes = [
     {
         path: "/messenger_media",
         name: "messengerMedia",
-        component: MessagerMedia, 
+        component: MessagerMedia,
     },
+
     {
         path: "/:notFound(.*)",
         name: "404",

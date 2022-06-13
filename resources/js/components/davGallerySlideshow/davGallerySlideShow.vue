@@ -94,8 +94,11 @@ export default {
             if (typeof img === "string") {
                 return img;
             }
-            return img.url;
+            if (typeof img !== "undefined") {
+                return img.url;
+            }
         },
+
         alt() {
             const img = this.images[this.imgIndex];
             if (typeof img === "object") {
@@ -250,11 +253,11 @@ $screen-md-max: ($screen-lg - 1);
     width: 100%;
     min-height: 100%;
     height: 100vh;
-    background-color: $black-alpha-80;
     display: table;
 }
 .vgs {
-    @include modal-mask();
+     @include modal-mask();
+     background: #000;
     &__close {
         position: absolute;
         top: 20px;
@@ -348,11 +351,12 @@ $screen-md-max: ($screen-lg - 1);
             width: 100px;
             height: 100px;
             object-fit: cover;
+            object-position: 50% 50%;
             display: inline-block;
             float: none;
             margin-right: 8px;
             cursor: pointer;
-            opacity: 0.6;
+            opacity: 0.3;
             border-radius: $radius-medium;
         }
         &__img--active {

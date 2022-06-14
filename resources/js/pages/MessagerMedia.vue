@@ -29,7 +29,6 @@ export default {
     },
 
     mounted() {
-        console.log("app mounted");
     },
     computed: {
         slides() {
@@ -46,7 +45,6 @@ export default {
                 const el = document.getElementsByClassName(
                     "vgs__gallery__container"
                 )[0];
-                console.log(this.transform);
             }
         },
         close() {

@@ -90,7 +90,20 @@ const mutations = {
         });
         s.usersOnline = updateUsers;
     },
-    deleteUserMRoom(s, p) {},
+    updateLastMessage(s, p) {
+        const indexRcv = s.users.findIndex((el) => {
+            return el.id == p.rcv_id;
+        });
+        const indexSd = s.users.findIndex((el) => {
+            return el.id == p.sd_id;
+        });
+        if (indexRcv != -1) {
+            s.users[indexRcv].lastest_msg = p;
+        }
+        if (indexSd != -1) {
+            s.users[indexSd].lastest_msg = p;
+        }
+    },
     // AREA GROUP
     async pushGroup(s, p) {
         await s.groups.push(p);
@@ -196,6 +209,7 @@ const actions = {
                 });
         });
     },
+
     getHandleUser(c, p) {
         c.commit("updateUser", p);
     },

@@ -23,6 +23,14 @@ class GroupController extends Controller
         })->get();
         $my_groups_joined = MembersGroup::with(['group', 'group.members', 'group.founder', 'group.requestsJoin', 'group.requestsJoin.sender', 'group.members.info'])->where('users_id', Auth::id())->get();
         $my_groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->where('users_id', Auth::id())->get();
+        $keyBy = $my_groups_joined->keyBy('groups_id')->toArray();
+        $sort1 = $groups->filter(function ($item, $key) use ($keyBy) {
+            return array_key_exists($item->id, $keyBy);
+        });
+        $sort2 = $groups->filter(function ($item, $key) use ($keyBy) {
+            return !array_key_exists($item->id, $keyBy);
+        });
+        $groups = collect($sort1)->merge(collect($sort2));
         return response()->json(['groups' => $groups, 'my_groups_joined' => $my_groups_joined, 'my_groups' => $my_groups], 200);
     }
 }

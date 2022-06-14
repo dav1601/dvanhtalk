@@ -43,6 +43,9 @@ export default {
         listUsersOnline() {
             return this.$store.getters["users/usersOnline"];
         },
+        receiver() {
+            return this.$store.getters["message/receiver"];
+        },
     },
     methods: {
         debounceSearchUser: debounce(function (e) {

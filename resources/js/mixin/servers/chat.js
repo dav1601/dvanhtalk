@@ -163,21 +163,22 @@ export default {
                             el.style.display = "";
                         }
                     }
-                    await this.$store.dispatch(
-                        "message/getMessage",
-                        e.user_message
-                    );
+
                     if (
-                        e.user_message.rcv_id == this.id &&
-                        this.$store.getters["message/receiver"].id == e.sd_id
+                        Number(e.user_message.rcv_id) == Number(this.id) &&
+                        Number(this.$store.getters["message/receiver"].id) ==
+                            Number(e.user_message.sd_id)
                     ) {
+                        await this.$store.dispatch(
+                            "message/getMessage",
+                            e.user_message
+                        );
                         await this.$store.dispatch(
                             "message/getIsChatting",
                             true
                         );
-                        this.$nextTick(() => {
-                            this.scrollEnd();
-                        });
+
+                        this.scrollEnd();
                     }
                 });
         },

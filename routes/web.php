@@ -79,8 +79,26 @@ Route::get('users', function (Request $request) {
     })->get()->except(Auth::id());
     $users = collect($query);
     $users = $users->each(function ($item) {
-        return $item->offline_at = Carbon::create($item->offline_at)->diffForHumans();
+        $item->offline_at = Carbon::create($item->offline_at)->diffForHumans();
+        $id = $item->id;
+        $item->lastest_msg = UserMessage::with('message')->where(function ($q) use ($id) {
+            $q->where('sd_id', '=', Auth::id())
+                ->where('rcv_id', '=', $id)
+                ->where('type', 0);
+        })->orWhere(function ($q) use ($id) {
+            $q->where('sd_id', '=', $id)
+                ->where('rcv_id', '=', Auth::id())
+                ->where('type', 0);
+        })->latest()->take(1)->first();
+        return $item;
     });
+    $sort1 = $users->filter(function ($item, $key) {
+        return $item->lastest_msg === null;
+    });
+    $sort2 = $users->filter(function ($item, $key) {
+        return $item->lastest_msg !== null;
+    });
+    $users = $sort2->merge($sort1);
     return response()->json($users, 200);
 })->name('users');
 
@@ -90,6 +108,7 @@ Route::controller(GroupController::class)->group(function () {
 Route::controller(MessagesController::class)->group(function () {
     Route::get('messages/{type}/{conversationId}', 'index')->name('messages.index');
     Route::get('media', 'messenger_media')->name('messages.media');
+    Route::post('saveMessage', 'store')->name('messages.store');
 });
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
     if ($request->type == 0) {
@@ -99,95 +118,7 @@ Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hl
     }
     return response()->json(['receiver' => $receiver], 200);
 })->name('get.receiver');
-Route::post('saveMessage', function (Request $request) {
-    $message = new Message();
-    $message_images = new Message();
-    $user_message = new UserMessage();
-    $haveImages = $request->has('images') ? true : false;
-    $haveMessageText = $request->message != null && $request->message != "" ? true : false;
-    $parent_id = $request->parent_id == 'null' || $request->parent_id == null ? NULL : (int) $request->parent_id;
-    if ($request->type == 1) {
-        if ($haveMessageText && !$haveImages) {
-            $message->message = $request->message;
-            $message->type = 1;
-        } elseif ($haveImages && !$haveMessageText) {
-            $images = $request->images;
-            $arrayImages = [];
-            foreach ($images as $image) {
-                $urlImgUploaded =  $image->storeOnCloudinary("user-" . $request->from)->getSecurePath();
-                $arrayImages[] = $urlImgUploaded;
-            }
-            $message->message = implode(",", $arrayImages);
-            $message->type = 2;
-        } elseif ($haveImages && $haveMessageText) {
-            $message->message = $request->message;
-            $message->type = 1;
-            $images = $request->images;
-            $arrayImages = [];
-            foreach ($images as $image) {
-                $urlImgUploaded =  $image->storeOnCloudinary("user-" . $request->from)->getSecurePath();
-                $arrayImages[] = $urlImgUploaded;
-            }
-            $message_images->message = implode(",", $arrayImages);
-            $message_images->parent_id =  $parent_id;
-            $message_images->type = 2;
-        }
-    }
-    if ($request->type == 3) {
-        $audio = $request->audio;
-        $urlAudioUploaded =  $audio->storeOnCloudinary("user-" . $request->from)->getSecurePath();
-        $message->message = $urlAudioUploaded;
-        $message->type = 3;
-    }
-    $message->parent_id = $parent_id;
-    if ($message->save()) {
-        try {
-            $user_message->msg_id = (int)$message->id;
-            $user_message->sd_id = (int)$request->from;
-            if ($request->for == 0) {
-                $user_message->rcv_id = (int) $request->to;
-            } else {
-                $user_message->rcv_group_id = (int) $request->to;
-            }
-            $user_message->seen = (int) $request->seen;
-            $user_message->type = $request->for;
-            $user_message->type_msg = $message->type;
-            $user_message->save();
-            $user_message->message = $message;
-            if ($haveMessageText && $haveImages) {
-                $user_message_images = new UserMessage();
-                $message_images->save();
-                $user_message_images->msg_id = (int) $message_images->id;
-                $user_message_images->sd_id = (int)$request->from;
-                if ($request->for == 0) {
-                    $user_message_images->rcv_id = (int) $request->to;
-                } else {
-                    $user_message_images->rcv_group_id = (int) $request->to;
-                }
-                $user_message_images->seen = (int) $request->seen;
-                $user_message_images->type = $request->for;
-                $user_message_images->type_msg = 2;
-                $user_message_images->save();
-                $user_message_images->message = $message_images;
-                $user_message->message_images = $user_message_images;
-            }
-            if ($request->for == 0) {
-                broadcast(new SendMessage($user_message))->toOthers();
-            } else {
-                $user_message->sender = User::where('id',  $user_message->sd_id)->first();
-                broadcast(new SendMessageGroup($user_message))->toOthers();
-            }
-            return response()->json(['data' => $user_message], 200);
-        } catch (\Exception $e) {
-            $message->delete();
-            $message_images->delete();
-            return response()->json(['error' => $e->getMessage()]);
-        }
-    } else {
-        $message->delete();
-        return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
-    }
-});
+
 Route::post('saveGroup', function (Request $request, GroupsInterface $hrl_gr) {
     $rqMembers = array();
     if (!empty($request->members)) {

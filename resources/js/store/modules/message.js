@@ -1,3 +1,5 @@
+import Vue from "vue";
+
 const state = () => ({
     messages: [],
     messengerMedia: [],
@@ -52,7 +54,7 @@ const mutations = {
         return (s.unSeenMessage.id = p);
     },
     setMessages(s, p) {
-        return (s.messages = p);
+        return (s.messages = p.data);
     },
     setMessemgerMedia(s, p) {
         s.messengerMedia = p;
@@ -61,7 +63,17 @@ const mutations = {
         s.receiver = { ...s.receiver, ...p };
     },
     async pushMessage(s, p) {
-        await s.messages.push(p);
+        const index = s.messages.findIndex((el) => {
+            return el.created_at == p.created_at;
+        });
+        let messages = [];
+        messages.push(p);
+        let data = { created_at: p.created_at, messages };
+        if (index != -1) {
+            await s.messages[index].messages.push(p);
+        } else {
+            await s.messages.push(data);
+        }
     },
     pushMember(s, p) {
         if (s.receiver.members) {
@@ -106,7 +118,6 @@ const actions = {
         });
     },
     getMessengerMedia(c, p) {
-        console.log(p);
         return new Promise((rs, rj) => {
             axios
                 .get(
@@ -122,7 +133,6 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
-                    console.log(err);
                     rj(err);
                 });
         });
@@ -141,13 +151,10 @@ const actions = {
                 )
                 .then((req) => {
                     const data = req.data.data;
-                    const messages = [];
-                    if (data != null) {
-                        data.forEach((message) => {
-                            messages.push(message);
-                        });
-                    }
-                    c.commit("setMessages", messages);
+                    c.commit("setMessages", {
+                        data: data,
+                        type: p.type,
+                    });
                     c.commit("setMessemgerMedia", req.data.messenger_media);
                     rs(req);
                 })
@@ -166,6 +173,7 @@ const actions = {
                 if (p.message_images) {
                     c.commit("pushMessage", p.message_images);
                 }
+                c.commit("users/updateLastMessage", p, { root: true });
             } else {
                 return;
             }
@@ -211,16 +219,14 @@ const actions = {
             axios
                 .post("/saveMessage", data, config)
                 .then((req) => {
-                    if (req.data.data.sd_id == c.rootGetters["auth/id"]) {
-                        let data = req.data.data;
-                        c.commit("pushMessage", data);
-                        if (req.data.data.message_images) {
-                            c.commit(
-                                "pushMessage",
-                                req.data.data.message_images
-                            );
-                        }
+                    let data = req.data.data;
+                    c.commit("pushMessage", data);
+                    if (data.message_images) {
+                        c.commit("pushMessage", data.message_images);
                     }
+                    c.commit("users/updateLastMessage", data, {
+                        root: true,
+                    });
                     rs(req);
                 })
                 .catch((err) => {

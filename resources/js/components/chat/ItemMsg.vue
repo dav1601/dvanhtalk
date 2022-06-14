@@ -1,7 +1,7 @@
 <template>
     <div class="package__msg">
         <div
-            class="pb-4"
+            class="chat-message"
             v-if="data.message.type != 4"
             :class="[itMe ? ['chat-message-right'] : ['chat-message-left']]"
         >
@@ -9,32 +9,35 @@
                 class="d-flex flex-column align-items-center justify-content-end"
             >
                 <img
-                    :src="itMe ? avatar : makeAvatar(receiver.avatar)"
+                    v-if="!itMe"
+                    :src="makeAvatar(receiver.avatar)"
                     class="rounded-circle mr-1"
+                    :class="{ invisible: !isLast }"
                     :alt="receiver.name"
-                    width="45"
-                    height="45"
+                    width="28"
+                    height="28"
                 />
-                <div
+                <!-- <div
                     class="text-muted text-nowrap mt-2"
                     :class="[itMe ? [''] : ['mx-2']]"
                 >
                     {{ formatTime(data.message.created_at) }}
-                </div>
+                </div> -->
             </div>
 
             <div
-                class="flex-shrink-1 bg-light rounded px-3 py-2 mr-2 chat-item d-flex flex-column position-relative"
+                class="flex-shrink-1 bg-light mr-2 chat-item d-flex flex-column position-relative"
                 :class="[
                     renderClass,
                     isGroup ? ['royal-role-' + role] : '',
                     ['msg-' + data.message.id],
+                    !isChat ? ['px-3', 'py-2'] : 'h-100',
                 ]"
                 v-if="type == 1"
             >
-                <div v-if="!isGroup" class="font-weight-bold mb-1 name-sender">
+                <!-- <div v-if="!isGroup" class="font-weight-bold mb-1 name-sender">
                     {{ itMe ? "You" : receiver.name }}
-                </div>
+                </div> -->
                 <div
                     v-if="isGroup"
                     class="font-weight-bold mb-1 name-sender d-flex justify-center-start align-items-center"
@@ -123,16 +126,24 @@
             </div>
 
             <div
-                :style="createBgAudio"
                 class="flex-shrink-1 bg-light rounded px-1 py-1 mr-3"
                 v-if="type == 3"
             >
-                <vuetify-audio
+                <!-- <vuetify-audio
                     :file="data.message.message"
                     color="primary"
                     downloadable
                     :canPlay="loaded"
-                ></vuetify-audio>
+                ></vuetify-audio> -->
+                <vue-plyr>
+                    <audio controls crossorigin playsinline>
+                        <source
+                            :src="data.message.message"
+                            type="audio/mp3"
+                            @canplay="loaded"
+                        />
+                    </audio>
+                </vue-plyr>
             </div>
         </div>
         <div class="pb-4 chat-message-system small" v-else>
@@ -144,10 +155,10 @@
 import user from "../../mixin/user";
 import TheRole from "../role/TheRole.vue";
 export default {
-    props: ["data", "receiver", "typeUserMsg", "cOrW"],
+    props: ["data", "typeUserMsg", "length", "index", "last"],
     mixins: [user],
     components: {
-        VuetifyAudio: () => import("vuetify-audio"),
+        // VuetifyAudio: () => import("vuetify-audio"),
         TheRole,
     },
     data() {
@@ -172,6 +183,9 @@ export default {
     },
 
     computed: {
+        isLast() {
+            return Number(this.last.msg_id) === Number(this.data.msg_id);
+        },
         encryptedId() {
             return this.$CryptoJS.AES.encrypt(
                 this.data.message.id + "",
@@ -249,7 +263,7 @@ export default {
                 index: index,
                 msgId: this.data.message.id,
             };
-             this.$emit('open-gll' , data);
+            this.$emit("open-gll", data);
         },
         async fetchMeataData(url) {
             await axios
@@ -321,6 +335,7 @@ export default {
 .msg-time-left {
     padding-left: 50px;
 }
+
 .message__image {
     max-width: 250px;
     max-height: 250px;
@@ -369,7 +384,10 @@ export default {
     background: #b0b3b8;
 }
 .chat-item {
-    border-radius: 8px !important;
+    border-radius: 18px !important;
+    font-size: 15px;
+    line-height: 20.1px;
+    padding: 8px 12px;
 }
 
 .friend-chat .name-sender {

@@ -83,7 +83,7 @@ import ItemMember from "../../../components/users/ItemMember.vue";
 import ItemSelect from "../../../components/users/ItemSelect.vue";
 export default {
     components: { ItemReq, ItemMember, ItemSelect },
-    props: ["receiver", "isAdmin", "isMod", "isManage", "members"],
+    props: ["isAdmin", "isMod", "isManage", "members"],
     mixins: [user],
     emits: ["close-dialog"],
     data() {

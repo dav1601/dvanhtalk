@@ -26,7 +26,6 @@
 <script>
 import user from "../../mixin/user";
 export default {
-    props: ["receiver"],
     mixins: [user],
 };
 </script>

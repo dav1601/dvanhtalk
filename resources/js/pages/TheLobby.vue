@@ -1,5 +1,9 @@
 <template>
-    <div :class="[isHome ? ['row'] : '']" class="h-100">
+    <div
+        :class="[isHome ? ['row'] : '']"
+        class="h-100"
+        style="background-color: inherit"
+    >
         <v-snackbar v-model="notValid" timeout="3500" color="error" top>
             {{ errorText }}
         </v-snackbar>
@@ -19,7 +23,7 @@
                 </v-card-title>
                 <v-card-text>
                     <v-container>
-                        <v-row>
+                        <v-row no-gutters>
                             <v-col cols="12" class="px-0">
                                 <v-text-field
                                     label="Tên Nhóm"
@@ -78,7 +82,7 @@
         </v-dialog>
         <!-- end dialog -->
         <div
-            class="row g-0 mx-0 p-0 h-100"
+            class="row g-0 mx-0 p-0 h-100 no-gutters"
             :class="[isHome ? ['col-6'] : 'col-12']"
         >
             <list-user :isLoadingUser="isLoadingUsers"></list-user>
@@ -88,7 +92,7 @@
         </div>
         <!-- ----------------------- -->
         <div
-            class="row g-0 mt-0 py-0"
+            class="row g-0 mt-0 py-0 no-gutters"
             v-if="isHome"
             :class="[isHome ? ['col-6'] : 'col-12']"
             id="listGroup"

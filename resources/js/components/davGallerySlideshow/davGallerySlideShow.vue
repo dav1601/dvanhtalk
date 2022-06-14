@@ -175,14 +175,7 @@ export default {
             const centerPos =
                 Math.floor(galleryWidth / (this.thumbnailWidth * 2)) *
                 this.thumbnailWidth;
-            // Prevent scrolling of images if not needed
-            console.log({
-                gllW: galleryWidth,
-                currThumbsWidth: currThumbsWidth,
-                maxThumbsWidth: maxThumbsWidth,
-                index: this.imgIndex,
-                centerPos: centerPos,
-            });
+            // Prevent scrolling of images if not neede
             if (maxThumbsWidth < galleryWidth) {
                 return;
             }

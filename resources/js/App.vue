@@ -184,6 +184,7 @@ $roles: 0, 1, 2;
 :root {
     scrollbar-color: var(--bs-gray-dark) #3e4042 !important;
     scrollbar-width: auto !important;
+    --secondary-text: #b0b3b8;
 }
 html {
     overflow: hidden;
@@ -218,6 +219,7 @@ html::-webkit-scrollbar {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 .listUser.col-xl-3 {
     flex: 0 0 20% !important;
     max-width: 20% !important;

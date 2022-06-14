@@ -1,7 +1,7 @@
 <template>
     <router-link
         v-if="!isLoading && link"
-        class="list-group-item list-group-item-action border-0"
+        class="listUser__item border-0"
         @click.native="resetSeen()"
         :to="{
             name: 'chat',
@@ -19,26 +19,30 @@
         >
             {{ count }}
         </div>
-        <div class="d-flex align-items-start">
-            <img
-                :src="makeAvatar(user.avatar)"
-                class="rounded-circle mr-1 img__obj--cover"
-                alt="Vanessa Tucker"
-                width="45"
-                height="45"
-            />
-            <div class="flex-grow-1 ml-3" style="overflow: hidden">
+        <div class="d-flex align-items-center listUser__item--left">
+            <div class="position-relative avatar">
+                <img
+                    :src="makeAvatar(user.avatar)"
+                    class="rounded-circle mr-1 img__obj--cover"
+                    alt="Vanessa Tucker"
+                    width="56"
+                    height="56"
+                />
+                <span
+                    class="fas fa-circle position-absolute status"
+                    :class="{
+                        'chat-online': isOnline,
+                        'chat-offline': !isOnline,
+                    }"
+                ></span>
+            </div>
+            <div class="ml-3 listUser__item--right" style="overflow: hidden">
                 <span class="name text-overflow">{{ user.name }}</span>
-                <div class="small center-start">
-                    <span
-                        class="fas fa-circle f-10"
-                        :class="{
-                            'chat-online': isOnline,
-                            'chat-offline': !isOnline,
-                        }"
-                    ></span>
-                    <span class="f-14 ml-2">{{ textStatus }}</span>
-                </div>
+                <span
+                    class="f-14 small center-start last__msg text-overflow"
+                    :class="'last__msg--' + user.id"
+                    >{{ lastestMessage }}</span
+                >
             </div>
         </div>
     </router-link>
@@ -54,6 +58,42 @@ export default {
         };
     },
     computed: {
+        lastestMessage() {
+            if (this.user.lastest_msg == null) {
+                return "";
+            }
+            if (this.user.lastest_msg.type_msg == 2) {
+                let prefix = "Đã gửi";
+                if (this.user.lastest_msg.sd_id == this.id) {
+                    prefix = "Bạn đã gửi";
+                }
+                return (
+                    prefix +
+                    " " +
+                    this.user.lastest_msg.message.message.split(",").length +
+                    " " +
+                    "ảnh"
+                );
+            } else if (this.user.lastest_msg.type_msg == 3) {
+                let prefix = "Đã gửi";
+                if (this.user.lastest_msg.sd_id == this.id) {
+                    prefix = "Bạn đã gửi";
+                }
+                return (
+                    prefix +
+                    " " +
+                    this.user.lastest_msg.message.message.split(",").length +
+                    " " +
+                    "tệp âm thanh"
+                );
+            } else {
+                let prefix = "";
+                if (this.user.lastest_msg.sd_id == this.id) {
+                    prefix = "Bạn: ";
+                }
+                return prefix + this.user.lastest_msg.message.message;
+            }
+        },
         encryptedId() {
             return this.$CryptoJS.AES.encrypt(
                 String(this.user.id),
@@ -111,6 +151,7 @@ export default {
     color: #fff;
     background-color: #007bff;
 }
+
 .list-group-item {
     margin: 10px !important;
 }

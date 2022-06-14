@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\UserMessage;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\Messages\MessagesInterface;
+use Carbon\Carbon;
 
 class MessagesRepository implements MessagesInterface
 {
@@ -73,5 +74,21 @@ class MessagesRepository implements MessagesInterface
         } catch (\Exception $e) {
             return false;
         }
+    }
+    public function created_at()
+    {
+        return Carbon::now('Asia/Ho_Chi_Minh')->format('Y-m-d H:i');
+    }
+    public function getLastMessage($friendId)
+    {
+        return UserMessage::with('message')->where(function ($q) use ($friendId) {
+            $q->where('sd_id', '=', Auth::id())
+                ->where('rcv_id', '=', $friendId)
+                ->where('type', 0);
+        })->orWhere(function ($q) use ($friendId) {
+            $q->where('sd_id', '=', $friendId)
+                ->where('rcv_id', '=', Auth::id())
+                ->where('type', 0);
+        })->latest()->take(1)->first();
     }
 }

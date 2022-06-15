@@ -232,7 +232,7 @@ html::-webkit-scrollbar {
     cursor: pointer !important;
 }
 .chat-item {
-    max-width: 55% !important;
+    max-width: 564px !important;
 }
 
 .chat-item.haveLink {
@@ -338,35 +338,6 @@ header {
     color: #e4606d;
 }
 
-.chat-messages {
-    display: flex;
-    flex-direction: column;
-    height: 590px;
-    overflow-y: scroll;
-    overflow-x: hidden;
-}
-
-.chat-message-left,
-.chat-message-right,
-.chat-message-system {
-    display: flex;
-    flex-shrink: 0;
-}
-
-.chat-message-left {
-    margin-right: auto;
-}
-.chat-message-system {
-    justify-content: center;
-    line-height: 1.2727;
-    color: #8a8d91 !important;
-    font-size: 0.6875rem;
-}
-
-.chat-message-right {
-    flex-direction: row-reverse;
-    margin-left: auto;
-}
 .py-3 {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;

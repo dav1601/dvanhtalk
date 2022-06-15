@@ -19,5 +19,5 @@ class Message extends Model
     {
         return $this->hasOne('App\Models\UserMessage', 'msg_id');
     }
-    
+  
 }

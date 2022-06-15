@@ -1,10 +1,8 @@
-import Vue from "vue";
-
 const state = () => ({
     messages: [],
+    messageReply: null,
     messengerMedia: [],
-    startMessengerMedia: 0,
-    receiver: {},
+    receiver: null,
     haveReceiver: false,
     typing: false,
     isChatting: false,
@@ -21,28 +19,29 @@ const getters = {
     haveReceiver(s) {
         return s.haveReceiver;
     },
-    // meIsAdminGroup(s, gts, rS, rGts) {
-    //     return !!(
-    //         s.receiver &&
-    //         s.receiver.founder.id &&
-    //         s.receiver.founder.id == rGts["auth/id"]
-    //     );
-    // },
     isTyping(s) {
         return s.typing;
     },
     isChatting(s) {
         return s.isChatting;
     },
+    messageReply(s) {
+        return s.messageReply;
+    },
 };
 
 const mutations = {
     reset(s) {
-        (s.messages = []),
-            (s.receiver = {}),
-            (s.haveReceiver = false),
-            (s.typing = false);
+        s.messages = [];
+        s.messengerMedia = [];
+        s.receiver = null;
+        s.haveReceiver = false;
+        s.typing = false;
         s.isChatting = false;
+        s.messageReply = null;
+    },
+    setMessageReply(s, p) {
+        s.messageReply = p;
     },
     setTyping(s, p) {
         s.typing = p;
@@ -89,6 +88,9 @@ const mutations = {
 };
 
 const actions = {
+    getMessageReply(c, p) {
+        c.commit("setMessageReply", p);
+    },
     handleActions(c, p) {
         c.commit("setReceiver", p.newestGr);
     },

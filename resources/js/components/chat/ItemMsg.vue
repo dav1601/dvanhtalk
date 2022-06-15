@@ -1,7 +1,17 @@
 <template>
-    <div class="package__msg">
+    <div
+        class="package__msg"
+        @mouseover="showActions = true"
+        @mouseleave="showActions = false"
+    >
+        <item-msg-reply
+            :message_parent="data.message_parent"
+            @load="loaded"
+            :itMe="itMe"
+            v-if="data.message_parent != null"
+        ></item-msg-reply>
         <div
-            class="chat-message"
+            class="chat-message w-100 h-100 position-relative"
             v-if="data.message.type != 4"
             :class="[itMe ? ['chat-message-right'] : ['chat-message-left']]"
         >
@@ -25,58 +35,41 @@
                 </div> -->
             </div>
 
-            <div
-                class="flex-shrink-1 bg-light mr-2 chat-item d-flex flex-column position-relative"
-                :class="[
-                    renderClass,
-                    isGroup ? ['royal-role-' + role] : '',
-                    ['msg-' + data.message.id],
-                    !isChat ? ['px-3', 'py-2'] : 'h-100',
-                ]"
-                v-if="type == 1"
-            >
-                <!-- <div v-if="!isGroup" class="font-weight-bold mb-1 name-sender">
-                    {{ itMe ? "You" : receiver.name }}
-                </div> -->
+            <div class="flex-shrink-1 mr-2 mr-2 d-flex flex-column">
                 <div
-                    v-if="isGroup"
-                    class="font-weight-bold mb-1 name-sender d-flex justify-center-start align-items-center"
-                    :class="'name-royal-role-' + role"
+                    class="chat-item"
+                    :class="[
+                        renderClass,
+                        isGroup ? ['royal-role-' + role] : '',
+                        ['msg-' + data.message.id],
+                        !isChat ? ['px-3', 'py-2'] : 'h-100',
+                    ]"
+                    v-if="type == 1"
                 >
-                    <span class="d-block">{{
-                        itMe ? "You" : data.sender.name
-                    }}</span>
-                    <div class="flex-1 ml-2 mb-1" v-if="isGroup">
-                        <the-role
-                            :role="role"
-                            :width="20"
-                            :height="20"
-                        ></the-role>
+                    <div
+                        v-if="isGroup"
+                        class="font-weight-bold mb-1 name-sender d-flex justify-center-start align-items-center position-relative"
+                        :class="'name-royal-role-' + role"
+                    >
+                        <span class="d-block">{{
+                            itMe ? "You" : data.sender.name
+                        }}</span>
+                        <div class="flex-1 ml-2 mb-1" v-if="isGroup">
+                            <the-role
+                                :role="role"
+                                :width="20"
+                                :height="20"
+                            ></the-role>
+                        </div>
                     </div>
-                </div>
-                <div
-                    class="text-chat"
-                    ref="myMsgText"
-                    v-html="MakeMessage(data.message.message, data.message.id)"
-                ></div>
-                <!-- <a href="" v-if="metaData && !isGroup" class="in4__website">
-                    <img
-                        :src="
-                            metaData.images.length > 0
-                                ? metaData.images[0]
-                                : 'https://occ-0-116-114.1.nflxso.net/dnm/api/v6/U6_eu_lw5TPOkLCYXBHQsUANDp0/AAAABWiz2QNaiC4pMM8J-uWx6IgnT_1SJrbbdRycS0kRYaH-i1yiIg_ew7wZHuKZ0AfrRSK1PSh9.png'
+                    <div
+                        class="text-chat"
+                        v-html="
+                            MakeMessage(data.message.message, data.message.id)
                         "
-                        width="300"
-                        height="auto"
-                        alt=""
-                        @load="loaded"
-                    />
-                    <span class="px-3 py-4">
-                        {{ metaData.title ? metaData.title : metaData.domain }}
-                    </span>
-                </a> -->
+                    ></div>
+                </div>
             </div>
-
             <div
                 class="message__image"
                 v-if="data.message.type == 2"
@@ -125,16 +118,7 @@
                 </div>
             </div>
 
-            <div
-                class="flex-shrink-1 bg-light rounded px-1 py-1 mr-3"
-                v-if="type == 3"
-            >
-                <!-- <vuetify-audio
-                    :file="data.message.message"
-                    color="primary"
-                    downloadable
-                    :canPlay="loaded"
-                ></vuetify-audio> -->
+            <div class="flex-shrink-1 mr-3 message__audio" v-if="type == 3">
                 <vue-plyr>
                     <audio controls crossorigin playsinline>
                         <source
@@ -145,6 +129,26 @@
                     </audio>
                 </vue-plyr>
             </div>
+            <div v-show="showActions" class="message__actions mr-3 my-auto">
+                <div class="d-flex align-items-center">
+                    <div @click="replyMessage" class="message__actions--reply">
+                        <v-tooltip top>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-icon
+                                    style="line-height: 20.1px; cursor: pointer"
+                                    dark
+                                    size="19"
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    color="#adb5bd"
+                                    >mdi-arrow-left-top-bold</v-icon
+                                >
+                            </template>
+                            <span>Trả lời</span>
+                        </v-tooltip>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="pb-4 chat-message-system small" v-else>
             {{ data.message.message }} {{ formatTime(data.message.created_at) }}
@@ -154,12 +158,14 @@
 <script>
 import user from "../../mixin/user";
 import TheRole from "../role/TheRole.vue";
+import ItemMsgReply from "./ItemMsgReply.vue";
 export default {
     props: ["data", "typeUserMsg", "length", "index", "last"],
     mixins: [user],
     components: {
         // VuetifyAudio: () => import("vuetify-audio"),
         TheRole,
+        ItemMsgReply,
     },
     data() {
         return {
@@ -167,6 +173,7 @@ export default {
             metaData: false,
             arrayFetch: [],
             arrayImage: [],
+            showActions: false,
         };
     },
     created() {
@@ -183,6 +190,15 @@ export default {
     },
 
     computed: {
+        bindClassType() {
+            if (this.data.type_msg == 1) {
+                return "chat-message-text";
+            } else if (this.data.type_msg == 2) {
+                return "chat-message-images";
+            } else if (this.data.type_msg == 3) {
+                return "chat-message-audio";
+            }
+        },
         isLast() {
             return Number(this.last.msg_id) === Number(this.data.msg_id);
         },
@@ -258,6 +274,9 @@ export default {
         },
     },
     methods: {
+        replyMessage() {
+            return this.$store.dispatch("message/getMessageReply", this.data);
+        },
         openGll(index) {
             const data = {
                 index: index,
@@ -304,7 +323,6 @@ export default {
         MakeMessage(message, id) {
             let goUrl = "",
                 fetchDataUrl = "";
-            // let url = /((https?:\/\/)?[\w-]+(\.[\w-]+)+\.?(:\d+)?(\/\S*)?)/gi;
             let url =
                 /((?:(http|https|Http|Https|rtsp|Rtsp):\/\/(?:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,64}(?:\:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,25})?\@)?)?((?:(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|(?:jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\:\d{1,5})?)(\/(?:(?:[a-zA-Z0-9\;\/\?\:\@\&\=\#\~\-\.\+\!\*\'\(\)\,\_])|(?:\%[a-fA-F0-9]{2}))*)?(?:\b|$)/gi;
             let startWith = /^((http|https|Http|Https|rtsp|Rtsp):\/\/)/;
@@ -335,7 +353,30 @@ export default {
 .msg-time-left {
     padding-left: 50px;
 }
-
+.plyr--audio .plyr__controls {
+    background: var(--bs-dark) !important;
+    .plyr__control {
+        color: #fff !important;
+        span {
+            color: #3e4042 !important;
+        }
+    }
+    .plyr__controls__item {
+        color: #fff !important;
+    }
+    .plyr__control--forward {
+        color: #3e4042 !important;
+    }
+}
+.message__audio {
+    flex: 1;
+    max-width: 503px;
+    border-radius: 25px !important;
+    background: transparent !important;
+    .plyr--audio {
+        border-radius: inherit;
+    }
+}
 .message__image {
     max-width: 250px;
     max-height: 250px;

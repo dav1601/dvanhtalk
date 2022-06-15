@@ -22,6 +22,10 @@ class UserMessage extends Model
     {
         return $this->belongsTo('App\Models\Message',  'msg_id');
     }
+    public function message_parent()
+    {
+        return $this->belongsTo('App\Models\Message',  'msg_id', 'parent_id');
+    }
     public function sender()
     {
         return $this->belongsTo('App\Models\User', 'sd_id');

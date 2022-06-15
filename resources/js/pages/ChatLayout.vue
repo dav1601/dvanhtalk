@@ -58,13 +58,14 @@
         </div>
         <div
             class="col-3 listUser scroll-custom"
-            v-if="isGroup && checking"
+            v-if="isGroup && checking && isLoading"
             style="height: 100vh !important; overflow: unset"
         >
             <v-skeleton-loader
                 type="image"
                 class="ske-layout-left-chat"
                 width="100%"
+                height="100%"
             >
             </v-skeleton-loader>
         </div>
@@ -250,6 +251,35 @@
                             <item-pre-img :icon="true"></item-pre-img>
                         </div>
                     </div>
+
+                    <div
+                        class="preview__images--wp w-100 p-2 preview--reply"
+                        v-if="messageReply != null"
+                    >
+                        <div
+                            class="d-flex justify-content-start align-items-start w-100 flex-column"
+                        >
+                            <span class="small"
+                                >Đang trả lời {{ receiver.name }}</span
+                            >
+                            <span
+                                class="text-overflow"
+                                v-if="messageReply.type_msg == 1"
+                            >
+                                {{ messageReply.message.message }}
+                            </span>
+                            <span v-if="messageReply.type_msg == 2">
+                                {{
+                                    messageReply.message.message.split(",")
+                                        .length
+                                }}
+                                Hình Ảnh
+                            </span>
+                            <span v-if="messageReply.type_msg == 3">
+                                Tệp Âm Thanh
+                            </span>
+                        </div>
+                    </div>
                     <v-textarea
                         @hook:updated="setHeightChatLayoutBody()"
                         id="input__message"
@@ -403,13 +433,12 @@ export default {
         this.$store.dispatch("message/reset");
         this.setup();
         this.setType();
-        this.$nextTick(function () {
-            this.setReceiver();
+        this.$nextTick(async () => {
+            await this.setReceiver();
             if (this.type == 0) {
                 Echo.leave(`group-chat-${this.friendId}`);
                 Echo.leave(`chat-${this.friendId}`);
                 this.server(this.friendId);
-                this.updateSeen(this.friendId);
             } else {
                 Echo.leave(`chat-${this.friendId}`);
                 Echo.leave(`group-chat-${this.friendId}`);
@@ -418,8 +447,9 @@ export default {
         });
     },
     async mounted() {
-        this.$nextTick(function () {
+        this.$nextTick(async () => {
             this.getMessages(false);
+            this.updateSeen(this.friendId);
             this.setHeightChatLayoutBody();
             window.addEventListener("resize", this.getDimensions);
         });
@@ -435,6 +465,9 @@ export default {
         },
     },
     computed: {
+        messageReply() {
+            return this.$store.getters["message/messageReply"];
+        },
         media() {
             return this.$store.getters["message/messengerMedia"];
         },
@@ -502,7 +535,6 @@ export default {
         getDimensions() {
             this.windowHeight = document.documentElement.clientHeight;
             this.windowWidth = document.documentElement.clientWidth;
-
         },
         updateSrcImg() {
             for (let i = 0; i < this.images.length; i++) {
@@ -768,7 +800,7 @@ export default {
                         to: this.friendId,
                         from: this.id,
                         msg: this.message,
-                        parent_id: this.parent_id,
+                        parent_id: this.messageReply.msg_id,
                         seen: seen,
                         // this type for text,file,audio message
                         type: type,
@@ -870,6 +902,35 @@ export default {
     .v-text-field__slot
     textarea {
     padding-right: 40px !important;
+}
+.chat-messages {
+    display: flex;
+    flex-direction: column;
+    height: 590px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.chat-message-left,
+.chat-message-right,
+.chat-message-system {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.chat-message-left {
+    margin-right: auto;
+}
+.chat-message-system {
+    justify-content: center;
+    line-height: 1.2727;
+    color: #8a8d91 !important;
+    font-size: 0.6875rem;
+}
+
+.chat-message-right {
+    flex-direction: row-reverse;
+    margin-left: auto;
 }
 .emoji-invoker {
     position: absolute;

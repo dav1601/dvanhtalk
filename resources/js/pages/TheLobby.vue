@@ -170,6 +170,8 @@ export default {
     data() {
         return {
             isLoading: false,
+            isLoadingUsers: false,
+            isLoadingGroup: false,
             currentContact: this.$route.query.uid,
             dialog: false,
             nameGroup: "",

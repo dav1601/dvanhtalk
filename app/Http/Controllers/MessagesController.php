@@ -93,14 +93,14 @@ class MessagesController extends Controller
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
                     $end_page = 1;
-                    $messages = $queryMsg->with('message')->get();
+                    $messages = $queryMsg->with(['message', 'message_parent'])->get();
                 } else {
                     $offset = $count - $limit;
-                    $messages = $queryMsg->with('message')->offset($offset)->limit($limit)->get();
+                    $messages = $queryMsg->with(['message', 'message_parent'])->offset($offset)->limit($limit)->get();
                 }
                 $messages->page = $page;
             } else {
-                $queryMsg = UserMessage::with(['message', 'sender'])->where('rcv_group_id', $conversationId)->where('type', 1);
+                $queryMsg = UserMessage::with(['message', 'message_parent', 'sender'])->where('rcv_group_id', $conversationId)->where('type', 1);
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
                     $end_page = 1;
@@ -201,6 +201,11 @@ class MessagesController extends Controller
                     $user_message_images->save();
                     $user_message_images->message = $message_images;
                     $user_message->message_images = $user_message_images;
+                }
+                if ($parent_id == NULL) {
+                    $user_message->message_parent = NULL;
+                } else {
+                    $user_message->message_parent = Message::where('id', $parent_id)->first();
                 }
                 if ($request->for == 0) {
                     broadcast(new SendMessage($user_message))->toOthers();

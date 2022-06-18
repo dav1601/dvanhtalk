@@ -19,5 +19,8 @@ class Message extends Model
     {
         return $this->hasOne('App\Models\UserMessage', 'msg_id');
     }
-  
+    public function reaction()
+    {
+        return $this->hasMany('App\Models\ReactionMessage');
+    }
 }

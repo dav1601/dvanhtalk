@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class UserMessage extends Model
 {
@@ -24,7 +25,7 @@ class UserMessage extends Model
     }
     public function message_parent()
     {
-        return $this->belongsTo('App\Models\Message',  'msg_id', 'parent_id');
+        return $this->belongsTo('App\Models\Message',  'msg_reply_id');
     }
     public function sender()
     {
@@ -34,4 +35,8 @@ class UserMessage extends Model
     {
         return $this->message()->where('type', 2);
     }
+    // public function getCreatedAtAttribute($date)
+    // {
+    //     return Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('Y-m-d H:i');
+    // }
 }

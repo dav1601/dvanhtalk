@@ -33,6 +33,34 @@
                 v-if="!isLoading"
             ></the-setting>
         </v-dialog>
+        <v-dialog
+            v-model="dialogReaction"
+            id="dialog__reaction"
+            scrollable
+            max-width="500"
+        >
+            <v-card dark>
+                <v-card-title class="text-h5 d-block text-center b-b">
+                    Cảm xúc về tin nhắn
+                </v-card-title>
+                <div id="dialog__reaction--nav">
+                    <div
+                        class="d-flex flex-wrap justify-content-start align-items-center tab__reaction"
+                    >
+                        <div
+                            class="tab__reaction--item --all"
+                            :class="[tabReationActive == 'all' ? 'active' : '']"
+                        >
+                            Tất Cả
+                        </div>
+                        <div class="tab__reaction--item">🐧</div>
+                        <div class="tab__reaction--item">🐧</div>
+                        <div class="tab__reaction--item">🐧</div>
+                    </div>
+                </div>
+                <div id="dialog__reaction--content"></div>
+            </v-card>
+        </v-dialog>
         <!-- end dialog setting for group -->
         <!-- start gllImage  -->
         <dav-gallery-slide-show
@@ -130,7 +158,7 @@
                         small
                         v-if="btnGoEndChat"
                         style="z-index: 200"
-                        @click="handleClickToBot()"
+                        @click.stop="handleClickToBot()"
                     >
                         <v-icon dark color="primary"
                             >mdi-arrow-down-thin</v-icon
@@ -253,9 +281,19 @@
                     </div>
 
                     <div
-                        class="preview__images--wp w-100 p-2 preview--reply"
+                        class="preview__images--wp w-100 p-2 preview--reply position-relative"
                         v-if="messageReply != null"
                     >
+                        <v-icon
+                            dark
+                            size="22"
+                            @click.stop="
+                                $store.commit('message/deleteMsgReply')
+                            "
+                            class="close__preview--reply position-absolute"
+                            style="top: 10px; right: 40px; cursor: pointer"
+                            >mdi-close</v-icon
+                        >
                         <div
                             class="d-flex justify-content-start align-items-start w-100 flex-column"
                         >
@@ -280,73 +318,46 @@
                             </span>
                         </div>
                     </div>
-                    <v-textarea
-                        @hook:updated="setHeightChatLayoutBody()"
-                        id="input__message"
-                        filled
-                        auto-grow
-                        :placeholder="placeHolder"
-                        rows="2"
-                        row-height="20"
-                        @keydown.enter.prevent="sendMessage(1)"
-                        v-model.trim="message"
-                        :disabled="disableChat"
-                        @keyup="isTyping"
-                        :loading="sending"
-                    ></v-textarea>
-                    <emoji-picker @emoji="append" :search="search">
+                    <div class="position-relative">
                         <div
-                            class="emoji-invoker"
-                            slot="emoji-invoker"
-                            slot-scope="{ events: { click: clickEvent } }"
-                            @click.stop="clickEvent"
+                            class="position-absolute input__actions d-flex align-items-center"
                         >
-                            <svg
-                                height="24"
-                                viewBox="0 0 24 24"
-                                width="24"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path d="M0 0h24v24H0z" fill="none" />
-                                <path
-                                    d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+                            <div class="position-relative">
+                                <VEmojiPicker
+                                    v-click-outside="closeEmoji"
+                                    v-if="showEmoji"
+                                    :style="{ width: '270px' }"
+                                    @select="onSelectEmoji"
+                                    :i18n="langEmoji"
                                 />
-                            </svg>
-                        </div>
-                        <div
-                            slot="emoji-picker"
-                            slot-scope="{ emojis, insert }"
-                        >
-                            <div class="emoji-picker">
-                                <div class="emoji-picker__search">
-                                    <input
-                                        type="text"
-                                        v-model="search"
-                                        v-focus
-                                    />
-                                </div>
-                                <div>
-                                    <div
-                                        v-for="(emojiGroup, category) in emojis"
-                                        :key="category"
-                                    >
-                                        <h5>{{ category }}</h5>
-                                        <div class="emojis">
-                                            <span
-                                                v-for="(
-                                                    emoji, emojiName
-                                                ) in emojiGroup"
-                                                :key="emojiName"
-                                                @click="insert(emoji)"
-                                                :title="emojiName"
-                                                >{{ emoji }}</span
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
+                            <v-icon
+                                dark
+                                size="22"
+                                @click.stop="showEmoji = true"
+                                >mdi-emoticon</v-icon
+                            >
                         </div>
-                    </emoji-picker>
+                        <v-textarea
+                            @click:append-outer="sendMessage(1)"
+                            append-outer-icon="mdi-send"
+                            counter
+                            clearable
+                            clear-icon="mdi-close-circle"
+                            @hook:updated="setHeightChatLayoutBody()"
+                            id="input__message"
+                            filled
+                            auto-grow
+                            :placeholder="placeHolder"
+                            rows="2"
+                            row-height="20"
+                            @keydown.enter.prevent="sendMessage(1)"
+                            v-model.trim="message"
+                            :disabled="disableChat"
+                            @keyup="isTyping"
+                            :loading="sending"
+                        ></v-textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -377,7 +388,6 @@ import TheSetting from "../components/users/group/TheSetting.vue";
 import ItemPreImg from "../components/chat/ItemPreImg.vue";
 import TyingChat from "../components/ui/TyingChat.vue";
 import DavGallerySlideShow from "../components/davGallerySlideshow/davGallerySlideShow.vue";
-import EmojiPicker from "vue-emoji-picker";
 import WrapperMsg from "../components/chat/WrapperMsg.vue";
 export default {
     components: {
@@ -389,7 +399,6 @@ export default {
         ItemPreImg,
         TyingChat,
         DavGallerySlideShow,
-        EmojiPicker,
         WrapperMsg,
     },
     mixins: [user, chat],
@@ -422,8 +431,10 @@ export default {
             showPreviewImg: false,
             windowHeight: document.documentElement.clientHeight,
             windowWidth: document.documentElement.clientWidth,
-            initialHeight: 0,
             startImage: null,
+            showEmoji: false,
+            dialogReaction: true,
+            tabReationActive: "all",
         };
     },
     beforeCreate() {
@@ -465,6 +476,12 @@ export default {
         },
     },
     computed: {
+        allReaction() {
+            return this.$store.getters["message/allReaction"];
+        },
+        groupReaction() {
+            return this.$store.getters["message/groupReaction"];
+        },
         messageReply() {
             return this.$store.getters["message/messageReply"];
         },
@@ -520,8 +537,15 @@ export default {
     },
 
     methods: {
-        append(emoji) {
-            this.message += " " + emoji;
+        openDialogReaction(data) {
+            this.allReaction = data.allReaction;
+            this.groupReaction = data.groupReaction;
+        },
+        closeEmoji() {
+            this.showEmoji = false;
+        },
+        onSelectEmoji(emoji) {
+            this.message += " " + emoji.data;
         },
         openGll(e) {
             const index = this.media.findIndex((image) => {
@@ -610,6 +634,7 @@ export default {
                     elBody.style.height = sum;
                 }
             }
+            this.scrollEnd();
         },
         toggleFormatMessage() {
             return (this.showFormatMessage = !this.showFormatMessage);
@@ -758,6 +783,7 @@ export default {
             this.disableChat = false;
             this.message = "";
             this.images = [];
+            this.showEmoji = false;
         },
         uploadFileImage() {
             this.$refs.messageImage.click();
@@ -800,7 +826,7 @@ export default {
                         to: this.friendId,
                         from: this.id,
                         msg: this.message,
-                        parent_id: this.messageReply.msg_id,
+                        messageReply: this.messageReply,
                         seen: seen,
                         // this type for text,file,audio message
                         type: type,
@@ -810,10 +836,12 @@ export default {
                         for: this.type,
                     })
                     .then((req) => {
+                        this.$store.commit("message/deleteMsgReply");
                         this.resetAll();
                         this.scrollEnd(true, true);
                     })
                     .catch((err) => {
+                        this.$store.commit("message/deleteMsgReply");
                         this.resetAll();
                         this.scrollEnd(true);
                     });
@@ -843,6 +871,7 @@ export default {
             this.isLoadingGroup = false;
             this.isLoadingUsers = false;
             this.startImage = null;
+            this.showEmoji = false;
         },
     },
     watch: {
@@ -897,6 +926,95 @@ export default {
 };
 </script>
 <style lang="scss">
+#dialog__reaction {
+    &--nav {
+        .tab__reaction {
+            &--item.--all {
+            }
+            &--item.active {
+                color: #1d8ecd;
+                border-bottom: 2px solid #1d8ecd;
+            }
+            &--item {
+                cursor: pointer;
+                &:hover {
+                    background: #b0b3b8;
+                    color: #fff;
+                    border-radius: 8px;
+                }
+                align-items: center;
+                color: #b0b3b8;
+                display: flex;
+                font-size: 0.9375rem;
+                line-height: 0px;
+                height: 60px;
+                min-height: 16px;
+                padding: 0 16px;
+                transition: 0.2s all;
+            }
+        }
+    }
+    &--content {
+        min-height: 200px;
+        max-height: 400px;
+        overflow: auto;
+    }
+}
+
+.input__actions {
+    top: 18px;
+    right: 45px;
+    button {
+        z-index: 100;
+        cursor: pointer;
+        &:hover {
+            color: #1d8ecd;
+        }
+    }
+    .emoji-picker {
+        top: -260px !important;
+        right: -10px !important;
+        z-index: 200;
+    }
+}
+.v-input__append-outer {
+    margin-right: 6px;
+    cursor: pointer;
+}
+.v-input__append-inner {
+    padding-right: 20px;
+}
+#EmojiPicker {
+    background-color: #1c1e21 !important;
+}
+#Categories::-webkit-scrollbar-track {
+    // -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    background-color: #3e4042;
+    opacity: 0.3;
+}
+#InputSearch {
+    display: none !important;
+}
+#Categories::-webkit-scrollbar {
+    height: 7px;
+    background-color: #f5f5f5;
+}
+
+#Categories::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: var(--bs-gray-dark);
+}
+.container-emoji {
+    height: 200px !important;
+}
+.emoji {
+    border: none !important;
+    font-size: 20px !important;
+}
+.emoji-picker {
+    position: absolute !important;
+    top: -244px;
+}
 .v-application--is-ltr
     .v-textarea.v-text-field--enclosed
     .v-text-field__slot
@@ -931,75 +1049,11 @@ export default {
 .chat-message-right {
     flex-direction: row-reverse;
     margin-left: auto;
-}
-.emoji-invoker {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.emoji-invoker:hover {
-    transform: scale(1.1);
-}
-.emoji-invoker > svg {
-    fill: #b1c6d0;
+    .emoji-picker {
+        right: 8px !important;
+    }
 }
 
-.emoji-picker {
-    top: -20rem;
-    right: 0;
-    position: absolute;
-    z-index: 1;
-    font-family: Montserrat;
-    border: 1px solid #ccc;
-    width: 15rem;
-    height: 20rem;
-    overflow: scroll;
-    padding: 1rem;
-    box-sizing: border-box;
-    border-radius: 0.5rem;
-    background: #fff;
-    box-shadow: 1px 1px 8px #c7dbe6;
-}
-.emoji-picker__search {
-    display: flex;
-}
-.emoji-picker__search > input {
-    flex: 1;
-    border-radius: 10rem;
-    border: 1px solid #ccc;
-    padding: 0.5rem 1rem;
-    outline: none;
-}
-.emoji-picker h5 {
-    margin-bottom: 0;
-    color: #b1b1b1;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    cursor: default;
-}
-.emoji-picker .emojis {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-.emoji-picker .emojis:after {
-    content: "";
-    flex: auto;
-}
-.emoji-picker .emojis span {
-    padding: 0.2rem;
-    cursor: pointer;
-    border-radius: 5px;
-}
-.emoji-picker .emojis span:hover {
-    background: #ececec;
-    cursor: pointer;
-}
 #chatLayout {
     height: 100%;
 }

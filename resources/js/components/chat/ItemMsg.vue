@@ -15,6 +15,12 @@
             v-if="data.message.type != 4"
             :class="[itMe ? ['chat-message-right'] : ['chat-message-left']]"
         >
+            <reaction-msg
+                :reaction="reaction"
+                :lengthReaction="lengthReaction"
+                :itMe="itMe"
+                @set-reaction-dialog="setReactionDialog"
+            ></reaction-msg>
             <div
                 class="d-flex flex-column align-items-center justify-content-end"
             >
@@ -35,7 +41,9 @@
                 </div> -->
             </div>
 
-            <div class="flex-shrink-1 mr-2 mr-2 d-flex flex-column">
+            <div
+                class="flex-shrink-1 mr-2 mr-2 d-flex flex-column wp-chat-item"
+            >
                 <div
                     class="chat-item"
                     :class="[
@@ -71,7 +79,7 @@
                 </div>
             </div>
             <div
-                class="message__image"
+                class="message__image wp-chat-item"
                 v-if="data.message.type == 2"
                 :class="[itMe ? ['mr-2'] : ['ml-2'], images ? ['images'] : '']"
             >
@@ -118,7 +126,10 @@
                 </div>
             </div>
 
-            <div class="flex-shrink-1 mr-3 message__audio" v-if="type == 3">
+            <div
+                class="flex-shrink-1 mr-3 message__audio wp-chat-item"
+                v-if="type == 3"
+            >
                 <vue-plyr>
                     <audio controls crossorigin playsinline>
                         <source
@@ -129,9 +140,18 @@
                     </audio>
                 </vue-plyr>
             </div>
-            <div v-show="showActions" class="message__actions mr-3 my-auto">
-                <div class="d-flex align-items-center">
-                    <div @click="replyMessage" class="message__actions--reply">
+            <div
+                class="message__actions mr-3 my-auto"
+                v-if="showActions || showDialog"
+            >
+                <div
+                    class="d-flex align-items-center"
+                    :class="{ 'flex-row-reverse': itMe }"
+                >
+                    <div
+                        @click.stop="replyMessage"
+                        class="message__actions--reply"
+                    >
                         <v-tooltip top>
                             <template v-slot:activator="{ on, attrs }">
                                 <v-icon
@@ -147,6 +167,18 @@
                             <span>Trả lời</span>
                         </v-tooltip>
                     </div>
+                    <div class="message__actions--reaction mx-3">
+                        <v-icon dark size="20" @click.stop="showDialog = true"
+                            >mdi-emoticon-outline</v-icon
+                        >
+                        <VEmojiPicker
+                            v-click-outside="handle"
+                            v-if="showDialog"
+                            :style="{ width: '270px' }"
+                            @select="onSelectEmoji"
+                            :i18n="langEmoji"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -159,6 +191,7 @@
 import user from "../../mixin/user";
 import TheRole from "../role/TheRole.vue";
 import ItemMsgReply from "./ItemMsgReply.vue";
+import ReactionMsg from "./ReactionMsg.vue";
 export default {
     props: ["data", "typeUserMsg", "length", "index", "last"],
     mixins: [user],
@@ -166,6 +199,7 @@ export default {
         // VuetifyAudio: () => import("vuetify-audio"),
         TheRole,
         ItemMsgReply,
+        ReactionMsg,
     },
     data() {
         return {
@@ -174,6 +208,8 @@ export default {
             arrayFetch: [],
             arrayImage: [],
             showActions: false,
+            search: "",
+            showDialog: false,
         };
     },
     created() {
@@ -182,14 +218,47 @@ export default {
         }
         this.created_at = this.data.message.created_at;
     },
-    async mounted() {
-        // this.interval = setInterval(() => this.$forceUpdate(), 1000);
-        // if (!this.isGroup) {
-        //     await this.setHaveLink;
-        // }
-    },
-
+    async mounted() {},
     computed: {
+        isNullReaction() {
+            if (
+                !this.data.message.reaction ||
+                this.data.message.reaction.length < 1
+            ) {
+                return true;
+            }
+            return false;
+        },
+        reaction() {
+            if (this.isNullReaction) {
+                return null;
+            }
+            const unique = [
+                ...new Set(
+                    this.data.message.reaction.map((item) => item.reaction)
+                ),
+            ];
+            return unique;
+        },
+        groupedReaction() {
+            const reaction = this.data.message.reaction.reduce(
+                (reaction, icon) => {
+                    const group = reaction[icon.reaction] || [];
+                    group.push(icon);
+                    reaction[icon.reaction] = group;
+                    return reaction;
+                },
+                {}
+            );
+            return reaction;
+        },
+
+        lengthReaction() {
+            if (this.isNullReaction) {
+                return 0;
+            }
+            return this.data.message.reaction.length;
+        },
         bindClassType() {
             if (this.data.type_msg == 1) {
                 return "chat-message-text";
@@ -274,6 +343,36 @@ export default {
         },
     },
     methods: {
+        async setReactionDialog() {
+            if (!this.isNullReaction) {
+                await this.$store.commit(
+                    "message/setReactionDialog",
+                    this.data.message.reaction
+                );
+            }
+        },
+        onlyUnique(value, index, self) {
+            return self.indexOf(value) === index;
+        },
+        handle() {
+            this.showDialog = false;
+        },
+        toogleDialogEmoji() {
+            console.log("Toogle!");
+            this.showDialog = !this.showDialog;
+        },
+        async onSelectEmoji(emoji) {
+            await this.$store
+                .dispatch("message/saveReaction", {
+                    rcvId: this.receiver.id,
+                    type: this.typeUserMsg,
+                    reaction: emoji.data,
+                    msgId: this.data.message.id,
+                })
+                .then((req) => {})
+                .catch((err) => {});
+        },
+
         replyMessage() {
             return this.$store.dispatch("message/getMessageReply", this.data);
         },
@@ -350,6 +449,9 @@ export default {
 };
 </script>
 <style lang="scss">
+.wp-chat-item {
+    position: relative;
+}
 .msg-time-left {
     padding-left: 50px;
 }
@@ -393,12 +495,17 @@ export default {
         }
     }
 }
+.message__actions {
+    &--reaction {
+        position: relative;
+    }
+}
 .message__image.images {
     max-width: 400px !important;
     width: 400px !important;
     max-height: 100% !important;
 }
-.text-muted {
+.message__actions .text-muted {
     font-size: 12.99999px;
 }
 .msg-time-right {

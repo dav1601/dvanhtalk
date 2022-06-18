@@ -7,6 +7,23 @@ export default {
         };
     },
     computed: {
+        langEmoji() {
+            const i18n = {
+                categories: {
+                    Activity: "Hoạt động",
+                    Flags: "Cờ",
+                    Foods: "Thức ăn",
+                    Frequently: "Bạn đã sử dụng",
+                    Objects: "Đồ vật",
+                    Nature: "Thiên nhiên",
+                    Peoples: "Con người",
+                    Symbols: "Biểu Tượng",
+                    Places: "Vị trí",
+                },
+            };
+            return i18n;
+        },
+
         name() {
             return this.$store.getters["auth/name"];
         },
@@ -78,6 +95,9 @@ export default {
         },
         formatTime($time) {
             return this.$moment($time).fromNow();
+        },
+        formatTime2($time) {
+            return this.$moment($time).format("llll");
         },
         compareRoleMember(a, b) {
             if (a.role < b.role) {

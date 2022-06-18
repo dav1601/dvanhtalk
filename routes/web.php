@@ -70,6 +70,15 @@ Route::group(['middleware' => ['guest']], function () {
 });
 Route::group(['middleware' => ['auth']], function () {
     Route::get('/logout', 'DavAuthController@logout_perform')->name('logout.perform');
+    Route::controller(GroupController::class)->group(function () {
+        Route::get('groups', 'index')->name('group.list');
+    });
+    Route::controller(MessagesController::class)->group(function () {
+        Route::get('messages/{type}/{conversationId}', 'index')->name('messages.index');
+        Route::get('media', 'messenger_media')->name('messages.media');
+        Route::post('saveMessage', 'store')->name('messages.store');
+        Route::post('saveReaction', 'storeReaction')->name('messages.store.reaction');
+    });
 });
 Route::get('users', function (Request $request) {
     Carbon::setLocale('vi');
@@ -102,14 +111,7 @@ Route::get('users', function (Request $request) {
     return response()->json($users, 200);
 })->name('users');
 
-Route::controller(GroupController::class)->group(function () {
-    Route::get('groups', 'index')->name('group.list');
-});
-Route::controller(MessagesController::class)->group(function () {
-    Route::get('messages/{type}/{conversationId}', 'index')->name('messages.index');
-    Route::get('media', 'messenger_media')->name('messages.media');
-    Route::post('saveMessage', 'store')->name('messages.store');
-});
+
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
     if ($request->type == 0) {
         $receiver = User::where('id', $id)->firstOrFail();
@@ -319,11 +321,22 @@ Route::prefix('handle/')->group(function () {
 });
 Route::get('update_offline/{id}', function ($id) {
     try {
+        $now = Carbon::now();
         $updated = User::where('id', $id)->update([
-            'offline_at' => Carbon::now()
+            'offline_at' => $now
         ]);
-        $user = User::where('id',  $id)->first();
-        $user->offline_at = Carbon::create($user->offline_at)->diffForHumans();
+        $user = User::with('count')->where('id', $id)->first();
+        $user->offline_at = $now->diffForHumans();
+        $id = $user->id;
+        $user->lastest_msg = UserMessage::with('message')->where(function ($q) use ($id) {
+            $q->where('sd_id', '=', Auth::id())
+                ->where('rcv_id', '=', $id)
+                ->where('type', 0);
+        })->orWhere(function ($q) use ($id) {
+            $q->where('sd_id', '=', $id)
+                ->where('rcv_id', '=', Auth::id())
+                ->where('type', 0);
+        })->latest()->take(1)->first();
         return response()->json($user);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()]);

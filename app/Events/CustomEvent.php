@@ -15,17 +15,17 @@ class CustomEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
     public $data;
-    public $action;
+    public $event;
     public $channel;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($data, $action, $channel)
+    public function __construct($data, $event, $channel)
     {
         $this->data = $data;
-        $this->action = $action;
+        $this->event = $event;
         $this->channel = $channel;
     }
 

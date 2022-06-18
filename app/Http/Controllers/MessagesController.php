@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CustomEvent;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Message;
@@ -10,6 +11,7 @@ use App\Models\UserMessage;
 use Illuminate\Http\Request;
 use Laravel\Ui\Presets\React;
 use App\Events\SendMessageGroup;
+use App\Models\ReactionMessage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Repositories\Groups\GroupsInterface;
@@ -23,54 +25,6 @@ class MessagesController extends Controller
         $this->dav2_group = $dav2_gr;
         $this->dav2_messages = $dav2_msg;
     }
-    // public function messenger_media(Request $request)
-    // {
-    //     // $validator = Validator::make($request->all(), [
-    //     //     'thread_id' => 'required|numeric',
-    //     //     'attachment_id' => 'required|numeric',
-    //     //     'message_id' => 'required|numeric',
-    //     //     'type' => 'required|numeric'
-    //     // ]);
-    //     // if ($validator->fails()) {
-    //     //     return response()->json($validator->errors()->first(), 400);
-    //     // }
-    //     try {
-    //         $rcv_id = $request->thread_id;
-    //         $attachment_id = $request->attachment_id;
-    //         $message_id = $request->message_id;
-    //         $type = $request->type;
-    //         $media =   UserMessage::where(function ($q) {
-    //             $q->where('sd_id', '=', Auth::id())
-    //                 ->where('rcv_id', '=', 2)
-    //                 ->where('type', 0);
-    //         })->orWhere(function ($q) {
-    //             $q->where('sd_id', '=', 2)
-    //                 ->where('rcv_id', '=', Auth::id())
-    //                 ->where('type_msg', '=', 2)
-    //                 ->where('type', 0);
-    //         })->get();
-    //         return $media;
-    //         $arrayImage = array();
-    //         foreach ($media as $msg) {
-    //             $array = explode(",", $msg->message->message);
-    //             foreach ($array as $key => $value) {
-    //                 $arrayImage[] = ["url" => $value,  "index" => $key, "msg_id" => $msg->message->id];
-    //             }
-    //         }
-    //         $start = collect($arrayImage)->filter(function ($item) use ($message_id, $attachment_id) {
-    //             return $item['msg_id'] == $message_id && $item['index'] == $attachment_id;
-    //         });
-    //         foreach ($start as $key => $item) {
-    //             $start = $key;
-    //         }
-    //         if (!$start) {
-    //             $start = 0;
-    //         }
-    //         return response()->json(['arrayImage' => $arrayImage, 'start' => $start], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json($e->getMessage(), 500);
-    //     }
-    // }
     public function index($type, $conversationId, Request $request)
     {
         try {
@@ -89,18 +43,18 @@ class MessagesController extends Controller
                     $q->where('sd_id', '=', $conversationId)
                         ->where('rcv_id', '=', Auth::id())
                         ->where('type', 0);
-                });
+                })->with(['message', 'message_parent', 'message.reaction', 'message.reaction.user']);
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
                     $end_page = 1;
-                    $messages = $queryMsg->with(['message', 'message_parent'])->get();
+                    $messages = $queryMsg->get();
                 } else {
                     $offset = $count - $limit;
-                    $messages = $queryMsg->with(['message', 'message_parent'])->offset($offset)->limit($limit)->get();
+                    $messages = $queryMsg->offset($offset)->limit($limit)->get();
                 }
                 $messages->page = $page;
             } else {
-                $queryMsg = UserMessage::with(['message', 'message_parent', 'sender'])->where('rcv_group_id', $conversationId)->where('type', 1);
+                $queryMsg = UserMessage::with(['message', 'message_parent', 'sender', 'message.reaction', 'message.reaction.user'])->where('rcv_group_id', $conversationId)->where('type', 1);
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
                     $end_page = 1;
@@ -114,6 +68,9 @@ class MessagesController extends Controller
             foreach ($messages as $key => $msg) {
                 $obj = new stdClass();
                 $obj->created_at = $key;
+                $msg->map(function ($item, $key) {
+                    return collect($item->message->reaction)->groupBy('reaction');
+                });
                 $obj->messages = $msg;
                 $arrayMessages[] = $obj;
                 unset($obj);
@@ -167,7 +124,6 @@ class MessagesController extends Controller
             $message->message = $urlAudioUploaded;
             $message->type = 3;
         }
-        $message->parent_id = $parent_id;
         $message->created_at =  $created_time;
         if ($message->save()) {
             try {
@@ -182,6 +138,7 @@ class MessagesController extends Controller
                 $user_message->type = $request->for;
                 $user_message->type_msg = $message->type;
                 $user_message->created_at = $created_time;
+                $user_message->msg_reply_id = $parent_id;
                 $user_message->save();
                 $user_message->message = $message;
                 if ($haveMessageText && $haveImages) {
@@ -198,6 +155,7 @@ class MessagesController extends Controller
                     $user_message_images->type = $request->for;
                     $user_message_images->type_msg = 2;
                     $user_message_images->created_at = $created_time;
+                    $user_message_images->msg_reply_id = $parent_id;
                     $user_message_images->save();
                     $user_message_images->message = $message_images;
                     $user_message->message_images = $user_message_images;
@@ -207,6 +165,7 @@ class MessagesController extends Controller
                 } else {
                     $user_message->message_parent = Message::where('id', $parent_id)->first();
                 }
+                $user_message->group_created_at = $this->dav2_messages->format_created_at($created_time);
                 if ($request->for == 0) {
                     broadcast(new SendMessage($user_message))->toOthers();
                 } else {
@@ -221,6 +180,38 @@ class MessagesController extends Controller
             }
         } else {
             $message->delete();
+            return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
+        }
+    }
+    public function storeReaction(Request $request)
+    {
+        $type = $request->type;
+        $rcv_id = $request->rcvId;
+        $reactionIcon = $request->reaction;
+        $msg_id = $request->msgId;
+        $reaction = new ReactionMessage();
+        $reaction->reaction = $reactionIcon;
+        $reaction->users_id = Auth::id();
+        $reaction->message_id = $msg_id;
+        $existReaction = ReactionMessage::with('user')->where('message_id', $msg_id)->where('users_id', Auth::id())->first();
+        try {
+            if (!$existReaction) {
+                $existReaction = $reaction->save();
+            } else {
+                ReactionMessage::where('message_id', $msg_id)->where('users_id', Auth::id())->update(['reaction' => $reactionIcon]);
+            }
+            $data = new stdClass();
+            $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user'])->where('msg_id', $msg_id)->first();
+            $data->created_at =  $this->dav2_messages->format_created_at($data->message->created_at);
+            $event = "reaction.message";
+            if ($type == 0) {
+                $channel = "chat-" . $rcv_id;
+            } else {
+                $channel = "group-chat-" . $rcv_id;
+            }
+            broadcast(new CustomEvent($data, $event, $channel))->toOthers();
+            return response()->json($data);
+        } catch (\Exception $e) {
             return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
         }
     }

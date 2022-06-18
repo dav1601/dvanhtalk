@@ -79,6 +79,10 @@ class MessagesRepository implements MessagesInterface
     {
         return Carbon::now('Asia/Ho_Chi_Minh')->format('Y-m-d H:i');
     }
+    public function format_created_at($created_at)
+    {
+        return (string) Carbon::parse($created_at)->format('Y-m-d H:i:s');
+    }
     public function getLastMessage($friendId)
     {
         return UserMessage::with('message')->where(function ($q) use ($friendId) {

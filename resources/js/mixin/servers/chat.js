@@ -68,6 +68,11 @@ export default {
                             e.data.newestGr
                         );
                     }
+                })
+                .listen("CustomEvent", (e) => {
+                    if (e.event == "reaction.message") {
+                        this.$store.dispatch("message/getDataReaction", e.data);
+                    }
                 });
         },
         server(idReceiver) {
@@ -179,6 +184,11 @@ export default {
                         );
 
                         this.scrollEnd();
+                    }
+                })
+                .listen("CustomEvent", (e) => {
+                    if (e.event == "reaction.message") {
+                        this.$store.commit("message/updateMessage", e.data);
                     }
                 });
         },

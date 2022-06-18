@@ -1,3 +1,4 @@
+import Vue from "vue";
 const state = () => ({
     messages: [],
     messageReply: null,
@@ -6,6 +7,8 @@ const state = () => ({
     haveReceiver: false,
     typing: false,
     isChatting: false,
+    allReaction: null,
+    groupReaction: null,
 });
 
 const getters = {
@@ -28,9 +31,52 @@ const getters = {
     messageReply(s) {
         return s.messageReply;
     },
+    allReaction(s) {
+        return s.allReaction;
+    },
+    groupReaction(s) {
+        return s.groupReaction;
+    },
 };
 
 const mutations = {
+    async updateMessage(s, p) {
+        const index = s.messages.findIndex((msgs) => {
+            return msgs.created_at == p.created_at;
+        });
+        if (index != -1) {
+            const indexMessage = s.messages[index].messages.findIndex((msg) => {
+                return msg.msg_id == p.message.msg_id;
+            });
+            console.log(indexMessage);
+            if (indexMessage != -1) {
+                await Vue.set(
+                    s.messages[index].messages,
+                    indexMessage,
+                    p.message
+                );
+            }
+        }
+    },
+    async updateReaction(s, p) {
+        if (allReaction == null || groupReaction == null) {
+            return;
+        }
+        this.commit("setReactionDialog", p);
+    },
+    setReactionDialog(s, p) {
+        s.allReaction = p;
+        const groupReaction = s.allReaction.reduce((reaction, icon) => {
+            const group = reaction[icon.reaction] || [];
+            group.push(icon);
+            reaction[icon.reaction] = group;
+            return reaction;
+        }, {});
+        s.groupReaction = groupReaction;
+    },
+    deleteMsgReply(s) {
+        return (s.messageReply = null);
+    },
     reset(s) {
         s.messages = [];
         s.messengerMedia = [];
@@ -39,6 +85,8 @@ const mutations = {
         s.typing = false;
         s.isChatting = false;
         s.messageReply = null;
+        s.allReaction = null;
+        s.groupReaction = null;
     },
     setMessageReply(s, p) {
         s.messageReply = p;
@@ -63,11 +111,11 @@ const mutations = {
     },
     async pushMessage(s, p) {
         const index = s.messages.findIndex((el) => {
-            return el.created_at == p.created_at;
+            return el.created_at == p.group_created_at;
         });
         let messages = [];
         messages.push(p);
-        let data = { created_at: p.created_at, messages };
+        let data = { created_at: p.group_created_at, messages };
         if (index != -1) {
             await s.messages[index].messages.push(p);
         } else {
@@ -88,6 +136,14 @@ const mutations = {
 };
 
 const actions = {
+    getReactionMsg(c, p) {
+        c.commit("updateReaction", p);
+    },
+    getDataReaction(c, p) {
+        if (c.rootGetters["auth/id"] == p.rcv_id) {
+            c.commit("updateMessage", p);
+        }
+    },
     getMessageReply(c, p) {
         c.commit("setMessageReply", p);
     },
@@ -209,7 +265,12 @@ const actions = {
         data.append("to", p.to);
         data.append("from", p.from);
         data.append("message", p.msg);
-        data.append("parent_id", p.parent_id);
+        if (p.messageReply == null) {
+            data.append("parent_id", null);
+        } else {
+            data.append("parent_id", p.messageReply.msg_id);
+        }
+
         data.append("seen", p.seen);
         data.append("type", p.type);
         for (let index = 0; index < p.images.length; index++) {
@@ -221,6 +282,7 @@ const actions = {
             axios
                 .post("/saveMessage", data, config)
                 .then((req) => {
+                    console.log(req);
                     let data = req.data.data;
                     c.commit("pushMessage", data);
                     if (data.message_images) {
@@ -229,6 +291,24 @@ const actions = {
                     c.commit("users/updateLastMessage", data, {
                         root: true,
                     });
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    saveReaction(c, p) {
+        const data = new FormData();
+        data.append("type", p.type);
+        data.append("rcvId", p.rcvId);
+        data.append("reaction", p.reaction);
+        data.append("msgId", p.msgId);
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("messages.store.reaction"), data)
+                .then((req) => {
+                    c.commit("updateMessage", req.data);
                     rs(req);
                 })
                 .catch((err) => {

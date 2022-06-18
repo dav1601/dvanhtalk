@@ -1,5 +1,8 @@
 <template>
     <div class="grouped__msg">
+        <div class="pb-4 chat-message-system small">
+            {{ formatTime2(groupMsg.created_at) }}
+        </div>
         <item-msg
             v-for="(message, key) in groupMsg.messages"
             :key="key"
@@ -15,9 +18,11 @@
 </template>
 <script>
 import ItemMsg from "../../components/chat/ItemMsg.vue";
+import user from "../../mixin/user";
 export default {
     props: ["groupMsg", "type", "friendId"],
     emits: ["open-gll"],
+    mixins: [user],
     components: {
         ItemMsg,
     },

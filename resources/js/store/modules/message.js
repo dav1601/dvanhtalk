@@ -7,8 +7,11 @@ const state = () => ({
     haveReceiver: false,
     typing: false,
     isChatting: false,
+    rootReaction: null,
     allReaction: null,
     groupReaction: null,
+    dialogReaction: false,
+    typeChat: 0,
 });
 
 const getters = {
@@ -37,9 +40,52 @@ const getters = {
     groupReaction(s) {
         return s.groupReaction;
     },
+    dialogReaction(s) {
+        return s.dialogReaction;
+    },
+    amountReaction(s) {
+        if (s.rootReaction != null) {
+            return s.rootReaction.length;
+        }
+    },
+    rootReaction(s) {
+        return s.rootReaction;
+    },
+    typeChat(s) {
+        return s.typeChat;
+    },
 };
 
 const mutations = {
+    setTypeChat(s, p) {
+        return (s.typeChat = p);
+    },
+    resetReaction(s) {
+        s.rootReaction = null;
+        s.allReaction = null;
+        s.groupReaction = null;
+        s.dialogReaction = false;
+    },
+    reset(s) {
+        s.messages = [];
+        s.messengerMedia = [];
+        s.receiver = null;
+        s.haveReceiver = false;
+        s.typing = false;
+        s.isChatting = false;
+        s.messageReply = null;
+        s.rootReaction = null;
+        s.allReaction = null;
+        s.groupReaction = null;
+        s.dialogReaction = false;
+    },
+    actionDialogReaction(s, p) {
+        if (p == "open") {
+            s.dialogReaction = true;
+        } else {
+            s.dialogReaction = false;
+        }
+    },
     async updateMessage(s, p) {
         const index = s.messages.findIndex((msgs) => {
             return msgs.created_at == p.created_at;
@@ -64,9 +110,13 @@ const mutations = {
         }
         this.commit("setReactionDialog", p);
     },
-    setReactionDialog(s, p) {
+    updateAllReaction(s, p) {
         s.allReaction = p;
-        const groupReaction = s.allReaction.reduce((reaction, icon) => {
+    },
+    setReactionDialog(s, p) {
+        s.rootReaction = p;
+        s.allReaction = p;
+        const groupReaction = s.rootReaction.reduce((reaction, icon) => {
             const group = reaction[icon.reaction] || [];
             group.push(icon);
             reaction[icon.reaction] = group;
@@ -77,17 +127,7 @@ const mutations = {
     deleteMsgReply(s) {
         return (s.messageReply = null);
     },
-    reset(s) {
-        s.messages = [];
-        s.messengerMedia = [];
-        s.receiver = null;
-        s.haveReceiver = false;
-        s.typing = false;
-        s.isChatting = false;
-        s.messageReply = null;
-        s.allReaction = null;
-        s.groupReaction = null;
-    },
+
     setMessageReply(s, p) {
         s.messageReply = p;
     },
@@ -110,6 +150,7 @@ const mutations = {
         s.receiver = { ...s.receiver, ...p };
     },
     async pushMessage(s, p) {
+        s.typing = false;
         const index = s.messages.findIndex((el) => {
             return el.created_at == p.group_created_at;
         });
@@ -137,7 +178,7 @@ const mutations = {
 
 const actions = {
     getReactionMsg(c, p) {
-        c.commit("updateReaction", p);
+        c.commit("setReactionDialog", p);
     },
     getDataReaction(c, p) {
         if (c.rootGetters["auth/id"] == p.rcv_id) {
@@ -213,7 +254,9 @@ const actions = {
                         data: data,
                         type: p.type,
                     });
-                    c.commit("setMessemgerMedia", req.data.messenger_media);
+                    if (p.page == 1) {
+                        c.commit("setMessemgerMedia", req.data.messenger_media);
+                    }
                     rs(req);
                 })
                 .catch((err) => {
@@ -222,6 +265,7 @@ const actions = {
         });
     },
     getMessage(c, p) {
+        c.commit("users/updateLastMessage", p, { root: true });
         if (p.type == 0) {
             if (
                 c.rootGetters["auth/id"] == p.rcv_id &&
@@ -231,7 +275,6 @@ const actions = {
                 if (p.message_images) {
                     c.commit("pushMessage", p.message_images);
                 }
-                c.commit("users/updateLastMessage", p, { root: true });
             } else {
                 return;
             }
@@ -239,6 +282,7 @@ const actions = {
             c.commit("pushMessage", p);
             if (p.message_images) {
                 c.commit("pushMessage", p.message_images);
+                //////////////////// Cập nhật lại media
             }
         }
     },
@@ -263,7 +307,6 @@ const actions = {
         };
         let data = new FormData();
         data.append("to", p.to);
-        data.append("from", p.from);
         data.append("message", p.msg);
         if (p.messageReply == null) {
             data.append("parent_id", null);
@@ -277,10 +320,10 @@ const actions = {
             data.append("images[" + index + "]", p.images[index]);
         }
         data.append("audio", p.audio);
-        data.append("for", p.for);
+        data.append("for", c.getters["typeChat"]);
         return new Promise((rs, rj) => {
             axios
-                .post("/saveMessage", data, config)
+                .post(route("messages.store"), data, config)
                 .then((req) => {
                     console.log(req);
                     let data = req.data.data;
@@ -300,15 +343,41 @@ const actions = {
     },
     saveReaction(c, p) {
         const data = new FormData();
-        data.append("type", p.type);
-        data.append("rcvId", p.rcvId);
-        data.append("reaction", p.reaction);
+        data.append("type", c.getters["typeChat"]);
+        data.append("rcvId", c.getters["receiver"].id);
+        if (p.reaction) {
+            data.append("reaction", p.reaction);
+        }
         data.append("msgId", p.msgId);
+        data.append("action", p.actions);
         return new Promise((rs, rj) => {
             axios
                 .post(route("messages.store.reaction"), data)
                 .then((req) => {
                     c.commit("updateMessage", req.data);
+                    c.commit(
+                        "setReactionDialog",
+                        req.data.message.message.reaction
+                    );
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    removeReaction(c, p) {
+        const data = new FormData();
+        data.append("type", p.type);
+        data.append("rcvId", p.rcvId);
+        data.append("msgId", p.msgId);
+        data.append("action", "delete");
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("messages.delete.reaction"), data)
+                .then((req) => {
+                    console.log(req);
+                    // c.commit("setReactionDialog", req.data);
                     rs(req);
                 })
                 .catch((err) => {

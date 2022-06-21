@@ -337,7 +337,14 @@ header {
 .chat-offline {
     color: #e4606d;
 }
-
+.col-20 {
+    flex: 0 0 20%;
+    max-width: 20%;
+}
+.col-80 {
+    flex: 0 0 80%;
+    max-width: 80%;
+}
 .py-3 {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;

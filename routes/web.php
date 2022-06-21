@@ -76,8 +76,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::controller(MessagesController::class)->group(function () {
         Route::get('messages/{type}/{conversationId}', 'index')->name('messages.index');
         Route::get('media', 'messenger_media')->name('messages.media');
-        Route::post('saveMessage', 'store')->name('messages.store');
-        Route::post('saveReaction', 'storeReaction')->name('messages.store.reaction');
+        Route::post('message_store', 'store')->name('messages.store');
+        Route::post('message_store_reaction', 'storeReaction')->name('messages.store.reaction');
+        Route::post('message_delete_reaction', 'message_delete_reaction')->name('messages.delete.reaction');
     });
 });
 Route::get('users', function (Request $request) {

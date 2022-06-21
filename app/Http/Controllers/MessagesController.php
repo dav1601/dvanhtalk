@@ -31,6 +31,7 @@ class MessagesController extends Controller
             $type = $type;
             $item_page = 20;
             $end_page = 0;
+            $messenger_media = [];
             $arrayMessages = array();
             $page =  $request->has('page') && $request->page != null ? $request->page : 1;
             $limit = $page * $item_page;
@@ -76,7 +77,9 @@ class MessagesController extends Controller
                 unset($obj);
             }
             $messages->arrayMessages = $arrayMessages;
-            $messenger_media = $this->dav2_messages->getAllMessageMedia($conversationId, $type);
+            if ($page == 1) {
+                $messenger_media = $this->dav2_messages->getAllMessageMedia($conversationId, $type);
+            }
             return response()->json(['data' => $messages->arrayMessages,   'page' => $page, 'endPage' => $end_page, 'messenger_media' => $messenger_media,], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -88,6 +91,9 @@ class MessagesController extends Controller
         $message = new Message();
         $message_images = new Message();
         $user_message = new UserMessage();
+        $rcv_id =  $request->to;
+        $for = $request->for;
+        $seen = $request->has('seen') ? $request->seen : 0;
         $haveImages = $request->has('images') ? true : false;
         $haveMessageText = $request->message != null && $request->message != "" ? true : false;
         $parent_id = $request->parent_id == 'null' || $request->parent_id == null ? NULL : (int) $request->parent_id;
@@ -99,7 +105,7 @@ class MessagesController extends Controller
                 $images = $request->images;
                 $arrayImages = [];
                 foreach ($images as $image) {
-                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . $request->from)->getSecurePath();
+                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
                     $arrayImages[] = $urlImgUploaded;
                 }
                 $message->message = implode(",", $arrayImages);
@@ -110,7 +116,7 @@ class MessagesController extends Controller
                 $images = $request->images;
                 $arrayImages = [];
                 foreach ($images as $image) {
-                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . $request->from)->getSecurePath();
+                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
                     $arrayImages[] = $urlImgUploaded;
                 }
                 $message_images->message = implode(",", $arrayImages);
@@ -120,56 +126,21 @@ class MessagesController extends Controller
         }
         if ($request->type == 3) {
             $audio = $request->audio;
-            $urlAudioUploaded =  $audio->storeOnCloudinary("user-" . $request->from)->getSecurePath();
+            $urlAudioUploaded =  $audio->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
             $message->message = $urlAudioUploaded;
             $message->type = 3;
         }
         $message->created_at =  $created_time;
-        if ($message->save()) {
+        $user_message =  $this->dav2_messages->store_message($rcv_id, $message->message, $message->type, $parent_id, $seen, $for);
+        if ($user_message) {
             try {
-                $user_message->msg_id = (int)$message->id;
-                $user_message->sd_id = (int)$request->from;
-                if ($request->for == 0) {
-                    $user_message->rcv_id = (int) $request->to;
-                } else {
-                    $user_message->rcv_group_id = (int) $request->to;
-                }
-                $user_message->seen = (int) $request->seen;
-                $user_message->type = $request->for;
-                $user_message->type_msg = $message->type;
-                $user_message->created_at = $created_time;
-                $user_message->msg_reply_id = $parent_id;
-                $user_message->save();
-                $user_message->message = $message;
                 if ($haveMessageText && $haveImages) {
-                    $user_message_images = new UserMessage();
-                    $message_images->save();
-                    $user_message_images->msg_id = (int) $message_images->id;
-                    $user_message_images->sd_id = (int)$request->from;
-                    if ($request->for == 0) {
-                        $user_message_images->rcv_id = (int) $request->to;
-                    } else {
-                        $user_message_images->rcv_group_id = (int) $request->to;
-                    }
-                    $user_message_images->seen = (int) $request->seen;
-                    $user_message_images->type = $request->for;
-                    $user_message_images->type_msg = 2;
-                    $user_message_images->created_at = $created_time;
-                    $user_message_images->msg_reply_id = $parent_id;
-                    $user_message_images->save();
-                    $user_message_images->message = $message_images;
+                    $user_message_images =   $this->dav2_messages->store_message($rcv_id, $message_images->message, $message_images->type, $parent_id, $seen, $for);
                     $user_message->message_images = $user_message_images;
                 }
-                if ($parent_id == NULL) {
-                    $user_message->message_parent = NULL;
-                } else {
-                    $user_message->message_parent = Message::where('id', $parent_id)->first();
-                }
-                $user_message->group_created_at = $this->dav2_messages->format_created_at($created_time);
                 if ($request->for == 0) {
                     broadcast(new SendMessage($user_message))->toOthers();
                 } else {
-                    $user_message->sender = User::where('id',  $user_message->sd_id)->first();
                     broadcast(new SendMessageGroup($user_message))->toOthers();
                 }
                 return response()->json(['data' => $user_message], 200);
@@ -185,23 +156,34 @@ class MessagesController extends Controller
     }
     public function storeReaction(Request $request)
     {
+        $action = $request->action;
         $type = $request->type;
         $rcv_id = $request->rcvId;
-        $reactionIcon = $request->reaction;
+        $reactionIcon = $request->has('reaction') ? $request->reaction : null;
         $msg_id = $request->msgId;
         $reaction = new ReactionMessage();
-        $reaction->reaction = $reactionIcon;
-        $reaction->users_id = Auth::id();
-        $reaction->message_id = $msg_id;
-        $existReaction = ReactionMessage::with('user')->where('message_id', $msg_id)->where('users_id', Auth::id())->first();
         try {
-            if (!$existReaction) {
-                $existReaction = $reaction->save();
-            } else {
-                ReactionMessage::where('message_id', $msg_id)->where('users_id', Auth::id())->update(['reaction' => $reactionIcon]);
+            if ($action == "store") {
+                $reaction->reaction = $reactionIcon;
+                $reaction->users_id = Auth::id();
+                $reaction->message_id = $msg_id;
+                $existReaction = ReactionMessage::with('user')->where('message_id', $msg_id)->where('users_id', Auth::id())->first();
+                if (!$existReaction) {
+                    $existReaction = $reaction->save();
+                } else {
+                    ReactionMessage::where('message_id', $msg_id)->where('users_id', Auth::id())->update(['reaction' => $reactionIcon]);
+                }
+            }
+            if ($action == "delete") {
+                ReactionMessage::where('message_id', $msg_id)->where('users_id', Auth::id())->delete();
             }
             $data = new stdClass();
-            $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user'])->where('msg_id', $msg_id)->first();
+            $data->action = $action;
+            if ($type == 0) {
+                $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user'])->where('msg_id', $msg_id)->first();
+            } else {
+                $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'sender'])->where('msg_id', $msg_id)->first();
+            }
             $data->created_at =  $this->dav2_messages->format_created_at($data->message->created_at);
             $event = "reaction.message";
             if ($type == 0) {
@@ -212,7 +194,29 @@ class MessagesController extends Controller
             broadcast(new CustomEvent($data, $event, $channel))->toOthers();
             return response()->json($data);
         } catch (\Exception $e) {
-            return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
+            return response()->json(['error' => "Lỗi xử lý dữ liệu"], 500);
         }
+    }
+    public function message_delete_reaction(Request $request)
+    {
+        $type = $request->type;
+        $rcv_id = $request->rcvId;
+        $msg_id = $request->msgId;
+        $deleted = ReactionMessage::where('message_id', $msg_id)->where('users_id', Auth::id())->delete();
+        if ($deleted) {
+            $data = new stdClass();
+            $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user'])->where('msg_id', $msg_id)->first();
+            $data->created_at =  $this->dav2_messages->format_created_at($data->message->created_at);
+            $data->reaction = ReactionMessage::with('user')->where('message_id', $msg_id)->get();
+            $event = "reaction.message.delete";
+            if ($type == 0) {
+                $channel = "chat-" . $rcv_id;
+            } else {
+                $channel = "group-chat-" . $rcv_id;
+            }
+            broadcast(new CustomEvent($data, $event, $channel))->toOthers();
+            return response()->json($data);
+        }
+        return response()->json(['error' => "Gỡ cảm xúc thất bại"], 500);
     }
 }

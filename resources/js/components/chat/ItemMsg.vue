@@ -43,6 +43,7 @@
 
             <div
                 class="flex-shrink-1 mr-2 mr-2 d-flex flex-column wp-chat-item"
+                v-if="type == 1"
             >
                 <div
                     class="chat-item"
@@ -52,7 +53,6 @@
                         ['msg-' + data.message.id],
                         !isChat ? ['px-3', 'py-2'] : 'h-100',
                     ]"
-                    v-if="type == 1"
                 >
                     <div
                         v-if="isGroup"
@@ -81,7 +81,7 @@
             <div
                 class="message__image wp-chat-item"
                 v-if="data.message.type == 2"
-                :class="[itMe ? ['mr-2'] : ['ml-2'], images ? ['images'] : '']"
+                :class="[itMe ? ['mr-0'] : ['ml-0'], images ? ['images'] : '']"
             >
                 <a
                     v-if="!images"
@@ -168,11 +168,14 @@
                         </v-tooltip>
                     </div>
                     <div class="message__actions--reaction mx-3">
-                        <v-icon dark size="20" @click.stop="showDialog = true"
+                        <v-icon
+                            dark
+                            size="20"
+                            @click.stop="showDialog = !showDialog"
                             >mdi-emoticon-outline</v-icon
                         >
                         <VEmojiPicker
-                            v-click-outside="handle"
+                            v-dav-click-outside="handle"
                             v-if="showDialog"
                             :style="{ width: '270px' }"
                             @select="onSelectEmoji"
@@ -269,6 +272,9 @@ export default {
             }
         },
         isLast() {
+            if (this.last == null) {
+                return true;
+            }
             return Number(this.last.msg_id) === Number(this.data.msg_id);
         },
         encryptedId() {
@@ -349,6 +355,10 @@ export default {
                     "message/setReactionDialog",
                     this.data.message.reaction
                 );
+                await this.$store.commit(
+                    "message/actionDialogReaction",
+                    "open"
+                );
             }
         },
         onlyUnique(value, index, self) {
@@ -364,13 +374,17 @@ export default {
         async onSelectEmoji(emoji) {
             await this.$store
                 .dispatch("message/saveReaction", {
-                    rcvId: this.receiver.id,
-                    type: this.typeUserMsg,
                     reaction: emoji.data,
                     msgId: this.data.message.id,
+                    actions: "store",
                 })
-                .then((req) => {})
-                .catch((err) => {});
+                .then((req) => {
+                    this.showDialog = false;
+                })
+                .catch((err) => {
+                    this.showDialog = false;
+                    this.$emit("error-api", "Thả cảm xúc tin nhắn thất bại 😞");
+                });
         },
 
         replyMessage() {

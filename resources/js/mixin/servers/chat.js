@@ -71,7 +71,11 @@ export default {
                 })
                 .listen("CustomEvent", (e) => {
                     if (e.event == "reaction.message") {
-                        this.$store.dispatch("message/getDataReaction", e.data);
+                        this.$store.commit("message/updateMessage", e.data);
+                        this.$store.dispatch(
+                            "message/getReactionMsg",
+                            e.data.message.message.reaction
+                        );
                     }
                 });
         },
@@ -168,27 +172,31 @@ export default {
                             el.style.display = "";
                         }
                     }
-
                     if (
-                        Number(e.user_message.rcv_id) == Number(this.id) &&
-                        Number(this.$store.getters["message/receiver"].id) ==
-                            Number(e.user_message.sd_id)
+                        Number(e.user_message.rcv_id) ==
+                        Number(this.$store.getters["auth/id"])
                     ) {
-                        await this.$store.dispatch(
+                        this.$store.dispatch(
                             "message/getMessage",
                             e.user_message
                         );
-                        await this.$store.dispatch(
-                            "message/getIsChatting",
-                            true
-                        );
-
-                        this.scrollEnd();
+                        if (
+                            Number(
+                                this.$store.getters["message/receiver"].id
+                            ) == Number(e.user_message.sd_id)
+                        ) {
+                            this.$store.dispatch("message/getIsChatting", true);
+                            this.scrollEnd();
+                        }
                     }
                 })
                 .listen("CustomEvent", (e) => {
                     if (e.event == "reaction.message") {
                         this.$store.commit("message/updateMessage", e.data);
+                        this.$store.dispatch(
+                            "message/getReactionMsg",
+                            e.data.message.message.reaction
+                        );
                     }
                 });
         },

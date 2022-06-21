@@ -61,7 +61,19 @@ export default {
             return this.$store.getters["users/usersOnline"];
         },
         receiver() {
-            return this.$store.getters["message/receiver"];
+            if (this.isReceiver) {
+                return this.$store.getters["message/receiver"];
+            }
+            return null;
+        },
+        isReceiver() {
+            if (
+                this.$store.getters["message/receiver"] &&
+                this.$store.getters["message/receiver"] != null
+            ) {
+                return true;
+            }
+            return false;
         },
     },
     methods: {

@@ -38,6 +38,7 @@
             id="dialog__reaction"
             scrollable
             max-width="500"
+            v-if="!isLoading"
         >
             <v-card dark>
                 <v-card-title class="text-h5 d-block text-center b-b">
@@ -50,15 +51,29 @@
                         <div
                             class="tab__reaction--item --all"
                             :class="[tabReationActive == 'all' ? 'active' : '']"
+                            @click="loadReaction('all')"
                         >
-                            Tất Cả
+                            Tất Cả {{ amountReaction }}
                         </div>
-                        <div class="tab__reaction--item">🐧</div>
-                        <div class="tab__reaction--item">🐧</div>
-                        <div class="tab__reaction--item">🐧</div>
+                        <div
+                            class="tab__reaction--item"
+                            v-for="(item, index) in groupReaction"
+                            :class="[tabReationActive == index ? 'active' : '']"
+                            @click="loadReaction(index)"
+                            :key="'tab-icon-' + index"
+                        >
+                            {{ index }} {{ item.length }}
+                        </div>
                     </div>
                 </div>
-                <div id="dialog__reaction--content"></div>
+                <div id="dialog__reaction--content" class="scroll-custom">
+                    <item-user-reaction
+                        v-for="(reaction, index) in allReaction"
+                        :key="'user-reaction-' + index"
+                        :data="reaction"
+                        :type="type"
+                    ></item-user-reaction>
+                </div>
             </v-card>
         </v-dialog>
         <!-- end dialog setting for group -->
@@ -69,24 +84,27 @@
         ></dav-gallery-slide-show>
         <!-- end gllImage -->
         <div
-            class="col-3 border-right davList scroll-custom"
-            v-if="isGroup && !checking"
+            class="col-20 border-right davList scroll-custom"
+            v-if="isGroup && loadedRcv"
         >
-            <item-member
-                v-for="(user, key) in members"
-                :key="'member' + key"
-                :member="user"
-                :isChecking="checking"
-                :isAdmin="isAdmin"
-                :isMod="isMod"
-                :isManage="isManage"
-                :isSetting="false"
-            ></item-member>
+            <div v-if="loadedRcv">
+                <item-member
+                    v-for="(user, key) in members"
+                    :key="'member' + key"
+                    :member="user"
+                    :isChecking="checking"
+                    :isAdmin="isAdmin"
+                    :isMod="isMod"
+                    :isManage="isManage"
+                    :isSetting="false"
+                ></item-member>
+            </div>
+
             <hr class="d-block d-lg-none mt-1 mb-0" />
         </div>
         <div
             class="col-3 listUser scroll-custom"
-            v-if="isGroup && checking && isLoading"
+            v-if="isGroup && !loadedRcv"
             style="height: 100vh !important; overflow: unset"
         >
             <v-skeleton-loader
@@ -100,8 +118,7 @@
         <!--  -->
         <div
             class="position-relative d-flex flex-column justify-between px-0 py-0 h-100 chat__layout"
-            :class="[!isGroup ? ['col-12'] : ['col-9']]"
-            v-if="!checking"
+            :class="[!isGroup ? ['col-12'] : ['col-80']]"
         >
             <v-snackbar
                 v-model="notification"
@@ -115,12 +132,12 @@
             <div
                 class="px-4 py-4 border-bottom d-none d-lg-block chat__layout--header"
             >
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center" v-if="loadedRcv">
                     <div class="position-relative">
                         <img
                             :src="makeAvatar(receiver.avatar)"
                             class="rounded-circle mr-1"
-                            :alt="$store.getters['message/receiver'].name"
+                            :alt="receiver.name"
                             width="45"
                             height="45"
                         />
@@ -171,18 +188,22 @@
                     ref="layoutChat"
                     @scroll="handleScroll"
                 >
-                    <wrapper-msg
-                        @open-gll="openGll"
-                        @loaded="loaded"
-                        :type="type"
-                        v-for="(message, key) in messages"
-                        :key="key"
-                        :groupMsg="message"
-                        :friendId="friendId"
-                    >
-                    </wrapper-msg>
+                    <div v-if="loadedMsg">
+                        <wrapper-msg
+                            @open-gll="openGll"
+                            @loaded="loaded"
+                            :type="type"
+                            v-for="(message, key) in messages"
+                            :key="key"
+                            :groupMsg="message"
+                            :friendId="friendId"
+                        >
+                        </wrapper-msg>
+                    </div>
                     <v-slide-y-reverse-transition mode="out-in">
-                        <tying-chat v-show="typing && !isGroup"></tying-chat>
+                        <tying-chat
+                            v-if="typing && !isGroup && !isLoading"
+                        ></tying-chat>
                     </v-slide-y-reverse-transition>
                 </div>
             </div>
@@ -204,7 +225,7 @@
                             class="group__message position-absolute"
                             ref="group__message"
                             v-show="showFormatMessage"
-                            v-click-outside="closeEvent"
+                            v-dav-click-outside="closeEvent"
                         >
                             <input
                                 type="file"
@@ -324,7 +345,7 @@
                         >
                             <div class="position-relative">
                                 <VEmojiPicker
-                                    v-click-outside="closeEmoji"
+                                    v-dav-click-outside="closeEmoji"
                                     v-if="showEmoji"
                                     :style="{ width: '270px' }"
                                     @select="onSelectEmoji"
@@ -362,7 +383,7 @@
             </div>
         </div>
         <!--  -->
-        <div
+        <!-- <div
             class="position-relative"
             :class="[!isGroup ? ['col-12'] : ['col-9']]"
             v-else
@@ -373,7 +394,7 @@
                 width="100%"
             >
             </v-skeleton-loader>
-        </div>
+        </div> -->
         <!--  -->
     </div>
 </template>
@@ -389,6 +410,7 @@ import ItemPreImg from "../components/chat/ItemPreImg.vue";
 import TyingChat from "../components/ui/TyingChat.vue";
 import DavGallerySlideShow from "../components/davGallerySlideshow/davGallerySlideShow.vue";
 import WrapperMsg from "../components/chat/WrapperMsg.vue";
+import ItemUserReaction from "../components/chat/dialogReaction/ItemUserReaction";
 export default {
     components: {
         ItemMsg,
@@ -400,6 +422,7 @@ export default {
         TyingChat,
         DavGallerySlideShow,
         WrapperMsg,
+        ItemUserReaction,
     },
     mixins: [user, chat],
     props: ["friendId"],
@@ -409,6 +432,8 @@ export default {
             images: [],
             search: "",
             parent_id: null,
+            loadedRcv: false,
+            loadedMsg: false,
             isLoading: false,
             seen: false,
             sending: false,
@@ -417,7 +442,6 @@ export default {
             timeout: 4000,
             notification: false,
             text: "",
-            type: 0,
             checking: false,
             page: 1,
             endPage: null,
@@ -433,7 +457,6 @@ export default {
             windowWidth: document.documentElement.clientWidth,
             startImage: null,
             showEmoji: false,
-            dialogReaction: true,
             tabReationActive: "all",
         };
     },
@@ -441,9 +464,9 @@ export default {
         localStorage.setItem("saveScrollHeight", 0);
     },
     async created() {
+        this.setType();
         this.$store.dispatch("message/reset");
         this.setup();
-        this.setType();
         this.$nextTick(async () => {
             await this.setReceiver();
             if (this.type == 0) {
@@ -476,6 +499,33 @@ export default {
         },
     },
     computed: {
+        type() {
+            return this.$store.getters["message/typeChat"];
+        },
+        amountReaction() {
+            return this.$store.getters["message/amountReaction"];
+        },
+        rootReaction() {
+            return this.$store.getters["message/rootReaction"];
+        },
+        dialogReaction: {
+            get() {
+                return this.$store.getters["message/dialogReaction"];
+            },
+            set(value) {
+                if (value) {
+                    return this.$store.commit(
+                        "message/actionDialogReaction",
+                        "open"
+                    );
+                } else {
+                    return this.$store.commit(
+                        "message/actionDialogReaction",
+                        "close"
+                    );
+                }
+            },
+        },
         allReaction() {
             return this.$store.getters["message/allReaction"];
         },
@@ -489,7 +539,7 @@ export default {
             return this.$store.getters["message/messengerMedia"];
         },
         members() {
-            if (this.receiver.members) {
+            if (this.isGroup && this.loadedRcv) {
                 return this.receiver.members.sort(this.compareRoleMember);
             }
         },
@@ -500,10 +550,12 @@ export default {
             return this.$route.name == "group";
         },
         isAdmin() {
-            return this.id == this.receiver.users_id;
+            if (this.isGroup && this.loadedRcv) {
+                return this.id == this.receiver.users_id;
+            }
         },
         isMod() {
-            if (this.receiver.members) {
+            if (this.loadedRcv && this.isGroup) {
                 const user = this.receiver.members.find(
                     (user) => user.users_id == this.id
                 );
@@ -537,6 +589,16 @@ export default {
     },
 
     methods: {
+        loadReaction(index) {
+            this.tabReationActive = index;
+            let data = this.groupReaction[index];
+            if (index == "all") {
+                data = this.rootReaction;
+            }
+            this.$nextTick(() => {
+                this.$store.commit("message/updateAllReaction", data);
+            });
+        },
         openDialogReaction(data) {
             this.allReaction = data.allReaction;
             this.groupReaction = data.groupReaction;
@@ -597,6 +659,7 @@ export default {
             return Math.ceil(el.offsetHeight + margin);
         },
         setHeightChatLayoutBody(height = 0, width = 0) {
+            console.log("setbody");
             const elMain = this.windowHeight - 60;
             const elTextInput = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
@@ -643,10 +706,11 @@ export default {
             this.dialog = false;
         },
         setType() {
+            let typeChat = 0;
             if (this.isGroup) {
-                return (this.type = 1);
+                typeChat = 1;
             }
-            return (this.type = 0);
+            return this.$store.commit("message/setTypeChat", typeChat);
         },
         inRoom() {
             let user = this.usersMyRoom.find(
@@ -686,6 +750,7 @@ export default {
                         }
                         this.checking = false;
                     }
+                    this.loadedRcv = true;
                 })
                 .catch((err) => {
                     return this.$router.push({ name: "home" });
@@ -710,6 +775,7 @@ export default {
                     .then((req) => {
                         this.endPage = req.data.endPage;
                         this.isLoading = false;
+                        this.loadedMsg = true;
                         this.$nextTick(() => {
                             this.scrollEnd(true);
                             this.endSetup();
@@ -929,8 +995,8 @@ export default {
 #dialog__reaction {
     &--nav {
         .tab__reaction {
-            &--item.--all {
-            }
+            // &--item.--all {
+            // }
             &--item.active {
                 color: #1d8ecd;
                 border-bottom: 2px solid #1d8ecd;

@@ -3,17 +3,37 @@
         <div class="pb-4 chat-message-system small">
             {{ formatTime2(groupMsg.created_at) }}
         </div>
-        <item-msg
-            v-for="(message, key) in groupMsg.messages"
-            :key="key"
-            :length="groupMsg.messages.length"
-            :last="getLast"
-            :index="key"
-            :data="message"
-            :typeUserMsg="type"
-            @open-gll="openGll"
-            @loaded="loaded"
-        ></item-msg>
+        <div v-if="type == 0">
+            <item-msg
+                v-for="(message, key) in groupMsg.messages"
+                :key="key"
+                :length="groupMsg.messages.length"
+                :last="getLast"
+                :index="key"
+                :data="message"
+                :typeUserMsg="type"
+                @open-gll="openGll"
+                @loaded="loaded"
+            ></item-msg>
+        </div>
+        <div v-if="type == 1">
+            <div
+                v-for="(messages, index) in userGroupMsg"
+                :key="'user-messages-group-' + index"
+            >
+                <item-msg
+                    v-for="(message, key) in messages"
+                    :key="'user-message-group-key-' + key"
+                    :length="messages.length"
+                    :last="getLastMsgGroup(messages)"
+                    :index="key"
+                    :data="message"
+                    :typeUserMsg="type"
+                    @open-gll="openGll"
+                    @loaded="loaded"
+                ></item-msg>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -31,10 +51,31 @@ export default {
             const data = this.groupMsg.messages.filter((el) => {
                 return el.sd_id == Number(this.friendId);
             });
+            if (!data) {
+                return null;
+            }
             return data[data.length - 1];
+        },
+        userGroupMsg() {
+            if (this.type == 1) {
+                const groupedUserMsgGroup = this.groupMsg.messages.reduce(
+                    (messages, message) => {
+                        const group = messages[message.sd_id] || [];
+                        group.push(message);
+                        messages[message.sd_id] = group;
+                        return messages;
+                    },
+                    {}
+                );
+                return groupedUserMsgGroup;
+            }
+            return null;
         },
     },
     methods: {
+        getLastMsgGroup(arrayMessages) {
+            return arrayMessages[arrayMessages.length - 1];
+        },
         openGll(e) {
             return this.$emit("open-gll", e);
         },

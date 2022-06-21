@@ -52,17 +52,22 @@ class MessagesRepository implements MessagesInterface
         try {
             $rcv_id = $partnerId;
             $type = $type;
-            $media =   UserMessage::where(function ($q) use ($rcv_id, $type) {
-                $q->where('sd_id', '=', Auth::id())
-                    ->where('rcv_id', '=', $rcv_id)
-                    ->where('type_msg', '=', 2)
-                    ->where('type', $type);
-            })->orWhere(function ($q) use ($rcv_id, $type) {
-                $q->where('sd_id', '=', $rcv_id)
-                    ->where('rcv_id', '=', Auth::id())
-                    ->where('type_msg', '=', 2)
-                    ->where('type', $type);
-            })->get();
+            $media = array();
+            if ($type == 0) {
+                $media =  UserMessage::with('message')->where(function ($q) use ($rcv_id, $type) {
+                    $q->where('sd_id', '=', Auth::id())
+                        ->where('rcv_id', '=', $rcv_id)
+                        ->where('type_msg', '=', 2)
+                        ->where('type', $type);
+                })->orWhere(function ($q) use ($rcv_id, $type) {
+                    $q->where('sd_id', '=', $rcv_id)
+                        ->where('rcv_id', '=', Auth::id())
+                        ->where('type_msg', '=', 2)
+                        ->where('type', $type);
+                })->get();
+            } else {
+                $media =  UserMessage::with('message')->where('rcv_group_id', $partnerId)->where('type_msg', '=', 2)->where('type', $type)->get();
+            }
             $arrayImage = array();
             foreach ($media as $msg) {
                 $array = explode(",", $msg->message->message);
@@ -94,5 +99,49 @@ class MessagesRepository implements MessagesInterface
                 ->where('rcv_id', '=', Auth::id())
                 ->where('type', 0);
         })->latest()->take(1)->first();
+    }
+    public function store_message($rcv_id, $message = null, $type_msg = 1, $parent_id = null, $seen = 0, $for = 0)
+    {
+        $store_message = new Message();
+        $user_message = new UserMessage();
+        $created_at = $this->created_at();
+        $store_message->message = $message;
+        $store_message->type = $type_msg;
+        $store_message->created_at =  $created_at;
+        $store_message->updated_at =  $created_at;
+        if ($store_message->save()) {
+            try {
+                $user_message->msg_id = (int) $store_message->id;
+                $user_message->sd_id = (int) Auth::id();
+                if ($for == 0) {
+                    $user_message->rcv_id = (int) $rcv_id;
+                } else {
+                    $user_message->rcv_group_id = (int) $rcv_id;
+                }
+                $user_message->seen = (int) $seen;
+                $user_message->type = $for;
+                $user_message->type_msg =  $store_message->type;
+                $user_message->created_at =  $created_at;
+                $user_message->msg_reply_id = $parent_id;
+                $user_message->save();
+                $user_message->message =  $store_message;
+                if ($parent_id == null) {
+                    $user_message->message_parent = null;
+                } else {
+                    $user_message->message_parent = Message::where('id', $parent_id)->first();
+                }
+                $user_message->group_created_at = $this->format_created_at($created_at);
+                if ($for == 1) {
+                    $user_message->sender = User::where('id',  $user_message->sd_id)->first();
+                }
+                return $user_message;
+            } catch (\Exception $e) {
+                $store_message->delete();
+                $user_message->delete();
+                return false;
+            }
+        }
+        $store_message->delete();
+        return false;
     }
 }

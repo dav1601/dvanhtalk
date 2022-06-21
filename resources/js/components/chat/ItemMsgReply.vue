@@ -87,7 +87,7 @@ export default {
         }
         &--left {
             margin-right: auto;
-            margin-left: 30px;
+            margin-left: 32px;
         }
     }
 }

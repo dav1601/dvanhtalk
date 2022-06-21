@@ -37,7 +37,7 @@ moment.locale("vi");
 Vue.prototype.$moment = moment;
 Vue.component("multiselect", Multiselect);
 Vue.component("base-loading", BaseLoading);
-Vue.directive("click-outside", {
+Vue.directive("dav-click-outside", {
     bind: function (el, binding, vnode) {
         window.event = function (event) {
             if (!(el == event.target || el.contains(event.target))) {

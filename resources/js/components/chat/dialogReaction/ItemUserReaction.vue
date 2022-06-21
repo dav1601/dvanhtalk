@@ -2,28 +2,74 @@
     <div class="user__reaction d-flex justify-content-between align-center">
         <div class="user__reaction--avatar">
             <img
-                src="https://res.cloudinary.com/team151/image/upload/v1655184458/user-1/x9zepj9jtvjxjue9ewvu.jpg"
-                class="rounded-cricle img__obj--cover"
+                :src="makeAvatar(data.user.avatar)"
+                class="rounded-circle img__obj--cover"
                 alt=""
+                width="50"
+                height="50"
             />
         </div>
-        <div class="user__reaction--cap">
-            <span class="name"></span>
-            <span class="note">Nhấp để gỡ</span>
+        <div
+            class="user__reaction--cap d-flex flex-column justify-content-center px-3"
+            @click="removeReaction"
+        >
+            <span class="name">{{ data.user.name }}</span>
+            <span class="note" v-if="meReaction">Nhấp để gỡ</span>
         </div>
-        <div class="user__reaction--icon"></div>
+        <div class="user__reaction--icon">{{ data.reaction }}</div>
     </div>
 </template>
 <script>
 import user from "../../../mixin/user";
 export default {
-    props: ["data"],
+    props: ["data", "type"],
+    mixins: [user],
+    computed: {
+        meReaction() {
+            return this.id == this.data.user.id;
+        },
+    },
+    methods: {
+        async removeReaction() {
+            if (!this.meReaction) {
+                return;
+            }
+            await this.$store
+                .dispatch("message/saveReaction", {
+                    msgId: this.data.message_id,
+                    actions: "delete",
+                })
+                .then((req) => {})
+                .catch((err) => {
+                    this.$emit("error-api", "Thả cảm xúc tin nhắn thất bại 😞");
+                });
+        },
+    },
 };
 </script>
 <style lang="scss" scoped>
 .user__reaction {
+    cursor: pointer;
+    &:hover {
+        background: #242526;
+    }
     padding: 5px;
     border-radius: 8px;
     margin: 0 5px;
+    &--cap {
+        padding-top: 5px;
+        flex: 1;
+        font-size: 15px;
+        .name {
+            color: #fff;
+        }
+        .note {
+            color: #b0b3b8;
+        }
+    }
+    &--icon {
+        font-size: 25px;
+        padding-top: 5px;
+    }
 }
 </style>

@@ -33,6 +33,22 @@
                     width="28"
                     height="28"
                 />
+                <div
+                    v-if="itMe && !isGroup && isLastMe"
+                    class="chat-message-seen"
+                >
+                    <v-icon dark v-if="data.seen == 0" size="15" color="#6c757d"
+                        >mdi-check-circle-outline</v-icon
+                    >
+                    <img
+                        v-else
+                        :src="makeAvatar(receiver.avatar)"
+                        width="14"
+                        height="14"
+                        class="img__obj--cover rounded-circle"
+                        alt=""
+                    />
+                </div>
                 <!-- <div
                     class="text-muted text-nowrap mt-2"
                     :class="[itMe ? [''] : ['mx-2']]"
@@ -196,7 +212,7 @@ import TheRole from "../role/TheRole.vue";
 import ItemMsgReply from "./ItemMsgReply.vue";
 import ReactionMsg from "./ReactionMsg.vue";
 export default {
-    props: ["data", "typeUserMsg", "length", "index", "last"],
+    props: ["data", "typeUserMsg", "length", "index", "last", "lastMe"],
     mixins: [user],
     components: {
         // VuetifyAudio: () => import("vuetify-audio"),
@@ -208,21 +224,15 @@ export default {
         return {
             interval: null,
             metaData: false,
-            arrayFetch: [],
-            arrayImage: [],
             showActions: false,
             search: "",
             showDialog: false,
         };
     },
-    created() {
-        if (this.data.type_msg == 2) {
-            this.arrayImage = this.data.message.message.split(",");
-        }
-        this.created_at = this.data.message.created_at;
-    },
-    async mounted() {},
     computed: {
+        arrayImage() {
+            return this.data.message.message.split(",");
+        },
         isNullReaction() {
             if (
                 !this.data.message.reaction ||
@@ -272,10 +282,16 @@ export default {
             }
         },
         isLast() {
-            if (this.last == null) {
-                return true;
+            if (this.last == null || !this.last) {
+                return false;
             }
             return Number(this.last.msg_id) === Number(this.data.msg_id);
+        },
+        isLastMe() {
+            if (this.lastMe == null || !this.lastMe) {
+                return false;
+            }
+            return Number(this.lastMe.msg_id) === Number(this.data.msg_id);
         },
         encryptedId() {
             return this.$CryptoJS.AES.encrypt(

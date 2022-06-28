@@ -1,6 +1,6 @@
 <template>
     <!-- App.vue -->
-    <v-app>
+    <v-app class="fix__layout">
         <notifications
             group="request__group"
             position="bottom right"
@@ -16,6 +16,17 @@
                 ></item-req>
             </template>
         </notifications>
+        <!-- <notifications
+            group="effect__group"
+            position="top right"
+            :speed="1000"
+            :duration="7000"
+            class="effect__group mb-2"
+        >
+            <template slot="body" slot-scope="props">
+                <join-chat :member="props.item.data.member"></join-chat>
+            </template>
+        </notifications> -->
         <v-app-bar app class="b-b" v-if="!isMedia">
             <v-container class="d-flex justify-content-end">
                 <v-menu
@@ -34,10 +45,7 @@
                         <v-list>
                             <v-list-item>
                                 <v-list-item-avatar>
-                                    <img
-                                        src="https://cdn.vuetifyjs.com/images/john.jpg"
-                                        alt="John"
-                                    />
+                                    <img :src="avatar" alt="John" />
                                 </v-list-item-avatar>
 
                                 <v-list-item-content>
@@ -85,6 +93,14 @@
                                     :value="csrfToken"
                                 />
                             </form>
+                            <v-btn
+                                text
+                                :link="true"
+                                :to="{ name: 'setting__user' }"
+                                color="primary"
+                            >
+                                Cài Đặt
+                            </v-btn>
                         </v-card-actions>
                     </v-card>
                 </v-menu>
@@ -100,7 +116,7 @@
           </v-slide-x-transition>
         </div> -->
                 <v-card :class="{ fix1: isHome }" class="p-0 h-100">
-                    <router-view></router-view>
+                    <router-view :loadedMe="loadedMe"></router-view>
                 </v-card>
             </v-container>
         </v-main>
@@ -114,12 +130,14 @@ import chat from "./mixin/servers/chat";
 import ItemJoin from "./components/users/ItemJoin.vue";
 import TheRole from "./components/role/TheRole.vue";
 import ItemReq from "./components/users/ItemReq";
+import JoinChat from "./components/users/group/effect/JoinChat";
 export default {
-    components: { ListUser, ItemJoin, TheRole, ItemReq },
+    components: { ListUser, ItemJoin, TheRole, ItemReq, JoinChat },
     mixins: [user, chat],
     name: "App",
     data: () => ({
         fav: true,
+        loadedMe: false,
         csrfToken: document.head.querySelector('meta[name="csrf-token"]')
             .content,
         menu: false,
@@ -128,6 +146,7 @@ export default {
     created() {
         this.setMe();
     },
+    mounted() {},
     computed: {
         isNotFound() {
             return this.$route.name == "404";
@@ -138,9 +157,11 @@ export default {
     },
     methods: {
         async setMe() {
+            this.loadedMe = false;
             await this.$store
                 .dispatch("auth/getMe")
                 .then((req) => {
+                    this.loadedMe = true;
                     Echo.join(`lobby`)
                         .here((users) => {
                             this.$store.dispatch("users/getUsersOnline", users);
@@ -157,7 +178,15 @@ export default {
                         .listen("NewUser", (e) => {
                             this.$store.dispatch("users/getNewUser", e.user);
                         })
-                        .listen("HandleUser", (e) => {});
+                        .listen("HandleUser", (e) => {})
+                        .listen("LobbyEvent", (e) => {
+                            if (e.event == "update.user") {
+                                this.$store.dispatch(
+                                    "users/getUserUpdate",
+                                    e.data
+                                );
+                            }
+                        });
                     this.myServer();
                 })
                 .catch((err) => {
@@ -186,9 +215,31 @@ $roles: 0, 1, 2;
     scrollbar-width: auto !important;
     --secondary-text: #b0b3b8;
 }
-html {
-    overflow: hidden;
-    height: 100vh;
+.fix__layout {
+    overflow: hidden !important;
+    height: 100vh !important;
+}
+
+.ske__avatar {
+    &--settingUser {
+        .v-skeleton-loader__avatar {
+            width: 120px;
+            height: 120px;
+        }
+    }
+}
+.ske__button {
+    &--settingUser {
+        .v-skeleton-loader__button {
+            width: 120px;
+        }
+    }
+    &--settingUserPen {
+        .v-skeleton-loader__button {
+            width: 24px;
+            height: 24px;
+        }
+    }
 }
 .img__obj {
     &--cover {
@@ -385,5 +436,10 @@ header {
 .scroll-custom::-webkit-scrollbar-thumb {
     border-radius: 10px;
     background: var(--bs-gray-dark);
+}
+.effect__group {
+    width: unset !important;
+    right: 110px !important;
+    overflow: unset !important;
 }
 </style>

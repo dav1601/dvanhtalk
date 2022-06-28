@@ -5,16 +5,19 @@ export default {
         };
     },
     methods: {
+        deleteSavedScroll() {
+            return localStorage.setItem("saveScrollHeight", 0);
+        },
         scrollEnd(
             foc = false,
             deleteSavedScroll = false,
             limit = 300,
             returnBackForNot = false
         ) {
-            const el = document.getElementById("chatLayout");
             if (deleteSavedScroll) {
-                localStorage.setItem("saveScrollHeight", 0);
+                this.deleteSavedScroll();
             }
+            const el = document.getElementById("chatLayout");
             const saveScrollHeight = localStorage.getItem("saveScrollHeight");
             if (el) {
                 let scroll = el.scrollHeight;
@@ -44,7 +47,21 @@ export default {
         serverGroup(idReceiver) {
             Echo.join(`group-chat-${idReceiver}`)
                 .here((users) => {})
-                .joining((user) => {})
+                .joining((user) => {
+                    // const members =
+                    //     this.$store.getters["message/receiver"].members;
+                    // const member = members.find((member) => {
+                    //     return member.users_id == user.id;
+                    // });
+                    // if (member && member.role < 2) {
+                    //     this.$notify({
+                    //         group: "effect__group",
+                    //         data: {
+                    //             member: member,
+                    //         },
+                    //     });
+                    // }
+                })
                 .leaving((user) => {})
                 .listen("SendMessageGroup", (e) => {
                     this.$store.dispatch("message/getMessage", e.user_message);

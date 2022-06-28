@@ -24,11 +24,38 @@ export default {
             return i18n;
         },
 
-        name() {
-            return this.$store.getters["auth/name"];
+        name: {
+            get() {
+                return this.$store.getters["auth/name"];
+            },
+            set(value) {
+                this.$store.commit("auth/updateData", {
+                    property: "name",
+                    value: value,
+                });
+            },
         },
-        email() {
-            return this.$store.getters["auth/email"];
+        phoneNumber: {
+            get() {
+                return this.$store.getters["auth/phoneNumber"];
+            },
+            set(value) {
+                this.$store.commit("auth/updateData", {
+                    property: "phoneNumber",
+                    value: value,
+                });
+            },
+        },
+        email: {
+            get() {
+                return this.$store.getters["auth/email"];
+            },
+            set(value) {
+                this.$store.commit("auth/updateData", {
+                    property: "email",
+                    value: value,
+                });
+            },
         },
         id() {
             return this.$store.getters["auth/id"];

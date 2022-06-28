@@ -2,6 +2,7 @@ import axios from "axios";
 import Vue from "vue";
 const state = () => ({
     users: [],
+    test: [],
     myGroupsJoined: [],
     myGroups: [],
     usersOnline: [],
@@ -49,7 +50,7 @@ const getters = {
 
 const mutations = {
     setUsers(s, p) {
-        return (s.users = p);
+        s.users = p;
     },
     setGroups(s, p) {
         return (s.groups = p);
@@ -209,7 +210,21 @@ const actions = {
                 });
         });
     },
-
+    getUserUpdate(c, p) {
+        c.commit("updateUser", p);
+        if (
+            c.rootGetters["message/typeChat"] == 0 &&
+            c.rootGetters["message/receiver"] != null
+        ) {
+            c.commit("message/setReceiver", p, { root: true });
+        }
+        if (
+            c.rootGetters["message/typeChat"] == 1 &&
+            c.rootGetters["message/receiver"] != null
+        ) {
+            c.commit("message/updateMember", p, { root: true });
+        }
+    },
     getHandleUser(c, p) {
         c.commit("updateUser", p);
     },
@@ -239,6 +254,7 @@ const actions = {
         c.commit("pushUserOnline", p);
     },
     pushMyRoom(c, p) {
+        c.commit("message/updateSeenAllMessage", p, { root: true });
         c.commit("pushMyRoom", p);
     },
     getUsersMyRoom(c, p) {
@@ -313,7 +329,7 @@ const actions = {
         }
         return new Promise((rs, rj) => {
             axios
-                .post("/saveGroup", data, config)
+                .post("/save__group", data, config)
                 .then((req) => {
                     c.commit("pushGroup", req.data.data);
                     c.commit("pushMyGroup", req.data.data);

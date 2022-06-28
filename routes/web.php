@@ -1,31 +1,34 @@
 <?php
 
-use App\Events\HandleRequest;
-use App\Events\HandleUser;
+use App\Events\CustomEvent;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Events\Lobby;
-use App\Events\NewGroup;
 use App\Models\Groups;
 use App\Models\Message;
+use App\Events\NewGroup;
 use Mockery\Expectation;
+use App\Events\HandleUser;
 use App\Events\SendMessage;
+use App\Events\SenRqJoinGr;
 use App\Models\UserMessage;
 use App\Events\QueueMessage;
-use App\Events\SendMessageGroup;
-use App\Events\SenRqJoinGr;
-use App\Http\Controllers\GroupController;
-use App\Http\Controllers\MessagesController;
 use App\Models\MembersGroup;
-use App\Models\RequestJoinGroup;
-use App\Repositories\Groups\GroupsInterface;
-use App\Repositories\Messages\MessagesInterface;
 use Illuminate\Http\Request;
+use App\Events\HandleRequest;
+use App\Events\LobbyEvent;
+use App\Events\SendMessageGroup;
+use App\Models\RequestJoinGroup;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Intervention\Image\Facades\Image;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Http\Controllers\GroupController;
+use Illuminate\Support\Facades\Validator;
 use PHPUnit\TextUI\XmlConfiguration\Group;
+use App\Http\Controllers\MessagesController;
+use App\Repositories\Groups\GroupsInterface;
+use App\Repositories\Messages\MessagesInterface;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,27 +45,8 @@ Auth::routes();
 Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
-});
+})->name('me');
 Route::get('update', function (MessagesInterface $dav2_message) {
-    $test =   UserMessage::where(function ($q) {
-        $q->where('sd_id', '=', Auth::id())
-            ->where('rcv_id', '=', 2)
-            ->where('type_msg', '=', 2)
-            ->where('type', 0);
-    })->orWhere(function ($q) {
-        $q->where('sd_id', '=', 2)
-            ->where('rcv_id', '=', Auth::id())
-            ->where('type_msg', '=', 2)
-            ->where('type', 0);
-    })->get();
-    $arrayImage = array();
-    foreach ($test as $msg) {
-        $array = explode(",", $msg->message->message);
-        foreach ($array as $key => $value) {
-            $arrayImage[] = ["image" => $value, "index" => $key, "msg_id" => $msg->message->id];
-        }
-    }
-    return response()->json($arrayImage);
 });
 Route::group(['middleware' => ['guest']], function () {
     Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
@@ -84,6 +68,7 @@ Route::group(['middleware' => ['auth']], function () {
 Route::get('users', function (Request $request) {
     Carbon::setLocale('vi');
     $seen = 0;
+    $endUsers = [];
     $query = User::with('count')->when($request->has('keyword'), function ($q) {
         return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
     })->get()->except(Auth::id());
@@ -111,7 +96,55 @@ Route::get('users', function (Request $request) {
     $users = $sort2->merge($sort1);
     return response()->json($users, 200);
 })->name('users');
-
+Route::post('auth__update', function (Request $request) {
+    $field = $request->field;
+    $value = $request->value;
+    $arrayRules = [];
+    $array__invalid = [];
+    if ($field == "name") {
+        $arrayRules['value'] = 'required|string|unique:users,name,' . Auth::id();
+        $array__invalid['value.required'] = text__err__request("Tên người dùng", "required");
+        $array__invalid['value.string'] = text__err__request("Tên người dùng", "string");
+        $array__invalid['value.unique'] = text__err__request("Tên người dùng", "unique");
+    }
+    if ($field == "email") {
+        $arrayRules['value'] = 'required|string|email|unique:users,email,' . Auth::id();
+        $array__invalid['value.required'] = text__err__request("Email", "required");
+        $array__invalid['value.string'] = text__err__request("Email", "string");
+        $array__invalid['value.email'] = text__err__request("Email", "email");
+        $array__invalid['value.unique'] = text__err__request("Email", "unique");
+    }
+    if ($field == "phone_number") {
+        $arrayRules['value'] = 'required|numeric|unique:users,phone_number,' . Auth::id();
+        $array__invalid['value.required'] = text__err__request("Số điện thoại", "required");
+        $array__invalid['value.string'] = text__err__request("Số điện thoại", "string");
+        $array__invalid['value.unique'] = text__err__request("Số điện thoại", "unique");
+    }
+    if ($field == "avatar") {
+        $image = $request->value;
+    }
+    $validator = Validator::make(
+        $request->all(),
+        $arrayRules,
+        $array__invalid
+    );
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors(), 'isValid' => false], 200);
+    }
+    try {
+        if ($field == "avatar") {
+            $value =  $image->storeOnCloudinary("auth-avatar-" . Auth::id())->getSecurePath();
+        }
+        User::where('id', Auth::id())->update([
+            $field => $value
+        ]);
+        $auth = User::where('id', Auth::id())->first();
+        broadcast(new LobbyEvent('update.user', $auth))->toOthers();
+        return response()->json(['isValid' => true, 'me' => $auth], 200);
+    } catch (\Exception $e) {
+        return response()->json($e->getMessage(), 500);
+    }
+})->name('auth.update');
 
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
     if ($request->type == 0) {
@@ -122,7 +155,7 @@ Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hl
     return response()->json(['receiver' => $receiver], 200);
 })->name('get.receiver');
 
-Route::post('saveGroup', function (Request $request, GroupsInterface $hrl_gr) {
+Route::post('save__group', function (Request $request, GroupsInterface $hrl_gr) {
     $rqMembers = array();
     if (!empty($request->members)) {
         foreach ($request->members as $member) {

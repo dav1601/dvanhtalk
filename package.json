@@ -37,6 +37,7 @@
         "moment": "^2.29.3",
         "url-metadata": "^2.5.0",
         "v-emoji-picker": "^2.3.3",
+        "vee-validate": "^3.4.14",
         "vue-chat-scroll": "^2.0.0-alpha.4",
         "vue-chat-scroll-image": "^1.0.3",
         "vue-confirm-dialog": "^1.1.0",

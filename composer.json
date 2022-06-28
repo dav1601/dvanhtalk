@@ -38,6 +38,9 @@
         "classmap": [
             "app/Helpers",
             "app/Repositories"
+        ],
+        "files": [
+            "app/Helpers/DavHelper.php"
         ]
     },
     "autoload-dev": {

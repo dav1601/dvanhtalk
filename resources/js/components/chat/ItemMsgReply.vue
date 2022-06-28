@@ -61,19 +61,19 @@ export default {
 .reply {
     img {
         position: relative;
-        top: -16px;
+        top: 10px;
         border-radius: 8px;
         margin-left: auto;
         width: 100%;
-        max-height: 100%;
+        height: 100%;
     }
     &__message {
         background: #3e4042;
         position: relative;
         top: 8px;
         &--img {
-            max-width: 100px;
-            max-height: 100px;
+            width: 100px;
+            height: 100px;
         }
         &--audio {
             border-radius: 25px !important;

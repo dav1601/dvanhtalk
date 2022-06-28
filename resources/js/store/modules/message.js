@@ -104,6 +104,15 @@ const mutations = {
             }
         }
     },
+    updateSeenAllMessage(s, p) {
+        if (p.id == s.receiver.id && p) {
+            s.messages.forEach((element) => {
+                element.messages.map((item) => {
+                    return (item.seen = 1);
+                });
+            });
+        }
+    },
     async updateReaction(s, p) {
         if (allReaction == null || groupReaction == null) {
             return;
@@ -161,6 +170,16 @@ const mutations = {
             await s.messages[index].messages.push(p);
         } else {
             await s.messages.push(data);
+        }
+    },
+    updateMember(s, p) {
+        if (s.receiver.members && p) {
+            const index = s.receiver.members.findIndex((user) => {
+                return user.users_id == p.id;
+            });
+            if (index != -1) {
+                s.receiver.members[index].info = p;
+            }
         }
     },
     pushMember(s, p) {
@@ -282,7 +301,6 @@ const actions = {
             c.commit("pushMessage", p);
             if (p.message_images) {
                 c.commit("pushMessage", p.message_images);
-                //////////////////// Cập nhật lại media
             }
         }
     },
@@ -325,7 +343,6 @@ const actions = {
             axios
                 .post(route("messages.store"), data, config)
                 .then((req) => {
-                    console.log(req);
                     let data = req.data.data;
                     c.commit("pushMessage", data);
                     if (data.message_images) {

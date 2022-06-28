@@ -83,10 +83,7 @@
             :index="startImage"
         ></dav-gallery-slide-show>
         <!-- end gllImage -->
-        <div
-            class="col-20 border-right davList scroll-custom"
-            v-if="isGroup && loadedRcv"
-        >
+        <div class="col-20 border-right davList scroll-custom" v-if="isGroup">
             <div v-if="loadedRcv">
                 <item-member
                     v-for="(user, key) in members"
@@ -100,22 +97,15 @@
                 ></item-member>
             </div>
 
+            <sk-item-user
+                v-for="i in 10"
+                :key="'ske-' + i"
+                :isLoading="!loadedRcv"
+            ></sk-item-user>
+
             <hr class="d-block d-lg-none mt-1 mb-0" />
         </div>
-        <div
-            class="col-3 listUser scroll-custom"
-            v-if="isGroup && !loadedRcv"
-            style="height: 100vh !important; overflow: unset"
-        >
-            <v-skeleton-loader
-                type="image"
-                class="ske-layout-left-chat"
-                width="100%"
-                height="100%"
-            >
-            </v-skeleton-loader>
-        </div>
-        <!--  -->
+
         <div
             class="position-relative d-flex flex-column justify-between px-0 py-0 h-100 chat__layout"
             :class="[!isGroup ? ['col-12'] : ['col-80']]"
@@ -411,6 +401,7 @@ import TyingChat from "../components/ui/TyingChat.vue";
 import DavGallerySlideShow from "../components/davGallerySlideshow/davGallerySlideShow.vue";
 import WrapperMsg from "../components/chat/WrapperMsg.vue";
 import ItemUserReaction from "../components/chat/dialogReaction/ItemUserReaction";
+import SkItemUser from "../components/skeleton/SkItemUser.vue";
 export default {
     components: {
         ItemMsg,
@@ -423,6 +414,7 @@ export default {
         DavGallerySlideShow,
         WrapperMsg,
         ItemUserReaction,
+        SkItemUser,
     },
     mixins: [user, chat],
     props: ["friendId"],
@@ -645,7 +637,7 @@ export default {
             this.updateSrcImg();
         },
         handleClickToBot() {
-            localStorage.setItem("saveScrollHeight", 0);
+            this.deleteSavedScroll();
             return this.scrollEnd(true);
         },
         getAbsoluteHeight(el) {
@@ -659,7 +651,6 @@ export default {
             return Math.ceil(el.offsetHeight + margin);
         },
         setHeightChatLayoutBody(height = 0, width = 0) {
-            console.log("setbody");
             const elMain = this.windowHeight - 60;
             const elTextInput = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
@@ -765,6 +756,7 @@ export default {
                 if (up) {
                     initialHeight = Number(elLayoutChat.scrollHeight);
                     localStorage.setItem("saveScrollHeight", initialHeight);
+                    console.log(elLayoutChat.scrollHeight);
                 }
                 await this.$store
                     .dispatch("message/getMessages", {
@@ -777,11 +769,12 @@ export default {
                         this.isLoading = false;
                         this.loadedMsg = true;
                         this.$nextTick(() => {
-                            this.scrollEnd(true);
+                            if (up) {
+                                this.scrollEnd(true);
+                            } else {
+                                this.scrollEnd(true, true);
+                            }
                             this.endSetup();
-                        });
-                        const index = this.messages.findIndex((el) => {
-                            return el.created_at == "2022-06-09 04:33:09";
                         });
                     })
                     .catch((err) => {
@@ -790,7 +783,7 @@ export default {
                         this.text =
                             "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
                         this.$nextTick(() => {
-                            this.scrollEnd(true);
+                            this.scrollEnd(true, true);
                             this.endSetup();
                         });
                     });
@@ -802,12 +795,10 @@ export default {
         handleScroll(e) {
             const elLayoutChat = document.getElementById("chatLayout");
             const scrollTop = elLayoutChat.scrollTop;
-            this.initialHeight = scrollTop;
             if (this.isPointBlockScroll()) {
                 this.blockSroll = true;
                 this.btnGoEndChat = true;
             } else {
-                localStorage.setItem("saveScrollHeight", 0);
                 this.blockSroll = false;
                 this.btnGoEndChat = false;
             }
@@ -909,7 +900,7 @@ export default {
                     .catch((err) => {
                         this.$store.commit("message/deleteMsgReply");
                         this.resetAll();
-                        this.scrollEnd(true);
+                        this.scrollEnd(true, true);
                     });
             }
         },

@@ -3,8 +3,7 @@ import VueRouter from "vue-router";
 import TheLobby from "./pages/TheLobby.vue";
 import ChatLayout from "./pages/ChatLayout";
 import NotFound from "./pages/NotFound";
-import MessagerMedia from "./pages/MessagerMedia";
-import store from "./store/index";
+import SettingUser from "./pages/SettingUser";
 Vue.use(VueRouter);
 const routes = [
     {
@@ -26,11 +25,12 @@ const routes = [
             },
         ],
     },
-    // {
-    //     path: "/messenger_media",
-    //     name: "messengerMedia",
-    //     component: MessagerMedia,
-    // },
+    {
+        path: "/setting/user",
+        name: "setting__user",
+        component: SettingUser,
+        props: true,
+    },
 
     {
         path: "/:notFound(.*)",

@@ -9,6 +9,7 @@
                 :key="key"
                 :length="groupMsg.messages.length"
                 :last="getLast"
+                :lastMe="getLastMe"
                 :index="key"
                 :data="message"
                 :typeUserMsg="type"
@@ -26,6 +27,7 @@
                     :key="'user-message-group-key-' + key"
                     :length="messages.length"
                     :last="getLastMsgGroup(messages)"
+                    :lastMe="null"
                     :index="key"
                     :data="message"
                     :typeUserMsg="type"
@@ -50,6 +52,15 @@ export default {
         getLast() {
             const data = this.groupMsg.messages.filter((el) => {
                 return el.sd_id == Number(this.friendId);
+            });
+            if (!data) {
+                return null;
+            }
+            return data[data.length - 1];
+        },
+        getLastMe() {
+            const data = this.groupMsg.messages.filter((el) => {
+                return el.sd_id != Number(this.friendId);
             });
             if (!data) {
                 return null;

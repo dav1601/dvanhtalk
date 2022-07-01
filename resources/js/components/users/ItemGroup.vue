@@ -26,14 +26,15 @@
                     <div
                         class="small d-flex justify-content-lg-start align-items-center"
                     >
-                        <span class="d-block">Admin:</span>
-                        <img
-                            :src="makeAvatar(group.founder.avatar)"
-                            :alt="group.name"
-                            width="20"
-                            height="20"
-                            class="rounded-circle mx-2"
-                        />
+                        <span class="d-block">Owner:</span>
+                        <item-avatar
+                            :fullWH="false"
+                            class="ml-3 mr-1"
+                            :username="group.founder.name"
+                            width="20px"
+                            height="20px"
+                            :img="group.founder.avatar"
+                        ></item-avatar>
                         <span class="d-block text-overflow" style="flex: 1">{{
                             group.founder.name
                         }}</span>
@@ -87,7 +88,9 @@
 </template>
 <script>
 import user from "../../mixin/user";
+import ItemAvatar from "./ItemAvatar.vue";
 export default {
+    components: { ItemAvatar },
     props: ["group", "isLoading"],
     mixins: [user],
     data() {

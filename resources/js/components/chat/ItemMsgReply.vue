@@ -20,7 +20,13 @@
                     : ['reply__message--left --img'],
             ]"
         >
-            <img class="img__obj--cover" :src="getImage" @load="loaded" />
+            <v-img
+                :src="getImage"
+                height="100px"
+                width="100px"
+                style="border-raidus: 8px"
+            ></v-img>
+            <!-- <img class="img__obj--cover" :src="getImage"  /> -->
         </div>
         <div
             v-if="message_parent.type == 3"
@@ -72,6 +78,11 @@ export default {
         position: relative;
         top: 8px;
         &--img {
+            position: relative;
+            top: 8px;
+            .v-image {
+                border-radius: 8px;
+            }
             width: 100px;
             height: 100px;
         }

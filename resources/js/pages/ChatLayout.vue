@@ -756,7 +756,6 @@ export default {
                 if (up) {
                     initialHeight = Number(elLayoutChat.scrollHeight);
                     localStorage.setItem("saveScrollHeight", initialHeight);
-                    console.log(elLayoutChat.scrollHeight);
                 }
                 await this.$store
                     .dispatch("message/getMessages", {

@@ -40,7 +40,7 @@ export default {
     margin-left: 2px;
 }
 .wp-right {
-    right: 10px;
+    right: 18px;
 }
 .wp {
     max-width: 100%;

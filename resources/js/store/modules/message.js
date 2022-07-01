@@ -286,13 +286,14 @@ const actions = {
     getMessage(c, p) {
         c.commit("users/updateLastMessage", p, { root: true });
         if (p.type == 0) {
-            if (
-                c.rootGetters["auth/id"] == p.rcv_id &&
-                c.getters.receiver.id == p.sd_id
-            ) {
-                c.commit("pushMessage", p);
-                if (p.message_images) {
-                    c.commit("pushMessage", p.message_images);
+            if (c.rootGetters["auth/id"] == p.rcv_id) {
+                if (c.getters.receiver.id == p.sd_id) {
+                    c.commit("pushMessage", p);
+                    if (p.message_images) {
+                        c.commit("pushMessage", p.message_images);
+                    }
+                } else {
+                    c.commit("users/updatePosUsers", p.sd_id, { root: true });
                 }
             } else {
                 return;

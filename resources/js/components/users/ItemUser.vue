@@ -21,13 +21,12 @@
         </div>
         <div class="d-flex align-items-center listUser__item--left">
             <div class="position-relative avatar">
-                <img
-                    :src="makeAvatar(user.avatar)"
-                    class="rounded-circle mr-1 img__obj--cover"
-                    alt="Vanessa Tucker"
-                    width="56"
-                    height="56"
-                />
+                <item-avatar
+                    height="56px"
+                    width="56px"
+                    :img="user.avatar"
+                    :username="user.name"
+                ></item-avatar>
                 <span
                     class="fas fa-circle position-absolute status"
                     :class="{
@@ -49,8 +48,10 @@
 </template>
 <script>
 import user from "../../mixin/user";
+import ItemAvatar from "../../components/users/ItemAvatar.vue";
 export default {
     props: ["user", "isOnline", "active", "isLoading", "link"],
+    components: { ItemAvatar },
     mixins: [user],
     data() {
         return {

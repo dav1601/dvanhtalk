@@ -45,7 +45,12 @@
                         <v-list>
                             <v-list-item>
                                 <v-list-item-avatar>
-                                    <img :src="avatar" alt="John" />
+                                    <item-avatar
+                                        height="100%"
+                                        width="100%"
+                                        :img="avatar"
+                                        :username="name"
+                                    ></item-avatar>
                                 </v-list-item-avatar>
 
                                 <v-list-item-content>
@@ -131,8 +136,16 @@ import ItemJoin from "./components/users/ItemJoin.vue";
 import TheRole from "./components/role/TheRole.vue";
 import ItemReq from "./components/users/ItemReq";
 import JoinChat from "./components/users/group/effect/JoinChat";
+import ItemAvatar from "./components/users/ItemAvatar";
 export default {
-    components: { ListUser, ItemJoin, TheRole, ItemReq, JoinChat },
+    components: {
+        ListUser,
+        ItemJoin,
+        TheRole,
+        ItemReq,
+        JoinChat,
+        ItemAvatar,
+    },
     mixins: [user, chat],
     name: "App",
     data: () => ({

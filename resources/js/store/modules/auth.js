@@ -78,10 +78,12 @@ const actions = {
 
         const field = p.field == "phoneNumber" ? "phone_number" : p.field;
         data.append("field", field);
-        data.append("value", c.getters[p.field]);
-        if (p.image != null) {
-            data.append("avatar", p.image);
+        if (field == "avatar") {
+            data.append("value", p.avatar);
+        } else {
+            data.append("value", c.getters[p.field]);
         }
+
         return new Promise((rs, rj) => {
             axios
                 .post(route("auth.update"), data, config)
@@ -95,6 +97,20 @@ const actions = {
                     console.log(err);
                     rj(err);
                 });
+        });
+    },
+    updateAvatar(c, p) {
+        const config = {
+            headers: {
+                "content-type": "multipart/form-data",
+            },
+        };
+        const data = new FormData();
+        data.append("file", p);
+        return new Promise((rs, rj) => {
+            axios.post(route("test"), data).then((req) => {
+                console.log(req);
+            });
         });
     },
 };

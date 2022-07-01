@@ -21,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
             'App\Repositories\Messages\MessagesInterface',
             'App\Repositories\Eloquents\MessagesRepository'
         );
+        $this->app->bind(
+            'App\Repositories\DavUser\DavUserInterface',
+            'App\Repositories\Eloquents\DavUserRepository'
+        );
     }
 
     /**

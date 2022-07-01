@@ -194,13 +194,23 @@ const mutations = {
             await Vue.set(s.users, index, p);
         }
     },
+    updatePosUsers(s, p) {
+        const index = s.users.findIndex((user) => {
+            return user.id == p;
+        });
+        if (index != 0) {
+            const user = s.users[index];
+            s.users.splice(index, 1);
+            s.users.unshift(user);
+        }
+    },
 };
 
 const actions = {
     getUsers(c) {
         return new Promise((rs, rj) => {
             axios
-                .get("/users")
+                .get(route("user.users"))
                 .then((req) => {
                     c.commit("setUsers", req.data);
                     rs(req);
@@ -210,8 +220,25 @@ const actions = {
                 });
         });
     },
+    getUser(c, p) {
+        return new Promise((rs, rj) => {
+            axios
+                .get(
+                    route("user.user", {
+                        id: p,
+                    })
+                )
+                .then((req) => {
+                    c.commit("updateUser", req.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
     getUserUpdate(c, p) {
-        c.commit("updateUser", p);
+        c.dispatch("getUser", p.id);
         if (
             c.rootGetters["message/typeChat"] == 0 &&
             c.rootGetters["message/receiver"] != null

@@ -34,8 +34,11 @@
                     height="28"
                 />
                 <div
-                    v-if="itMe && !isGroup && isLastMe"
-                    class="chat-message-seen"
+                    :class="{
+                        invisible: itMe && !isGroup && !isLastMe,
+                        'd-none': !itMe,
+                    }"
+                    class="chat-message-seen ml-1"
                 >
                     <v-icon dark v-if="data.seen == 0" size="15" color="#6c757d"
                         >mdi-check-circle-outline</v-icon
@@ -59,7 +62,7 @@
 
             <div
                 class="flex-shrink-1 mr-2 mr-2 d-flex flex-column wp-chat-item"
-                v-if="type == 1"
+                v-if="data.message.type == 1"
             >
                 <div
                     class="chat-item"
@@ -143,18 +146,12 @@
             </div>
 
             <div
-                class="flex-shrink-1 mr-3 message__audio wp-chat-item"
-                v-if="type == 3"
+                class="flex-shrink-1 mr-3 wp-chat-item"
+                v-if="typeMessage == 3"
             >
-                <vue-plyr>
-                    <audio controls crossorigin playsinline>
-                        <source
-                            :src="data.message.message"
-                            type="audio/mp3"
-                            @canplay="loaded"
-                        />
-                    </audio>
-                </vue-plyr>
+                <audio controls crossorigin playsinline class="message__audio">
+                    <source :src="data.message.message" type="audio/mp3" />
+                </audio>
             </div>
             <div
                 class="message__actions mr-3 my-auto"
@@ -184,12 +181,20 @@
                         </v-tooltip>
                     </div>
                     <div class="message__actions--reaction mx-3">
-                        <v-icon
-                            dark
-                            size="20"
-                            @click.stop="showDialog = !showDialog"
-                            >mdi-emoticon-outline</v-icon
-                        >
+                        <v-tooltip top>
+                            <template v-slot:activator="{ on, attrs }">
+                                <v-icon
+                                    dark
+                                    size="20"
+                                    v-bind="attrs"
+                                    v-on="on"
+                                    @click.stop="showDialog = !showDialog"
+                                    >mdi-emoticon-outline</v-icon
+                                >
+                            </template>
+                            <span>Cảm xúc</span>
+                        </v-tooltip>
+
                         <VEmojiPicker
                             v-dav-click-outside="handle"
                             v-if="showDialog"
@@ -241,6 +246,9 @@ export default {
                 return true;
             }
             return false;
+        },
+        typeMessage() {
+            return Number(this.data.message.type);
         },
         reaction() {
             if (this.isNullReaction) {

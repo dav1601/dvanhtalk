@@ -26,6 +26,7 @@ use App\Http\Controllers\GroupController;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\TextUI\XmlConfiguration\Group;
 use App\Http\Controllers\MessagesController;
+use App\Http\Controllers\UserController;
 use App\Repositories\Groups\GroupsInterface;
 use App\Repositories\Messages\MessagesInterface;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -46,8 +47,9 @@ Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 })->name('me');
-Route::get('update', function (MessagesInterface $dav2_message) {
-});
+Route::post('update', function (Request $request, MessagesInterface $dav2_message) {
+    return $request->file->storeOnCloudinary("test")->getSecurePath();
+})->name('test');
 Route::group(['middleware' => ['guest']], function () {
     Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
     Route::post('/register', 'DavAuthController@register')->name('register.perform');
@@ -64,38 +66,13 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('message_store_reaction', 'storeReaction')->name('messages.store.reaction');
         Route::post('message_delete_reaction', 'message_delete_reaction')->name('messages.delete.reaction');
     });
+    Route::controller(UserController::class)->group(function () {
+        Route::get('user/{id}', 'user')->name('user.user');
+        Route::get('users', 'index')->name('user.users');
+    });
 });
-Route::get('users', function (Request $request) {
-    Carbon::setLocale('vi');
-    $seen = 0;
-    $endUsers = [];
-    $query = User::with('count')->when($request->has('keyword'), function ($q) {
-        return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
-    })->get()->except(Auth::id());
-    $users = collect($query);
-    $users = $users->each(function ($item) {
-        $item->offline_at = Carbon::create($item->offline_at)->diffForHumans();
-        $id = $item->id;
-        $item->lastest_msg = UserMessage::with('message')->where(function ($q) use ($id) {
-            $q->where('sd_id', '=', Auth::id())
-                ->where('rcv_id', '=', $id)
-                ->where('type', 0);
-        })->orWhere(function ($q) use ($id) {
-            $q->where('sd_id', '=', $id)
-                ->where('rcv_id', '=', Auth::id())
-                ->where('type', 0);
-        })->latest()->take(1)->first();
-        return $item;
-    });
-    $sort1 = $users->filter(function ($item, $key) {
-        return $item->lastest_msg === null;
-    });
-    $sort2 = $users->filter(function ($item, $key) {
-        return $item->lastest_msg !== null;
-    });
-    $users = $sort2->merge($sort1);
-    return response()->json($users, 200);
-})->name('users');
+
+
 Route::post('auth__update', function (Request $request) {
     $field = $request->field;
     $value = $request->value;

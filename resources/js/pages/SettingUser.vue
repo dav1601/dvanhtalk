@@ -1,6 +1,46 @@
 <template>
     <v-container id="setting__user">
         <div class="setting__user">
+            <v-dialog
+                transition="dialog-top-transition"
+                max-width="600"
+                v-model="dialgUpdateAvatar"
+            >
+                <v-card dark>
+                    <v-card-title>Cập nhật ảnh đại diện</v-card-title>
+                    <div id="update__avatar">
+                        <avatar-editor
+                            class="d-flex justify-content-center upd__avatar"
+                            :width="300"
+                            :height="300"
+                            :rotation="rotation"
+                            :borderRadius="borderRadius"
+                            :scale="scale"
+                            ref="vueavatar"
+                            :image="fileUpload"
+                            @click.stop="block"
+                            @vue-avatar-editor:image-ready="onImageReady"
+                            :reset="resetImage"
+                        >
+                        </avatar-editor>
+                    </div>
+                    <v-card-actions class="justify-end">
+                        <v-btn
+                            :disabled="saving"
+                            text
+                            @click="dialgUpdateAvatar = false"
+                            >Huỷ</v-btn
+                        >
+                        <v-btn
+                            color="primary"
+                            @click="savedAvatar"
+                            :loading="saving"
+                            :disabled="saving"
+                            >Lưu</v-btn
+                        >
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
             <v-card dark v-if="loadedMe">
                 <v-card-title class="setting__user-title">
                     Cài đặt tài khoản chung
@@ -12,6 +52,7 @@
                         >
                             <div>
                                 <img
+                                    v-if="avatar != null || fileUpload != null"
                                     :src="avatar"
                                     ref="authAvatar"
                                     class="img__obj--cover rounded-circle"
@@ -19,22 +60,27 @@
                                     height="120"
                                     alt=""
                                 />
+                                <item-avatar
+                                    :img="null"
+                                    :username="name"
+                                    height="120px"
+                                    width="120px"
+                                    font="5vw"
+                                    v-else
+                                ></item-avatar>
                             </div>
                             <v-btn
                                 color="blue-grey"
                                 class="ma-2 white--text"
-                                @click="avatarUpload"
+                                @click.stop="openInput"
                                 :disabled="saving"
                             >
-                                {{ showCancel ? "Huỷ" : "Tải lên" }}
-                                <v-icon right dark v-if="!showCancel">
-                                    mdi-cloud-upload
-                                </v-icon>
+                                Cập nhật ảnh đại diện
                             </v-btn>
                             <input
                                 type="file"
                                 class="d-none"
-                                ref="avatarUpload"
+                                ref="inputAvatar"
                                 @change="changeAvatar"
                             />
                         </div>
@@ -225,7 +271,7 @@
             <!-- --------------- -->
             <v-card dark>
                 <v-card-title class="setting__user-title">
-                   Bảo Mật Và Đăng Nhập
+                    Bảo Mật Và Đăng Nhập
                 </v-card-title>
             </v-card>
             <!-- --------------- -->
@@ -273,8 +319,11 @@
     </v-container>
 </template>
 <script>
+import ItemAvatar from "../components/users/ItemAvatar.vue";
 import user from "../mixin/user";
+import AvatarEditor from "../components/users/AvatarEditor";
 export default {
+    components: { ItemAvatar, AvatarEditor },
     mixins: [user],
     props: ["loadedMe"],
     data() {
@@ -285,6 +334,11 @@ export default {
             showCancel: false,
             valid: true,
             activeEdit: null,
+            rotation: 0,
+            scale: 1,
+            resetImage: false,
+            borderRadius: 200,
+            dialgUpdateAvatar: false,
             nameRules: [
                 (v) => !!v || "Tên người dùng không được để trống",
                 (v) =>
@@ -316,16 +370,56 @@ export default {
 
             reader.readAsDataURL(this.fileUpload);
         },
+        resetCanvas() {
+            this.fileUpload = null;
+            this.scale = 1;
+            this.rotation = 0;
+            this.resetImage = false;
+        },
+        onImageReady() {
+            this.scale = 1;
+            this.rotation = 0;
+        },
+        block() {
+            console.log("ok");
+        },
+        openInput() {
+            return this.$refs.inputAvatar.click();
+        },
+        changeAvatar(e) {
+            var files = e.target.files || e.dataTransfer.files;
+            if (files.length < 1) {
+                this.fileUpload = null;
+            }
+            var reader = new FileReader();
+            reader.onload = (e) => {
+                this.fileUpload = reader.result;
+            };
+            reader.readAsDataURL(files[0]);
+            this.activeEdit = "avatar";
+            this.dialgUpdateAvatar = true;
+        },
+        savedAvatar() {
+            var img = this.$refs.vueavatar.getImageScaled();
+            const dataURL = img.toDataURL();
+            var blobBin = atob(dataURL.split(",")[1]);
+            var array = [];
+            for (var i = 0; i < blobBin.length; i++) {
+                array.push(blobBin.charCodeAt(i));
+            }
+            var file = new Blob([new Uint8Array(array)], { type: "image/*" });
+            this.saveDataUser(file);
+        },
         switchActiveEdit(field) {
             if (!this.saving) {
                 this.activeEdit = field;
             }
         },
-        async saveDataUser() {
+        async saveDataUser(file = null) {
             this.saving = true;
             await this.$store
                 .dispatch("auth/updateData", {
-                    image: this.fileUpload,
+                    avatar: file,
                     field: this.activeEdit,
                 })
                 .then((req) => {
@@ -333,9 +427,11 @@ export default {
                         this.activeEdit = null;
                         this.showCancel = false;
                         this.saving = false;
+                        this.dialgUpdateAvatar = false;
                     }
                 })
                 .catch((err) => {
+                    this.dialgUpdateAvatar = false;
                     this.activeEdit = null;
                     this.showCancel = false;
                     this.saving = false;
@@ -353,6 +449,15 @@ export default {
             } else {
                 this.$refs.authAvatar.src = this.avatar;
                 this.showCancel = false;
+            }
+        },
+    },
+    watch: {
+        dialgUpdateAvatar(show) {
+            if (!show) {
+                this.activeEdit = null;
+                this.resetImage = true;
+                this.resetCanvas();
             }
         },
     },

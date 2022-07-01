@@ -55,7 +55,7 @@ export default {
             default: false,
         },
     },
-    components: { SkItemUser, ItemUser },
+    components: { SkItemUser, ItemUser  },
     mixins: [user],
     mounted() {},
     methods: {

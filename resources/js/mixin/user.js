@@ -64,10 +64,7 @@ export default {
             return this.$store.getters["auth/full"];
         },
         avatar() {
-            if (this.$store.getters["auth/avatar"] != null) {
-                return this.$store.getters["auth/avatar"];
-            }
-            return "https://res.cloudinary.com/vanh-tech/image/upload/v1652075156/rs.jpg";
+            return this.$store.getters["auth/avatar"];
         },
         isHome() {
             return this.$route.name == "home";

@@ -70,6 +70,10 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('user/{id}', 'user')->name('user.user');
         Route::get('users', 'index')->name('user.users');
     });
+    Route::get("auth__group/{groupId}", function (Request $request) {
+        $auth = false;
+        return response()->json(["auth" => $auth], 200);
+    })->name('auth.group');
 });
 
 

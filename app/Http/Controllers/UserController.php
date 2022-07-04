@@ -28,8 +28,7 @@ class UserController extends Controller
             return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
         })->get()->except(Auth::id());
         $users = collect($query);
-        $users = $users->each(function ($item) {
-            $item->offline_at = Carbon::create($item->offline_at)->diffForHumans();
+        $users = $users->map(function ($item) {
             $id = $item->id;
             $item->lastest_msg = UserMessage::with('message')->where(function ($q) use ($id) {
                 $q->where('sd_id', '=', Auth::id())

@@ -23,16 +23,18 @@
             ></reaction-msg>
             <div
                 class="d-flex flex-column align-items-center justify-content-end"
+                v-if="!isGroup"
             >
-                <img
+                <item-avatar
                     v-if="!itMe"
-                    :src="makeAvatar(receiver.avatar)"
-                    class="rounded-circle mr-1"
+                    class="mr-1"
                     :class="{ invisible: !isLast }"
-                    :alt="receiver.name"
-                    width="28"
-                    height="28"
-                />
+                    width="28px"
+                    height="28px"
+                    :fullWH="false"
+                    :username="receiver.name"
+                    :img="receiver.avatar"
+                ></item-avatar>
                 <div
                     :class="{
                         invisible: itMe && !isGroup && !isLastMe,
@@ -43,14 +45,15 @@
                     <v-icon dark v-if="data.seen == 0" size="15" color="#6c757d"
                         >mdi-check-circle-outline</v-icon
                     >
-                    <img
+                    <item-avatar
                         v-else
-                        :src="makeAvatar(receiver.avatar)"
-                        width="14"
-                        height="14"
-                        class="img__obj--cover rounded-circle"
-                        alt=""
-                    />
+                        class="mr-1"
+                        width="14px"
+                        height="14px"
+                        :fullWH="false"
+                        :username="receiver.name"
+                        :img="receiver.avatar"
+                    ></item-avatar>
                 </div>
                 <!-- <div
                     class="text-muted text-nowrap mt-2"
@@ -59,6 +62,23 @@
                     {{ formatTime(data.message.created_at) }}
                 </div> -->
             </div>
+            <!-- avatar seen group chat -->
+            <div
+                class="d-flex flex-column align-items-center justify-content-end"
+                v-else
+            >
+                <item-avatar
+                    v-if="!itMe"
+                    class="mr-1"
+                    :class="{ invisible: !isLast }"
+                    width="28px"
+                    height="28px"
+                    :fullWH="false"
+                    :username="data.sender.name"
+                    :img="data.sender.avatar"
+                ></item-avatar>
+            </div>
+            <!-- end avatar seen group chat -->
 
             <div
                 class="flex-shrink-1 mr-2 mr-2 d-flex flex-column wp-chat-item"
@@ -92,9 +112,22 @@
                     <div
                         class="text-chat"
                         v-html="
-                            MakeMessage(data.message.message, data.message.id)
+                            $sanitize(MakeMessage2, {
+                                allowedTags: ['a'],
+                                allowedAttributes: {
+                                    a: [
+                                        'href',
+                                        'title',
+                                        'target',
+                                        'class',
+                                        'data-url-fetch',
+                                    ],
+                                },
+                            })
                         "
-                    ></div>
+                    >
+                        <!-- {{ MakeMessage(data.message.message, data.message.id) }} -->
+                    </div>
                 </div>
             </div>
             <div
@@ -146,7 +179,7 @@
             </div>
 
             <div
-                class="flex-shrink-1 mr-3 wp-chat-item"
+                class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-audio"
                 v-if="typeMessage == 3"
             >
                 <audio controls crossorigin playsinline class="message__audio">
@@ -154,7 +187,7 @@
                 </audio>
             </div>
             <div
-                class="message__actions mr-3 my-auto"
+                class="message__actions my-auto"
                 v-if="showActions || showDialog"
             >
                 <div
@@ -207,7 +240,8 @@
             </div>
         </div>
         <div class="pb-4 chat-message-system small" v-else>
-            {{ data.message.message }} {{ formatTime(data.message.created_at) }}
+            {{ data.message.message }}
+            {{ allSystemMsg ? formatTime(data.message.created_at) : "" }}
         </div>
     </div>
 </template>
@@ -217,7 +251,15 @@ import TheRole from "../role/TheRole.vue";
 import ItemMsgReply from "./ItemMsgReply.vue";
 import ReactionMsg from "./ReactionMsg.vue";
 export default {
-    props: ["data", "typeUserMsg", "length", "index", "last", "lastMe"],
+    props: [
+        "data",
+        "typeUserMsg",
+        "length",
+        "index",
+        "last",
+        "lastMe",
+        "allSystemMsg",
+    ],
     mixins: [user],
     components: {
         // VuetifyAudio: () => import("vuetify-audio"),
@@ -235,6 +277,34 @@ export default {
         };
     },
     computed: {
+        MakeMessage2() {
+            const id = this.data.message.id;
+            let goUrl = "",
+                fetchDataUrl = "";
+            let url =
+                /((?:(http|https|Http|Https|rtsp|Rtsp):\/\/(?:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,64}(?:\:(?:[a-zA-Z0-9\$\-\_\.\+\!\*\'\(\)\,\;\?\&\=]|(?:\%[a-fA-F0-9]{2})){1,25})?\@)?)?((?:(?:[a-zA-Z0-9][a-zA-Z0-9\-]{0,64}\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|(?:jobs|j[emop])|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|mobi|museum|m[acdghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\:\d{1,5})?)(\/(?:(?:[a-zA-Z0-9\;\/\?\:\@\&\=\#\~\-\.\+\!\*\'\(\)\,\_])|(?:\%[a-fA-F0-9]{2}))*)?(?:\b|$)/gi;
+            let startWith = /^((http|https|Http|Https|rtsp|Rtsp):\/\/)/;
+            return this.data.message.message.replace(url, function ($1) {
+                const that = this;
+                goUrl = $1;
+                fetchDataUrl = $1;
+                if (!startWith.test(goUrl)) {
+                    fetchDataUrl = "http://" + goUrl;
+                    goUrl = "//" + goUrl;
+                }
+                let a = document.createElement("a");
+                let linkText = document.createTextNode($1);
+                a.appendChild(linkText);
+                a.title = $1;
+                a.href = goUrl;
+                a.target = "_blank";
+                a.setAttribute("data-url-fetch", fetchDataUrl);
+                a.classList.add("chat__text--link");
+                a.classList.add("msg__link--" + id);
+                a.classList.add("mr-1");
+                return a.outerHTML;
+            });
+        },
         arrayImage() {
             return this.data.message.message.split(",");
         },
@@ -346,13 +416,6 @@ export default {
         },
         type() {
             return this.data.message.type;
-        },
-
-        getUser() {
-            const user = this.receiver.members.find(
-                (user) => user.users_id == this.data.sd_id
-            );
-            return user;
         },
         renderClass() {
             if (!this.isGroup) {
@@ -487,8 +550,9 @@ export default {
 };
 </script>
 <style lang="scss">
-.wp-chat-item {
+.wp-chat-item:not(.wp-chat-item-audio) {
     position: relative;
+    max-width: 60%;
 }
 .msg-time-left {
     padding-left: 50px;
@@ -518,7 +582,7 @@ export default {
     }
 }
 .message__image {
-    max-width: 250px;
+    max-width: 250px !important;
     max-height: 250px;
     &--item {
         flex: 0 0 125.31px;
@@ -534,13 +598,14 @@ export default {
     }
 }
 .message__actions {
+    margin-right: 10px;
+    margin-left: 10px;
     &--reaction {
         position: relative;
     }
 }
 .message__image.images {
     max-width: 400px !important;
-    width: 400px !important;
     max-height: 100% !important;
 }
 .message__actions .text-muted {

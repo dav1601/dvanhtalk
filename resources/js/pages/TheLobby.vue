@@ -85,7 +85,11 @@
             class="row g-0 mx-0 p-0 h-100 no-gutters"
             :class="[isHome ? ['col-6'] : 'col-12']"
         >
-            <list-user :isLoadingUser="isLoadingUsers"></list-user>
+            <list-user
+                :isLoadingUser="isLoadingUsers"
+                :class="[!isHome ? ['col-20'] : '']"
+                class="wrapper__layout--users d-ipp-none"
+            ></list-user>
 
             <!--  -->
             <router-view></router-view>

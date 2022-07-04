@@ -26,14 +26,9 @@
                     width="56px"
                     :img="user.avatar"
                     :username="user.name"
+                    :showStt="true"
+                    :userId="user.id"
                 ></item-avatar>
-                <span
-                    class="fas fa-circle position-absolute status"
-                    :class="{
-                        'chat-online': isOnline,
-                        'chat-offline': !isOnline,
-                    }"
-                ></span>
             </div>
             <div class="ml-3 listUser__item--right" style="overflow: hidden">
                 <span class="name text-overflow">{{ user.name }}</span>
@@ -48,10 +43,8 @@
 </template>
 <script>
 import user from "../../mixin/user";
-import ItemAvatar from "../../components/users/ItemAvatar.vue";
 export default {
-    props: ["user", "isOnline", "active", "isLoading", "link"],
-    components: { ItemAvatar },
+    props: ["user", "active", "isLoading", "link"],
     mixins: [user],
     data() {
         return {

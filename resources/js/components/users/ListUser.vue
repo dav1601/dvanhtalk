@@ -1,6 +1,6 @@
 <template>
     <div
-        class="fl-1 border-right listUser davList scroll-custom overflow-x-hidden"
+        class="border-right listUser davList scroll-custom overflow-x-hidden"
         @mouseover="toggleScroll('over')"
         @mouseleave="toggleScroll('leave')"
         :class="[
@@ -23,17 +23,15 @@
             </div>
         </div>
         <div v-if="!isGroup" style="margin-bottom: 69px">
-            <perfect-scrollbar>
-                <item-user
-                    v-for="(user, key) in listUser"
-                    :key="'Lobby-User-' + key"
-                    :user="user"
-                    :active="active(user.id)"
-                    :link="true"
-                    :isOnline="isOnline(user.id)"
-                    :isLoading="isLoadingUsers"
-                ></item-user>
-            </perfect-scrollbar>
+            <item-user
+                v-for="(user, key) in listUser"
+                :key="'Lobby-User-' + key"
+                :user="user"
+                :active="active(user.id)"
+                :link="true"
+                :isLoading="isLoadingUsers"
+            ></item-user>
+
             <sk-item-user
                 v-for="i in 10"
                 :key="'Ske-User-' + i"
@@ -55,7 +53,7 @@ export default {
             default: false,
         },
     },
-    components: { SkItemUser, ItemUser  },
+    components: { SkItemUser, ItemUser },
     mixins: [user],
     mounted() {},
     methods: {
@@ -75,9 +73,6 @@ export default {
         },
         active(id) {
             return id == this.$route.query.uid;
-        },
-        isOnline(id) {
-            return this.listUsersOnline.find((user) => user.id == id);
         },
     },
 };

@@ -22,6 +22,7 @@ const routes = [
                 name: "group",
                 component: ChatLayout,
                 props: true,
+                meta: { requiresAuthGroup: true },
             },
         ],
     },

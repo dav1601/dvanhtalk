@@ -12,6 +12,7 @@
     "devDependencies": {
         "@mdi/font": "^6.6.96",
         "@popperjs/core": "^2.10.2",
+        "@types/sanitize-html": "^2.6.2",
         "axios": "^0.25",
         "bootstrap": "^5.1.3",
         "laravel-mix": "^6.0.6",
@@ -35,6 +36,7 @@
         "html-metadata-parser": "^2.0.4",
         "laravel-echo": "^1.11.7",
         "moment": "^2.29.3",
+        "sanitize-html": "^2.7.0",
         "url-metadata": "^2.5.0",
         "v-emoji-picker": "^2.3.3",
         "vee-validate": "^3.4.14",

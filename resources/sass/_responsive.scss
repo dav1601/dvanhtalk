@@ -1,0 +1,115 @@
+$breakpoints-v: (
+    iphone5-se: 320px,
+    iphone6-7-8-x: 375px,
+    iphone6-7-8plus: 414px,
+    small-table: 600px,
+    ipad: 768px,
+    ipad-pro: 1024px,
+    hdtv: 1080px,
+);
+$breakpoints-h: (
+    iphone5-se: 568px,
+    iphone6-7-8: 667px,
+    iphone6-7-8plus: 736px,
+    small-table: 800px,
+    iphoneX: 812px,
+    ipad: 1024px,
+    ipad-pro: 1366px,
+);
+@mixin responsive_v($breakpoint, $direction: down) {
+    //neu breakpoint ton tai
+    @if map-has-key($breakpoints-v, $breakpoint) {
+        //Kiểm tra breakpoint truyền vào có tồn tại như bạn đã định nghĩa hay không.
+        $breakpoint-value: map-get($breakpoints-v, $breakpoint);
+
+        // Xác định min-width hay max-width
+        @if $direction == up {
+            //Build media query
+            @media (min-width: $breakpoint-value) {
+                @content;
+            }
+        } @else if $direction == down {
+            //Build media query
+            @media (max-width: $breakpoint-value) {
+                @content;
+            }
+        }
+    }
+}
+@mixin responsive_h($breakpoint, $direction: down) {
+    //neu breakpoint ton tai
+    @if map-has-key($breakpoints-h, $breakpoint) {
+        //Kiểm tra breakpoint truyền vào có tồn tại như bạn đã định nghĩa hay không.
+        $breakpoint-value: map-get($breakpoints-h, $breakpoint);
+
+        // Xác định min-width hay max-width
+        @if $direction == up {
+            //Build media query
+            @media (min-width: $breakpoint-value) {
+                @content;
+            }
+        } @else if $direction == down {
+            //Build media query
+            @media (max-width: $breakpoint-value) {
+                @content;
+            }
+        }
+    }
+}
+
+@include responsive_v(ipad-pro, down) {
+    .d-ipp-none {
+        display: none !important;
+    }
+    .d-ipp-block {
+        display: block !important;
+    }
+    .wrapper__layout {
+        &--chat {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+}
+@include responsive_v(iphone5-se, down) {
+    .message__actions {
+        margin-right: 0px;
+        margin-left: 0px;
+    }
+    audio.message__audio {
+        width: 189px;
+    }
+}
+@include responsive_v(iphone6-7-8plus, down) {
+    .message__image {
+        &--item {
+            flex: 0 0 100px;
+            max-width: 100px;
+            height: 100px;
+            max-height: 100px;
+            margin-bottom: 5px;
+            margin-right: 5px;
+        }
+    }
+    #chatLayout {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+
+    audio.message__audio {
+        width: 250px;
+    }
+}
+@include responsive_v(iphone6-7-8-x, down) {
+    audio.message__audio {
+        width: 230px;
+    }
+    .message__actions {
+        margin-right: 0px;
+        margin-left: 0px;
+    }
+    .message__image.images {
+        max-width: 250px !important;
+        max-height: 100% !important;
+    }
+}

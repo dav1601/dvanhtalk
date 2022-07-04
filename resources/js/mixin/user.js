@@ -101,6 +101,12 @@ export default {
         },
     },
     methods: {
+        isOnline(id) {
+            if (id) {
+                return this.listUsersOnline.find((user) => user.id == id);
+            }
+            return false;
+        },
         debounceSearchUser: debounce(function (e) {
             this.isLoadingUsers = true;
             this.$store

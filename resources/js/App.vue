@@ -27,16 +27,29 @@
                 <join-chat :member="props.item.data.member"></join-chat>
             </template>
         </notifications> -->
-        <v-app-bar app class="b-b" v-if="!isMedia">
+        <v-app-bar
+            app
+            class="b-b"
+            :class="{ 'd-ipp-none': !isHome }"
+            v-if="!isMedia"
+        >
             <v-container class="d-flex justify-content-end">
+                <!-- <app-bar-mobile v-if="!isHome"></app-bar-mobile> -->
                 <v-menu
+                    class="d-ipp-none"
                     v-model="menu"
                     :close-on-content-click="false"
                     :nudge-width="200"
                     offset-x
                 >
                     <template v-slot:activator="{ on, attrs }">
-                        <v-btn color="indigo" dark v-bind="attrs" v-on="on">
+                        <v-btn
+                            color="indigo"
+                            class="d-ipp-none"
+                            dark
+                            v-bind="attrs"
+                            v-on="on"
+                        >
                             Hi! {{ name }}
                         </v-btn>
                     </template>
@@ -120,7 +133,10 @@
             <router-view></router-view>
           </v-slide-x-transition>
         </div> -->
-                <v-card :class="{ fix1: isHome }" class="p-0 h-100">
+                <v-card
+                    :class="{ fix1: isHome }"
+                    class="p-0 h-100 wrapper__layout"
+                >
                     <router-view :loadedMe="loadedMe"></router-view>
                 </v-card>
             </v-container>
@@ -211,6 +227,7 @@ export default {
 </script>
 <style lang="scss">
 @import "../sass/_variables.scss";
+@import "../sass/_responsive.scss";
 $roles: 0, 1, 2;
 @each $role in $roles {
     .royal-role-#{$role} {
@@ -220,9 +237,7 @@ $roles: 0, 1, 2;
         }
     }
 }
-// .v-responsive__sizer {
-//     padding-bottom: 100% !important;
-// }
+
 :root {
     scrollbar-color: var(--bs-gray-dark) #3e4042 !important;
     scrollbar-width: auto !important;
@@ -401,14 +416,13 @@ header {
 .chat-offline {
     color: #e4606d;
 }
-.col-20 {
-    flex: 0 0 20%;
-    max-width: 20%;
+@for $i from 1 through 10 {
+    .col-#{$i * 10} {
+        flex: 0 0 #{$i * 10%};
+        max-width: #{$i * 10%};
+    }
 }
-.col-80 {
-    flex: 0 0 80%;
-    max-width: 80%;
-}
+
 .py-3 {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;

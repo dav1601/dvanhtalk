@@ -1,6 +1,6 @@
 <template>
     <div class="grouped__msg">
-        <div class="pb-4 chat-message-system small">
+        <div class="pb-4 chat-message-system small" v-if="!checkAllSystemMsg">
             {{ formatTime2(groupMsg.created_at) }}
         </div>
         <div v-if="type == 0">
@@ -15,6 +15,7 @@
                 :typeUserMsg="type"
                 @open-gll="openGll"
                 @loaded="loaded"
+                :allSystemMsg="checkAllSystemMsg"
             ></item-msg>
         </div>
         <div v-if="type == 1">
@@ -22,18 +23,21 @@
                 v-for="(messages, index) in userGroupMsg"
                 :key="'user-messages-group-' + index"
             >
-                <item-msg
-                    v-for="(message, key) in messages"
-                    :key="'user-message-group-key-' + key"
-                    :length="messages.length"
-                    :last="getLastMsgGroup(messages)"
-                    :lastMe="null"
-                    :index="key"
-                    :data="message"
-                    :typeUserMsg="type"
-                    @open-gll="openGll"
-                    @loaded="loaded"
-                ></item-msg>
+                <div class="mt-2">
+                    <item-msg
+                        v-for="(message, key) in messages"
+                        :key="'user-message-group-key-' + key"
+                        :length="messages.length"
+                        :last="getLastMsgGroup(messages)"
+                        :lastMe="null"
+                        :index="key"
+                        :data="message"
+                        :typeUserMsg="type"
+                        @open-gll="openGll"
+                        @loaded="loaded"
+                         :allSystemMsg="checkAllSystemMsg"
+                    ></item-msg>
+                </div>
             </div>
         </div>
     </div>
@@ -68,6 +72,7 @@ export default {
             return data[data.length - 1];
         },
         userGroupMsg() {
+            // Nhóm những tin nhắn theo người gửi
             if (this.type == 1) {
                 const groupedUserMsgGroup = this.groupMsg.messages.reduce(
                     (messages, message) => {
@@ -82,11 +87,21 @@ export default {
             }
             return null;
         },
+        checkAllSystemMsg() {
+            const check = this.groupMsg.messages.find((el) => {
+                return Number(el.type_msg) != 4;
+            });
+            if (check) {
+                return false;
+            }
+            return true;
+        },
     },
     methods: {
         getLastMsgGroup(arrayMessages) {
             return arrayMessages[arrayMessages.length - 1];
         },
+
         openGll(e) {
             return this.$emit("open-gll", e);
         },

@@ -5,13 +5,20 @@
         v-if="!isChecking"
     >
         <div class="d-flex align-items-center">
-            <img
+            <!-- <img
                 :src="makeAvatar(member.info.avatar)"
                 class="rounded-circle mr-1 img__obj--cover"
                 alt="Vanessa Tucker"
                 width="45"
                 height="45"
-            />
+            /> -->
+            <item-avatar
+                :fullWH="false"
+                height="45px"
+                width="45px"
+                :img="member.info.avatar"
+                :username="member.info.name"
+            ></item-avatar>
             <div class="flex-grow-1 ml-3">
                 {{ member.info.name }}
             </div>
@@ -45,8 +52,9 @@
 <script>
 import user from "../../mixin/user";
 import TheRole from "../role/TheRole.vue";
+import ItemAvatar from "./ItemAvatar.vue";
 export default {
-    components: { TheRole },
+    components: { TheRole, ItemAvatar },
     props: [
         "member",
         "isChecking",

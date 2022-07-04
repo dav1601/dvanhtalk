@@ -88,9 +88,7 @@
 </template>
 <script>
 import user from "../../mixin/user";
-import ItemAvatar from "./ItemAvatar.vue";
 export default {
-    components: { ItemAvatar },
     props: ["group", "isLoading"],
     mixins: [user],
     data() {

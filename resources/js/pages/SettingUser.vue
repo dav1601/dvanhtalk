@@ -319,11 +319,10 @@
     </v-container>
 </template>
 <script>
-import ItemAvatar from "../components/users/ItemAvatar.vue";
 import user from "../mixin/user";
 import AvatarEditor from "../components/users/AvatarEditor";
 export default {
-    components: { ItemAvatar, AvatarEditor },
+    components: { AvatarEditor },
     mixins: [user],
     props: ["loadedMe"],
     data() {

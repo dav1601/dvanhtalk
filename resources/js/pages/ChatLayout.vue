@@ -1,18 +1,12 @@
 <template>
     <div
         class="wrapper__layout--chat pl-0 py-0 h-100"
+        ref="mainLayoutChat"
         :class="[
             !isGroup
-                ? [
-                      'col-12',
-                      'col-lg-7',
-                      'col-xl-9',
-                      'position-relative',
-                      'row',
-                      'g-0',
-                      'mx-0',
-                  ]
+                ? ['position-relative', 'row', 'g-0', 'mx-0']
                 : ['col-12', 'row', 'mx-0', 'g-0'],
+            windowWidth > 1024 ? ['col-80'] : ['col-100'],
         ]"
     >
         <!-- start dialog setting for group -->
@@ -108,7 +102,14 @@
 
         <div
             class="position-relative d-flex flex-column justify-between px-0 py-0 h-100 chat__layout"
-            :class="[!isGroup ? ['col-12'] : ['col-80']]"
+            :class="[
+                isGroup ? ['col-80'] : '',
+                windowWidth <= 1024 ? ['col-100'] : '',
+                isChat && showChatInfo && windowWidth > 1024 ? ['col-70'] : '',
+                isChat && !showChatInfo && windowWidth > 1024
+                    ? ['col-100']
+                    : '',
+            ]"
         >
             <v-snackbar
                 v-model="notification"
@@ -120,35 +121,71 @@
             </v-snackbar>
             <base-loading :isLoading="isLoading"></base-loading>
             <div
-                class="px-4 py-4 border-bottom d-none d-lg-block chat__layout--header"
+                class="px-4 py-4 border-bottom chat__layout--header d-flex justify-content-between align-center"
             >
-                <div class="d-flex align-items-center" v-if="loadedRcv">
-                    <div class="position-relative">
-                        <img
-                            :src="makeAvatar(receiver.avatar)"
-                            class="rounded-circle mr-1"
-                            :alt="receiver.name"
-                            width="45"
-                            height="45"
-                        />
+                <chat-bar-mobile
+                    :loaded="loadedRcv"
+                    class="d-ipp-block"
+                ></chat-bar-mobile>
+                <div class="d-ipp-none">
+                    <div class="d-flex align-items-center" v-if="loadedRcv">
+                        <div class="position-relative">
+                            <item-avatar
+                                v-if="isChat"
+                                height="45px"
+                                width="45px"
+                                :username="receiver.name"
+                                :img="receiver.avatar"
+                                :fullWH="false"
+                                :showStt="true"
+                                :userId="receiver.id"
+                            ></item-avatar>
+                        </div>
+                        <div class="flex-grow-1 pl-3">
+                            <strong>{{ receiver.name }}</strong>
+                            <text-small :text="statusText"></text-small>
+                        </div>
+                        <div>
+                            <v-btn
+                                :loading="setting"
+                                :disabled="setting"
+                                v-if="isManage"
+                                color="primary"
+                                class="ma-2 white--text"
+                                fab
+                                small
+                                @click.stop="dialog = true"
+                            >
+                                <v-icon dark>mdi-cog</v-icon>
+                            </v-btn>
+                        </div>
                     </div>
-                    <div class="flex-grow-1 pl-3">
-                        <strong>{{ receiver.name }}</strong>
-                    </div>
-                    <div>
-                        <v-btn
-                            :loading="setting"
-                            :disabled="setting"
-                            v-if="isManage"
-                            color="primary"
-                            class="ma-2 white--text"
-                            fab
-                            small
-                            @click.stop="dialog = true"
-                        >
-                            <v-icon dark>mdi-cog</v-icon>
-                        </v-btn>
-                    </div>
+                </div>
+                <div
+                    class="--actions d-flex justify-content-end align-items-center"
+                >
+                    <v-icon
+                        dark
+                        color="primary"
+                        size="30"
+                        class="cursor-pointer mr-8"
+                        >mdi-phone</v-icon
+                    >
+                    <v-icon
+                        dark
+                        color="primary"
+                        size="30"
+                        class="cursor-pointer mr-8"
+                        >mdi-video</v-icon
+                    >
+                    <v-icon
+                        dark
+                        color="primary"
+                        size="30"
+                        @click="showChatInfo = !showChatInfo"
+                        class="cursor-pointer mr-8"
+                        >mdi-alert-circle</v-icon
+                    >
                 </div>
             </div>
 
@@ -402,6 +439,8 @@ import DavGallerySlideShow from "../components/davGallerySlideshow/davGallerySli
 import WrapperMsg from "../components/chat/WrapperMsg.vue";
 import ItemUserReaction from "../components/chat/dialogReaction/ItemUserReaction";
 import SkItemUser from "../components/skeleton/SkItemUser.vue";
+import ChatBarMobile from "../components/layout/ChatBarMobile";
+import TextSmall from "../components/ui/TextSmall";
 export default {
     components: {
         ItemMsg,
@@ -415,6 +454,8 @@ export default {
         WrapperMsg,
         ItemUserReaction,
         SkItemUser,
+        ChatBarMobile,
+        TextSmall,
     },
     mixins: [user, chat],
     props: ["friendId"],
@@ -445,17 +486,33 @@ export default {
             arrayImages: ["1", "2"],
             arrayFileAudio: [],
             showPreviewImg: false,
-            windowHeight: document.documentElement.clientHeight,
-            windowWidth: document.documentElement.clientWidth,
+            windowHeight: null,
+            windowWidth: null,
             startImage: null,
             showEmoji: false,
             tabReationActive: "all",
+            showChatInfo: false,
         };
     },
     beforeCreate() {
         localStorage.setItem("saveScrollHeight", 0);
+        if (this.$route.name == "group") {
+            axios
+                .get(
+                    route("auth.group", {
+                        groupId: this.$route.params.friendId,
+                    })
+                )
+                .then((req) => {
+                    console.log(req);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
     },
     async created() {
+        this.getDimensions();
         this.setType();
         this.$store.dispatch("message/reset");
         this.setup();
@@ -474,9 +531,9 @@ export default {
     },
     async mounted() {
         this.$nextTick(async () => {
+            this.setHeightChatLayoutBody();
             this.getMessages(false);
             this.updateSeen(this.friendId);
-            this.setHeightChatLayoutBody();
             window.addEventListener("resize", this.getDimensions);
         });
     },
@@ -491,6 +548,12 @@ export default {
         },
     },
     computed: {
+        statusText() {
+            if (this.isOnline(this.receiver.id)) {
+                return "Đang hoạt động";
+            }
+            return "Hoạt động " + this.formatTime(this.receiver.offline_at);
+        },
         type() {
             return this.$store.getters["message/typeChat"];
         },
@@ -613,6 +676,12 @@ export default {
         getDimensions() {
             this.windowHeight = document.documentElement.clientHeight;
             this.windowWidth = document.documentElement.clientWidth;
+            console.log({
+                hh: this.windowHeight,
+                ww: this.windowWidth,
+                h: document.documentElement.clientHeight,
+                w: document.documentElement.clientWidth,
+            });
         },
         updateSrcImg() {
             for (let i = 0; i < this.images.length; i++) {
@@ -651,7 +720,10 @@ export default {
             return Math.ceil(el.offsetHeight + margin);
         },
         setHeightChatLayoutBody(height = 0, width = 0) {
-            const elMain = this.windowHeight - 60;
+            let elMain = this.windowHeight;
+            if (this.windowWidth > 1024) {
+                elMain = elMain - 60;
+            }
             const elTextInput = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
             );
@@ -742,9 +814,6 @@ export default {
                         this.checking = false;
                     }
                     this.loadedRcv = true;
-                })
-                .catch((err) => {
-                    return this.$router.push({ name: "home" });
                 });
         },
 
@@ -928,6 +997,8 @@ export default {
             this.isLoadingUsers = false;
             this.startImage = null;
             this.showEmoji = false;
+            this.tabReationActive = "all";
+            this.showChatInfo = false;
         },
     },
     watch: {
@@ -982,6 +1053,16 @@ export default {
 };
 </script>
 <style lang="scss">
+.wrapper__layout {
+    &--chat {
+        flex: 0 0 80%;
+        max-width: 80%;
+    }
+}
+#chatLayout {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
 #dialog__reaction {
     &--nav {
         .tab__reaction {

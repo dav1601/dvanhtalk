@@ -10,31 +10,30 @@ import router from "./router";
 import store from "./store/index";
 import App from "./App.vue";
 import Vuetify from "vuetify";
+import sanitizeHTML from "sanitize-html";
 import colors from "vuetify/lib/util/colors";
 import Multiselect from "vue-multiselect";
 import "bootstrap";
 import Notifications from "vue-notification";
 import moment from "moment";
-import PerfectScrollbar from "vue2-perfect-scrollbar";
-import VueCryptojs from "vue-cryptojs";
 import VEmojiPicker from "v-emoji-picker";
-import "vue-plyr/dist/vue-plyr.css";
 import "vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue";
 import BaseLoading from "./components/ui/BaseLoading";
 import "@mdi/font/css/materialdesignicons.css";
 import "vue-multiselect/dist/vue-multiselect.min.css";
+import ItemAvatar from "./components/users/ItemAvatar";
 Vue.use(Vuetify);
 Vue.use(Notifications);
-Vue.use(PerfectScrollbar);
 Vue.use(VEmojiPicker);
 Vue.use(ZiggyVue);
-Vue.use(VueCryptojs);
 Vue.component();
 moment.locale("vi");
 Vue.prototype.$moment = moment;
+Vue.prototype.$sanitize = sanitizeHTML;
 Vue.component("multiselect", Multiselect);
 Vue.component("base-loading", BaseLoading);
+Vue.component("item-avatar", ItemAvatar);
 Vue.directive("dav-click-outside", {
     bind: function (el, binding, vnode) {
         window.event = function (event) {

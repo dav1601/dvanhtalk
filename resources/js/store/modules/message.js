@@ -11,10 +11,23 @@ const state = () => ({
     allReaction: null,
     groupReaction: null,
     dialogReaction: false,
-    typeChat: 0,
+    typeChat: null,
+    calling: false,
+    rcvInRoom: false,
+    blockLoadImg: false,
 });
 
 const getters = {
+    rcvInRoom(s) {
+        return s.rcvInRoom;
+    },
+    blockLoadImg(s) {
+        return s.blockLoadImg;
+    },
+    calling(s) {
+        return s.calling;
+    },
+
     messages(s) {
         return s.messages;
     },
@@ -54,11 +67,63 @@ const getters = {
     typeChat(s) {
         return s.typeChat;
     },
+    notifyCall(s) {
+        return s.notifyCall;
+    },
 };
 
 const mutations = {
+    leavingChat(s, p) {
+        if (s.receiver && s.receiver.id == p) {
+            return (s.rcvInRoom = false);
+        }
+        return;
+    },
+    joinChat(s, p) {
+        if (s.receiver && s.receiver.id == p) {
+            return (s.rcvInRoom = true);
+        }
+        return;
+    },
+    setCalling(s, p) {
+        return (s.calling = p);
+    },
+    pushMedia(s, p) {
+        const arrayMedia = p.message.split(",");
+        console.log(arrayMedia);
+        arrayMedia.forEach((el, index) => {
+            let data = {
+                alt: "image message",
+                index: index,
+                msg_id: p.id,
+                url: el,
+            };
+            console.log(data);
+            s.messengerMedia.push(data);
+        });
+    },
+    setBlockLoadImg(s, p) {
+        return (s.blockLoadImg = p);
+    },
+    setInRoom(s, p) {
+        if (s.receiver != null) {
+            const isRcv = p.findIndex((user) => {
+                return user.id == s.receiver.id;
+            });
+            if (isRcv != -1) {
+                s.rcvInRoom = true;
+            } else {
+                s.rcvInRoom = false;
+            }
+        } else {
+            s.rcvInRoom = false;
+        }
+    },
     setTypeChat(s, p) {
         return (s.typeChat = p);
+    },
+    setNotifyCall(s, p) {
+        return (s.notifyCall = p);
     },
     resetReaction(s) {
         s.rootReaction = null;
@@ -78,6 +143,7 @@ const mutations = {
         s.allReaction = null;
         s.groupReaction = null;
         s.dialogReaction = false;
+        s.blockLoadImg = false;
     },
     actionDialogReaction(s, p) {
         if (p == "open") {
@@ -136,7 +202,6 @@ const mutations = {
     deleteMsgReply(s) {
         return (s.messageReply = null);
     },
-
     setMessageReply(s, p) {
         s.messageReply = p;
     },
@@ -283,25 +348,31 @@ const actions = {
                 });
         });
     },
-    getMessage(c, p) {
-        c.commit("users/updateLastMessage", p, { root: true });
+    async getMessage(c, p) {
+        await c.commit("users/updateLastMessage", p, { root: true });
         if (p.type == 0) {
             if (c.rootGetters["auth/id"] == p.rcv_id) {
                 if (c.getters.receiver.id == p.sd_id) {
-                    c.commit("pushMessage", p);
+                    await c.commit("pushMessage", p);
+                    if (p.type_msg == 2) {
+                        await c.commit("pushMedia", p.message);
+                    }
                     if (p.message_images) {
-                        c.commit("pushMessage", p.message_images);
+                        await c.commit("pushMedia", p.message_images.message);
+                        await c.commit("pushMessage", p.message_images);
                     }
                 } else {
-                    c.commit("users/updatePosUsers", p.sd_id, { root: true });
+                    await c.commit("users/updatePosUsers", p.sd_id, {
+                        root: true,
+                    });
                 }
             } else {
                 return;
             }
         } else {
-            c.commit("pushMessage", p);
+            await c.commit("pushMessage", p);
             if (p.message_images) {
-                c.commit("pushMessage", p.message_images);
+                await c.commit("pushMessage", p.message_images);
             }
         }
     },
@@ -343,13 +414,21 @@ const actions = {
         return new Promise((rs, rj) => {
             axios
                 .post(route("messages.store"), data, config)
-                .then((req) => {
+                .then(async (req) => {
+                    console.log(req);
                     let data = req.data.data;
-                    c.commit("pushMessage", data);
-                    if (data.message_images) {
-                        c.commit("pushMessage", data.message_images);
+                    await c.commit("pushMessage", data);
+                    if (data.type_msg == 2) {
+                        await c.commit("pushMedia", data.message);
                     }
-                    c.commit("users/updateLastMessage", data, {
+                    if (data.message_images) {
+                        await c.commit(
+                            "pushMedia",
+                            data.message_images.message
+                        );
+                        await c.commit("pushMessage", data.message_images);
+                    }
+                    await c.commit("users/updateLastMessage", data, {
                         root: true,
                     });
                     rs(req);
@@ -359,6 +438,7 @@ const actions = {
                 });
         });
     },
+    createMessageCall(c, p) {},
     saveReaction(c, p) {
         const data = new FormData();
         data.append("type", c.getters["typeChat"]);
@@ -396,6 +476,40 @@ const actions = {
                 .then((req) => {
                     console.log(req);
                     // c.commit("setReactionDialog", req.data);
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    createRoomCall(c, p) {
+        const data = new FormData();
+        data.append("to", Number(p));
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("message.create.room.call"), data)
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    sendMessageToPeer() {},
+    offerCall(c, p) {
+        const data = new FormData();
+        console.log(p);
+        data.append("to", Number(p.receiver));
+        data.append("type", p.type);
+        data.append("action", p.action);
+        data.append("urlJoin", p.urlJoin);
+        data.append("singalCaller", p.singalCaller);
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("call.offer"), data)
+                .then((req) => {
                     rs(req);
                 })
                 .catch((err) => {

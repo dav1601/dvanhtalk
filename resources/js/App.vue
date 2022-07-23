@@ -1,6 +1,59 @@
 <template>
     <!-- App.vue -->
+
     <v-app class="fix__layout">
+        <audio controls autoplay muted class="d-none" id="ringCallRcv">
+            <source
+                :src="$helpers.getAssetsPath('audio/facebook_call.mp3')"
+                type="audio/mp3"
+            />
+        </audio>
+        <v-dialog v-model="answerCallDialog" v-if="caller != null" width="300">
+            <v-card dark>
+                <div
+                    class="info__broadcaster d-flex flex-column justify-content-center align-center"
+                >
+                    <item-avatar
+                        height="60px"
+                        width="60px"
+                        :fullWH="false"
+                        :img="caller.avatar"
+                        :username="caller.name"
+                    ></item-avatar>
+                    <v-card-title
+                        >{{ caller.name }} đang gọi cho bạn</v-card-title
+                    >
+                    <v-card-text
+                        >Cuộc gọi sẽ bắt đầu ngay lập tức nếu bạn đồng
+                        ý</v-card-text
+                    >
+                </div>
+                <div
+                    class="action__call d-flex justify-content-center align-center"
+                >
+                    <v-btn
+                        class="mx-3"
+                        fab
+                        dark
+                        small
+                        color="pink"
+                        @click="answerCall('deny')"
+                    >
+                        <v-icon dark> mdi-phone </v-icon>
+                    </v-btn>
+                    <v-btn
+                        class="mx-3"
+                        fab
+                        dark
+                        small
+                        color="success"
+                        @click="answerCall('accepted')"
+                    >
+                        <v-icon dark> mdi-phone </v-icon>
+                    </v-btn>
+                </div>
+            </v-card>
+        </v-dialog>
         <notifications
             group="request__group"
             position="bottom right"
@@ -31,7 +84,7 @@
             app
             class="b-b"
             :class="{ 'd-ipp-none': !isHome }"
-            v-if="!isMedia"
+            v-if="!isCallChat"
         >
             <v-container class="d-flex justify-content-end">
                 <!-- <app-bar-mobile v-if="!isHome"></app-bar-mobile> -->
@@ -134,10 +187,14 @@
           </v-slide-x-transition>
         </div> -->
                 <v-card
-                    :class="{ fix1: isHome }"
-                    class="p-0 h-100 wrapper__layout"
+                    :class="{ fix1: isHome, 'd-flex': isCallChat }"
+                    class="p-0 h-100 wrapper__layout position-relative"
                 >
-                    <router-view :loadedMe="loadedMe"></router-view>
+                    <router-view
+                        :auth="authUser"
+                        :myChannel="myChannel"
+                        :singalCaller="singalCaller"
+                    ></router-view>
                 </v-card>
             </v-container>
         </v-main>
@@ -153,6 +210,7 @@ import TheRole from "./components/role/TheRole.vue";
 import ItemReq from "./components/users/ItemReq";
 import JoinChat from "./components/users/group/effect/JoinChat";
 import ItemAvatar from "./components/users/ItemAvatar";
+import chatCall from "./mixin/servers/chatCall";
 export default {
     components: {
         ListUser,
@@ -162,20 +220,38 @@ export default {
         JoinChat,
         ItemAvatar,
     },
-    mixins: [user, chat],
+    props: ["auth"],
+    mixins: [user, chat, chatCall],
     name: "App",
     data: () => ({
         fav: true,
         loadedMe: false,
         csrfToken: document.head.querySelector('meta[name="csrf-token"]')
             .content,
+        authUser: JSON.parse(
+            document
+                .querySelector("meta[name='auth_user']")
+                .getAttribute("content")
+        ),
         menu: false,
+        incomingCall: false,
+        answerCallDialog: false,
+        timeOutCall: null,
+        statusCall: null,
+        urlJoin: null,
+        caller: null,
+        singalCaller: null,
+        streamIdCall: null,
+        ringCallRcv: null,
+        myChannel: {},
     }),
 
-    created() {
-        this.setMe();
+    async created() {
+        await this.setMe();
     },
-    mounted() {},
+    mounted() {
+        this.initMyChannel();
+    },
     computed: {
         isNotFound() {
             return this.$route.name == "404";
@@ -186,41 +262,165 @@ export default {
     },
     methods: {
         async setMe() {
-            this.loadedMe = false;
-            await this.$store
-                .dispatch("auth/getMe")
-                .then((req) => {
-                    this.loadedMe = true;
-                    Echo.join(`lobby`)
-                        .here((users) => {
-                            this.$store.dispatch("users/getUsersOnline", users);
-                        })
-                        .joining((user) => {
-                            this.$store.dispatch("users/pushUsersOnline", user);
-                        })
-                        .leaving((user) => {
-                            this.$store.dispatch("users/deleteUser", user);
-                        })
-                        .listen("NewGroup", (e) => {
-                            this.$store.dispatch("users/getGroup", e.group);
-                        })
-                        .listen("NewUser", (e) => {
-                            this.$store.dispatch("users/getNewUser", e.user);
-                        })
-                        .listen("HandleUser", (e) => {})
-                        .listen("LobbyEvent", (e) => {
-                            if (e.event == "update.user") {
-                                this.$store.dispatch(
-                                    "users/getUserUpdate",
-                                    e.data
-                                );
-                            }
-                        });
-                    this.myServer();
+            await this.$store.dispatch("auth/getMe", this.authUser);
+        },
+
+        resetCall(calling = false) {
+            clearTimeout(this.timeOutCall);
+            this.incomingCall = false;
+            this.timeOutCall = null;
+            this.statusCall = null;
+            this.urlJoin = null;
+            this.caller = null;
+            this.setCalling(calling);
+        },
+        answerCall(ans) {
+            if (ans == "accepted") {
+                this.popupCenter(this.urlJoin, "Cuộc hội thoại của dav-chat");
+                this.resetCall(true);
+            } else {
+                this.sendAns(ans);
+            }
+        },
+        sendAns(ans) {
+            axios
+                .post(route("call.answer"), {
+                    type: "answer",
+                    answer: ans,
+                    callerId: this.caller.id,
                 })
-                .catch((err) => {
-                    return this.$router.push("/login");
+                .then((req) => {
+                    this.resetCall();
                 });
+        },
+        ring(r = true) {
+            let audio = document.getElementById("ringCallRcv");
+            audio.currentTime = 0;
+            if (r) {
+                audio.muted = false;
+            } else {
+                audio.muted = true;
+            }
+        },
+        initMyChannel() {
+            this.myChannel["notify"] = Echo.join(`notify-${this.id}`);
+            this.myChannel["lobby"] = Echo.join(`lobby`);
+            this.myChannel["notify"]
+                .here((users) => {})
+                .listen("SenRqJoinGr", (e) => {
+                    this.$notify({
+                        group: "request__group",
+                        data: {
+                            request: e.reqJG,
+                            nofifyFor: "admin",
+                            status: null,
+                        },
+                    });
+                    this.$store.dispatch("users/getReq", e.reqJG);
+                })
+                .listen("HandleRequest", (e) => {
+                    if (e.data.action == "joinGr") {
+                        this.$notify({
+                            group: "request__group",
+                            data: {
+                                request: e.data.request,
+                                nofifyFor: "user",
+                                status: e.data.status,
+                            },
+                        });
+                        this.$store.dispatch(
+                            "users/getDataHandleRequest",
+                            e.data
+                        );
+                    }
+                    if (e.data.group_action == "reqActions") {
+                        this.$store.dispatch("users/getHandleActions", e.data, {
+                            root: true,
+                        });
+                        if (e.data.action == "kick") {
+                            if (e.data.users_id == this.id) {
+                                this.$router.push({ name: "home" });
+                            }
+                        }
+                    }
+                    if (e.data.group_action == "reqSaveData") {
+                        this.$store.dispatch(
+                            "users/getDataGroupSave",
+                            e.data.newestGr
+                        );
+                    }
+                })
+                .listen("NotifyCall", async (e) => {
+                    if (e.data.type == "offer") {
+                        if (!this.calling) {
+                            if (!this.incomingCall) {
+                                this.incomingCall = true;
+                                this.caller = e.data.broadcaster;
+                                this.urlJoin = e.data.urlJoin;
+                            }
+                            if (!this.answerCallDialog && this.incomingCall) {
+                                this.answerCallDialog = true;
+                            }
+                        } else {
+                            this.answerCall("haveCall");
+                        }
+                    }
+                    if (e.data.type == "ended") {
+                        if (!this.calling && this.incomingCall) {
+                            this.ring(false);
+                            await this.setCalling(false);
+                            this.resetCall();
+                        }
+                    }
+                });
+            // ///////////////////////
+            this.myChannel["lobby"]
+                .here((users) => {
+                    this.$store.dispatch("users/getUsersOnline", users);
+                })
+                .joining((user) => {
+                    this.$store.dispatch("users/pushUsersOnline", user);
+                })
+                .leaving((user) => {
+                    this.$store.dispatch("users/deleteUser", user);
+                })
+                .listen("NewGroup", (e) => {
+                    this.$store.dispatch("users/getGroup", e.group);
+                })
+                .listen("NewUser", (e) => {
+                    this.$store.dispatch("users/getNewUser", e.user);
+                })
+                .listen("HandleUser", (e) => {})
+                .listen("LobbyEvent", (e) => {
+                    if (e.event == "update.user") {
+                        this.$store.dispatch("users/getUserUpdate", e.data);
+                    }
+                });
+            this.myChannelChat();
+        },
+    },
+    watch: {
+        incomingCall(incomingCall) {
+            if (incomingCall) {
+                this.answerCallDialog = true;
+                this.ring();
+                this.timeOutCall = setTimeout(
+                    () => (
+                        (this.incomingCall = false),
+                        (this.statusCall = "no answer"),
+                        this.answerCall("missed")
+                    ),
+                    60000
+                );
+            } else {
+                this.ring(false);
+                this.answerCallDialog = false;
+            }
+        },
+        answerCallDialog(open) {
+            if (!open) {
+                this.incomingCall = false;
+            }
         },
     },
 };

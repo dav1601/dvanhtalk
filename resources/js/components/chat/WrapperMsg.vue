@@ -1,7 +1,7 @@
 <template>
     <div class="grouped__msg">
         <div class="pb-4 chat-message-system small" v-if="!checkAllSystemMsg">
-            {{ formatTime2(groupMsg.created_at) }}
+            {{ handleTime() }}
         </div>
         <div v-if="type == 0">
             <item-msg
@@ -35,7 +35,7 @@
                         :typeUserMsg="type"
                         @open-gll="openGll"
                         @loaded="loaded"
-                         :allSystemMsg="checkAllSystemMsg"
+                        :allSystemMsg="checkAllSystemMsg"
                     ></item-msg>
                 </div>
             </div>
@@ -53,6 +53,9 @@ export default {
         ItemMsg,
     },
     computed: {
+        setBlockLoadImg() {
+            return this.$store.getters["message/setBlockLoadImg"];
+        },
         getLast() {
             const data = this.groupMsg.messages.filter((el) => {
                 return el.sd_id == Number(this.friendId);
@@ -105,8 +108,25 @@ export default {
         openGll(e) {
             return this.$emit("open-gll", e);
         },
-        loaded() {
-            return this.$emit("loaded");
+        loaded(sd_id) {
+            return this.$emit("loaded", sd_id);
+        },
+        handleTime() {
+            const MSGTIME = this.$moment(this.groupMsg.created_at);
+            const NOW = this.$moment();
+            const TODAY = MSGTIME.clone().startOf("day");
+            const ISTODAY = NOW.isSame(TODAY, "d");
+            const YESTERDAY = MSGTIME.clone()
+                .subtract(1, "days")
+                .startOf("day");
+            const ISYESTERDAY = NOW.isSame(YESTERDAY, "d");
+            if (ISTODAY) {
+                return "Hôm nay " + MSGTIME.format("LT");
+            }
+            if (ISYESTERDAY) {
+                return "Hôm qua " + MSGTIME.format("LT");
+            }
+            return this.formatTime2(this.groupMsg.created_at);
         },
     },
 };

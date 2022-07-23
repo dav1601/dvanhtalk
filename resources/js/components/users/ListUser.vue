@@ -31,7 +31,6 @@
                 :link="true"
                 :isLoading="isLoadingUsers"
             ></item-user>
-
             <sk-item-user
                 v-for="i in 10"
                 :key="'Ske-User-' + i"

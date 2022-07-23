@@ -2,6 +2,8 @@ export default {
     data() {
         return {
             blockSroll: false,
+            channelChat: null,
+            chatting: false,
         };
     },
     methods: {
@@ -12,7 +14,7 @@ export default {
             foc = false,
             deleteSavedScroll = false,
             limit = 300,
-            returnBackForNot = false
+            returnBackIfNot = false
         ) {
             if (deleteSavedScroll) {
                 this.deleteSavedScroll();
@@ -22,7 +24,7 @@ export default {
             if (el) {
                 let scroll = el.scrollHeight;
                 let sum = Number(scroll - saveScrollHeight);
-                if (!this.isPointBlockScroll(limit, returnBackForNot) || foc) {
+                if (!this.isPointBlockScroll(limit, returnBackIfNot) || foc) {
                     el.scrollTo({
                         top: sum,
                     });
@@ -100,7 +102,7 @@ export default {
             Echo.join(`chat-${idReceiver}`);
             ////////////////////////////////////////////////////////////////////////////////////////
         },
-        async myServer() {
+        async myChannelChat() {
             await Echo.private(`chat-${this.id}`).listenForWhisper(
                 "typing",
                 async (e) => {
@@ -116,60 +118,18 @@ export default {
                     }
                 }
             );
-            await Echo.join(`notify-${this.id}`)
-                .here((users) => {})
-                .listen("SenRqJoinGr", (e) => {
-                    this.$notify({
-                        group: "request__group",
-                        data: {
-                            request: e.reqJG,
-                            nofifyFor: "admin",
-                            status: null,
-                        },
-                    });
-                    this.$store.dispatch("users/getReq", e.reqJG);
-                })
-                .listen("HandleRequest", (e) => {
-                    if (e.data.action == "joinGr") {
-                        this.$notify({
-                            group: "request__group",
-                            data: {
-                                request: e.data.request,
-                                nofifyFor: "user",
-                                status: e.data.status,
-                            },
-                        });
-                        this.$store.dispatch(
-                            "users/getDataHandleRequest",
-                            e.data
-                        );
-                    }
-                    if (e.data.group_action == "reqActions") {
-                        this.$store.dispatch("users/getHandleActions", e.data, {
-                            root: true,
-                        });
-                        if (e.data.action == "kick") {
-                            if (e.data.users_id == this.id) {
-                                this.$router.push({ name: "home" });
-                            }
-                        }
-                    }
-                    if (e.data.group_action == "reqSaveData") {
-                        this.$store.dispatch(
-                            "users/getDataGroupSave",
-                            e.data.newestGr
-                        );
-                    }
-                });
+
             await Echo.join(`chat-${this.id}`)
                 .here((users) => {
                     this.$store.dispatch("users/getUsersMyRoom", users);
                 })
                 .joining((user) => {
                     this.$store.dispatch("users/pushMyRoom", user);
+                    this.$store.commit("message/joinChat", user.id);
                 })
                 .leaving((user) => {
                     this.$store.commit("users/deleteUserMyRoom", user);
+                    this.$store.commit("message/leavingChat", user.id);
                 })
                 .listen("SendMessage", async (e) => {
                     await this.$store.dispatch("message/getTyping", false);
@@ -193,17 +153,37 @@ export default {
                         Number(e.user_message.rcv_id) ==
                         Number(this.$store.getters["auth/id"])
                     ) {
-                        this.$store.dispatch(
+                        this.chatting = true;
+                        const blocking = this.isPointBlockScroll();
+                        if (blocking) {
+                            await this.$store.commit(
+                                "message/setBlockLoadImg",
+                                true
+                            );
+                        } else {
+                            await this.$store.commit(
+                                "message/setBlockLoadImg",
+                                false
+                            );
+
+                        }
+                        await this.$store.dispatch(
                             "message/getMessage",
                             e.user_message
                         );
+
                         if (
                             Number(
                                 this.$store.getters["message/receiver"].id
                             ) == Number(e.user_message.sd_id)
                         ) {
-                            this.$store.dispatch("message/getIsChatting", true);
-                            this.scrollEnd();
+                            await this.$store.dispatch(
+                                "message/getIsChatting",
+                                true
+                            );
+                            if (!blocking) {
+                                this.scrollEnd(true);
+                            }
                         }
                     }
                 })

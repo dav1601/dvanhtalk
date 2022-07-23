@@ -23,6 +23,7 @@ import BaseLoading from "./components/ui/BaseLoading";
 import "@mdi/font/css/materialdesignicons.css";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import ItemAvatar from "./components/users/ItemAvatar";
+import helpers from "./helpers";
 Vue.use(Vuetify);
 Vue.use(Notifications);
 Vue.use(VEmojiPicker);
@@ -47,7 +48,14 @@ Vue.directive("dav-click-outside", {
         document.body.removeEventListener("click", window.event);
     },
 });
+const plugin = {
+    install() {
+        Vue.helpers = helpers;
+        Vue.prototype.$helpers = helpers;
+    },
+};
 
+Vue.use(plugin);
 const app = new Vue({
     router,
     store,

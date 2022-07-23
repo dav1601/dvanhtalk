@@ -65,7 +65,7 @@
                         v-for="(reaction, index) in allReaction"
                         :key="'user-reaction-' + index"
                         :data="reaction"
-                        :type="type"
+                        :type="typeChat"
                     ></item-user-reaction>
                 </div>
             </v-card>
@@ -169,6 +169,7 @@
                         color="primary"
                         size="30"
                         class="cursor-pointer mr-8"
+                        @click="offerCall(false)"
                         >mdi-phone</v-icon
                     >
                     <v-icon
@@ -176,6 +177,7 @@
                         color="primary"
                         size="30"
                         class="cursor-pointer mr-8"
+                        @click="offerCall(true)"
                         >mdi-video</v-icon
                     >
                     <v-icon
@@ -219,7 +221,7 @@
                         <wrapper-msg
                             @open-gll="openGll"
                             @loaded="loaded"
-                            :type="type"
+                            :type="typeChat"
                             v-for="(message, key) in messages"
                             :key="key"
                             :groupMsg="message"
@@ -441,6 +443,7 @@ import ItemUserReaction from "../components/chat/dialogReaction/ItemUserReaction
 import SkItemUser from "../components/skeleton/SkItemUser.vue";
 import ChatBarMobile from "../components/layout/ChatBarMobile";
 import TextSmall from "../components/ui/TextSmall";
+import chatCall from "../mixin/servers/chatCall";
 export default {
     components: {
         ItemMsg,
@@ -457,7 +460,7 @@ export default {
         ChatBarMobile,
         TextSmall,
     },
-    mixins: [user, chat],
+    mixins: [user, chat, chatCall],
     props: ["friendId"],
     data() {
         return {
@@ -492,6 +495,7 @@ export default {
             showEmoji: false,
             tabReationActive: "all",
             showChatInfo: false,
+            friendInRoom: false,
         };
     },
     beforeCreate() {
@@ -518,7 +522,7 @@ export default {
         this.setup();
         this.$nextTick(async () => {
             await this.setReceiver();
-            if (this.type == 0) {
+            if (this.typeChat == 0) {
                 Echo.leave(`group-chat-${this.friendId}`);
                 Echo.leave(`chat-${this.friendId}`);
                 this.server(this.friendId);
@@ -548,13 +552,22 @@ export default {
         },
     },
     computed: {
+        blockLoadImg() {
+            return this.$store.getters["message/blockLoadImg"];
+        },
+        inRoom() {
+            return this.$store.getters["message/rcvInRoom"];
+        },
+        streamId() {
+            return this.id + this.makeStreamId(10);
+        },
         statusText() {
             if (this.isOnline(this.receiver.id)) {
                 return "Đang hoạt động";
             }
             return "Hoạt động " + this.formatTime(this.receiver.offline_at);
         },
-        type() {
+        typeChat() {
             return this.$store.getters["message/typeChat"];
         },
         amountReaction() {
@@ -644,6 +657,38 @@ export default {
     },
 
     methods: {
+        urlCall(hasVideo = false) {
+            const route = this.$router.resolve({
+                name: "call__chat",
+                params: { streamId: this.id + this.makeStreamId(15) },
+                query: {
+                    receiver: this.receiver.id,
+                    broadcaster: this.id,
+                    type: this.typeChat,
+                    has_video: hasVideo,
+                },
+            });
+            return route.href;
+        },
+        async offerCall(hasVideo = false) {
+            this.popupCenter(
+                this.urlCall(hasVideo),
+                "Cuộc hội thoại của dav-chat"
+            );
+        },
+        makeStreamId(length) {
+            var result = "";
+            var characters =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var charactersLength = characters.length;
+            for (var i = 0; i < length; i++) {
+                result += characters.charAt(
+                    Math.floor(Math.random() * charactersLength)
+                );
+            }
+            return result;
+        },
+
         loadReaction(index) {
             this.tabReationActive = index;
             let data = this.groupReaction[index];
@@ -676,12 +721,12 @@ export default {
         getDimensions() {
             this.windowHeight = document.documentElement.clientHeight;
             this.windowWidth = document.documentElement.clientWidth;
-            console.log({
-                hh: this.windowHeight,
-                ww: this.windowWidth,
-                h: document.documentElement.clientHeight,
-                w: document.documentElement.clientWidth,
-            });
+            // console.log({
+            //     hh: this.windowHeight,
+            //     ww: this.windowWidth,
+            //     h: document.documentElement.clientHeight,
+            //     w: document.documentElement.clientWidth,
+            // });
         },
         updateSrcImg() {
             for (let i = 0; i < this.images.length; i++) {
@@ -775,15 +820,7 @@ export default {
             }
             return this.$store.commit("message/setTypeChat", typeChat);
         },
-        inRoom() {
-            let user = this.usersMyRoom.find(
-                (user) => user.id == this.friendId
-            );
-            if (user) {
-                return true;
-            }
-            return false;
-        },
+
         setup() {
             this.disableChat = true;
             this.setting = true;
@@ -793,16 +830,16 @@ export default {
             this.setting = false;
         },
         async setReceiver() {
-            if (this.type == 1) {
+            if (this.typeChat == 1) {
                 this.checking = true;
             }
             await this.$store
                 .dispatch("message/getReceiver", {
                     contactId: this.friendId,
-                    type: this.type,
+                    type: this.typeChat,
                 })
                 .then((req) => {
-                    if (this.type == 1) {
+                    if (this.typeChat == 1) {
                         if (
                             !this.receiver.members.find(
                                 (user) => user.users_id == this.id
@@ -829,7 +866,7 @@ export default {
                 await this.$store
                     .dispatch("message/getMessages", {
                         conversationId: this.friendId,
-                        type: this.type,
+                        type: this.typeChat,
                         page: this.page,
                     })
                     .then((req) => {
@@ -878,7 +915,7 @@ export default {
             }
         },
         isTyping() {
-            if (this.type == 0) {
+            if (this.typeChat == 0) {
                 let typing = false;
                 if (
                     this.message != "" &&
@@ -895,10 +932,12 @@ export default {
                 return;
             }
         },
-        loaded() {
-            if (this.isChatting) {
-                this.scrollEnd();
-            } else {
+        loaded(sd_id) {
+            console.log({
+                block: this.blockLoadImg,
+            });
+            if (!this.blockLoadImg || sd_id == this.id) {
+                console.log("loaded");
                 this.scrollEnd(true);
             }
         },
@@ -933,14 +972,11 @@ export default {
         },
         sendMessage(type) {
             let seen = 0;
-            if (this.inRoom()) {
+            if (this.inRoom) {
                 seen = 1;
             }
-            if (
-                this.message == "" &&
-                this.images.length <= 0 &&
-                this.audio == ""
-            ) {
+
+            if (!this.message && this.images.length <= 0 && this.audio == "") {
                 this.resetAll();
             } else {
                 this.sending = true;
@@ -958,7 +994,7 @@ export default {
                         images: this.images,
                         audio: this.audio,
                         // that type for 1: pers 2: group
-                        for: this.type,
+                        for: this.typeChat,
                     })
                     .then((req) => {
                         this.$store.commit("message/deleteMsgReply");
@@ -976,6 +1012,7 @@ export default {
             this.showFormatMessage = false;
         },
         resetLoad() {
+            this.setType(null);
             this.message = "";
             this.images = [];
             this.parent_id = null;
@@ -987,7 +1024,6 @@ export default {
             this.timeout = 4000;
             this.notification = false;
             this.text = "";
-            this.type = 0;
             this.checking = false;
             this.page = 1;
             this.endPage = null;
@@ -1012,7 +1048,7 @@ export default {
             this.setType();
             this.$nextTick(async () => {
                 this.setReceiver();
-                if (this.type == 0) {
+                if (this.typeChat == 0) {
                     Echo.leave(`group-chat-${oldVal}`);
                     Echo.leave(`chat-${oldVal}`);
                     this.server(newVal);

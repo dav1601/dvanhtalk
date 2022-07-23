@@ -57,6 +57,17 @@ export default {
                 });
             },
         },
+        notifyCall: {
+            get() {
+                return this.$store.getters["message/notifyCall"];
+            },
+            set(value) {
+                this.$store.commit("message/setNotifyCall");
+            },
+        },
+        calling() {
+            return this.$store.getters["message/calling"];
+        },
         id() {
             return this.$store.getters["auth/id"];
         },
@@ -77,6 +88,9 @@ export default {
         },
         isChat() {
             return this.$route.name == "chat";
+        },
+        isCallChat() {
+            return this.$route.name == "call__chat";
         },
         listUser() {
             return this.$store.getters["users/users"];
@@ -106,6 +120,9 @@ export default {
                 return this.listUsersOnline.find((user) => user.id == id);
             }
             return false;
+        },
+        setCalling(calling = true) {
+            return this.$store.commit("message/setCalling", calling);
         },
         debounceSearchUser: debounce(function (e) {
             this.isLoadingUsers = true;

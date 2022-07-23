@@ -11,6 +11,7 @@ const state = () => ({
     founderGroupCurrent: null,
     usersGroupCurrent: [],
     usersGroupCurrentOnline: [],
+    receiverInRoom: false,
 });
 
 function getIndexGroupById(group, id) {
@@ -290,6 +291,10 @@ const actions = {
     getUsersOnline(c, p) {
         c.commit("setUsersOnline", p);
     },
+    getUsersMyRoom(c, p) {
+        console.log(p);
+        c.commit("message/setInRoom", p, { root: true });
+    },
     deleteUser(c, p) {
         axios
             .all([
@@ -450,6 +455,22 @@ const actions = {
     banUserGroup(c, p) {},
     getNewUser(c, p) {
         c.commit("pushNewUser", p);
+    },
+    getSimpleUser(c, p) {
+        return new Promise((rs, rj) => {
+            axios
+                .get(
+                    route("user.simple", {
+                        id: p,
+                    })
+                )
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
     },
 };
 

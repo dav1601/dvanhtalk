@@ -497,7 +497,7 @@ export default {
                 });
         },
         loaded() {
-            return this.$emit("loaded");
+            return this.$emit("loaded", this.data.sd_id);
         },
         haveHttps(url = "") {
             let newUrl = window.decodeURIComponent(url);
@@ -582,13 +582,10 @@ export default {
     }
 }
 .message__image {
-    max-width: 250px !important;
-    max-height: 250px;
     &--item {
-        flex: 0 0 125.31px;
+        flex: 1 1 125.31px;
         max-width: 125.31px;
         height: 125.31px;
-        max-height: 125.31px;
         margin-bottom: 5px;
         margin-right: 5px;
         a {
@@ -605,7 +602,8 @@ export default {
     }
 }
 .message__image.images {
-    max-width: 400px !important;
+    min-width: 300px;
+    max-width: 400px;
     max-height: 100% !important;
 }
 .message__actions .text-muted {

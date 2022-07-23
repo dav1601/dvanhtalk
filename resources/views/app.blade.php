@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="auth_user" content="{{ Auth::user() }}">
     <link rel="icon" href="https://res.cloudinary.com/vanh-tech/image/upload/v1650763070/email-logo_rw3wea.png"
         type="image/gif">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
@@ -33,7 +34,7 @@
 </head>
 
 <body>
-    <div id="app"></div>
+    <div id="app" :auth_user="@json(Auth::user())"></div>
     <script src=" {{ asset('js/app.js') }} "></script>
 </body>
 

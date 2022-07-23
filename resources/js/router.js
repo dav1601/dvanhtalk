@@ -4,12 +4,14 @@ import TheLobby from "./pages/TheLobby.vue";
 import ChatLayout from "./pages/ChatLayout";
 import NotFound from "./pages/NotFound";
 import SettingUser from "./pages/SettingUser";
+import ChatCall from "./pages/ChatCall";
 Vue.use(VueRouter);
 const routes = [
     {
         path: "/",
         name: "home",
         component: TheLobby,
+        props: true,
         children: [
             {
                 path: "/chat/:friendId",
@@ -32,7 +34,12 @@ const routes = [
         component: SettingUser,
         props: true,
     },
-
+    {
+        path: "/call__chat/ROOM::streamId",
+        name: "call__chat",
+        component: ChatCall,
+        props: true,
+    },
     {
         path: "/:notFound(.*)",
         name: "404",

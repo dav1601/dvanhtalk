@@ -51,19 +51,8 @@ const mutations = {
 };
 
 const actions = {
-    getMe(c) {
-        return new Promise((rs, rj) => {
-            axios
-                .get(route("me"))
-                .then((req) => {
-                    c.commit("setMe", req.data.me);
-                    // Làm loading khi mà đang load me truyền loadingMe sang route-view
-                    rs(req);
-                })
-                .catch((err) => {
-                    rj(err);
-                });
-        });
+    getMe(c, p) {
+        c.commit("setMe", p);
     },
     resetMe(c) {
         c.commit("setMe", c.getters.full);

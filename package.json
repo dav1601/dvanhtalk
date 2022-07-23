@@ -32,11 +32,14 @@
         "vuetify": "^2.6.5"
     },
     "dependencies": {
+        "crypto-js": "^4.1.1",
         "debounce": "^1.2.1",
         "html-metadata-parser": "^2.0.4",
         "laravel-echo": "^1.11.7",
         "moment": "^2.29.3",
+        "peerjs": "^1.4.6",
         "sanitize-html": "^2.7.0",
+        "simple-peer": "^9.11.1",
         "url-metadata": "^2.5.0",
         "v-emoji-picker": "^2.3.3",
         "vee-validate": "^3.4.14",

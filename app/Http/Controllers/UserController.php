@@ -67,4 +67,9 @@ class UserController extends Controller
     public function update()
     {
     }
+    public function simple__user($id)
+    {
+        $user = User::where('id', $id)->first();
+        return response()->json($user);
+    }
 }

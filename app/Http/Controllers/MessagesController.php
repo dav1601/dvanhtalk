@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Laravel\Ui\Presets\React;
 use App\Events\SendMessageGroup;
 use App\Models\ReactionMessage;
+use App\Models\RoomCallChat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Repositories\Groups\GroupsInterface;
@@ -35,6 +36,7 @@ class MessagesController extends Controller
             $arrayMessages = array();
             $page =  $request->has('page') && $request->page != null ? $request->page : 1;
             $limit = $page * $item_page;
+            $setupRelation = ['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'call_infor'];
             if ($type == 0) {
                 $queryMsg = UserMessage::where(function ($q) use ($conversationId) {
                     $q->where('sd_id', '=', Auth::id())
@@ -44,7 +46,7 @@ class MessagesController extends Controller
                     $q->where('sd_id', '=', $conversationId)
                         ->where('rcv_id', '=', Auth::id())
                         ->where('type', 0);
-                })->with(['message', 'message_parent', 'message.reaction', 'message.reaction.user']);
+                })->with($setupRelation);
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
                     $end_page = 1;
@@ -55,7 +57,8 @@ class MessagesController extends Controller
                 }
                 $messages->page = $page;
             } else {
-                $queryMsg = UserMessage::with(['message', 'message_parent', 'sender', 'message.reaction', 'message.reaction.user'])->where('rcv_group_id', $conversationId)->where('type', 1);
+                $setupRelation[] = "sender";
+                $queryMsg = UserMessage::with($setupRelation)->where('rcv_group_id', $conversationId)->where('type', 1);
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
                     $end_page = 1;
@@ -95,7 +98,7 @@ class MessagesController extends Controller
         $for = $request->for;
         $seen = $request->has('seen') ? $request->seen : 0;
         $haveImages = $request->has('images') ? true : false;
-        $haveMessageText = $request->message != null && $request->message != "" ? true : false;
+        $haveMessageText = !empty($request->message) ? true : false;
         $parent_id = $request->parent_id == 'null' || $request->parent_id == null ? NULL : (int) $request->parent_id;
         if ($request->type == 1) {
             if ($haveMessageText && !$haveImages) {
@@ -218,5 +221,18 @@ class MessagesController extends Controller
             return response()->json($data);
         }
         return response()->json(['error' => "Gỡ cảm xúc thất bại"], 500);
+    }
+    public function create__room__call__chat(Request $request)
+    {
+        $to = (int) $request->to;
+        try {
+            $room = new RoomCallChat();
+            $room->from = Auth::id();
+            $room->to = $to;
+            $room->save();
+            return response()->json($room, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => "Tạo call chat thất bại"], 500);
+        }
     }
 }

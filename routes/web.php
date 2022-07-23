@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Validator;
 use PHPUnit\TextUI\XmlConfiguration\Group;
 use App\Http\Controllers\MessagesController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WebrtcStreamingController;
 use App\Repositories\Groups\GroupsInterface;
 use App\Repositories\Messages\MessagesInterface;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -65,10 +66,19 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('message_store', 'store')->name('messages.store');
         Route::post('message_store_reaction', 'storeReaction')->name('messages.store.reaction');
         Route::post('message_delete_reaction', 'message_delete_reaction')->name('messages.delete.reaction');
+        Route::post('message_create_room_call', 'create__room__call__chat')->name('message.create.room.call');
     });
     Route::controller(UserController::class)->group(function () {
         Route::get('user/{id}', 'user')->name('user.user');
+        Route::get('user/simple/{id}', 'simple__user')->name('user.simple');
         Route::get('users', 'index')->name('user.users');
+    });
+    Route::controller(WebrtcStreamingController::class)->group(function () {
+        Route::post('/stream__offer', 'makeStreamOffer')->name('stream.offer');
+        Route::post('/stream__answer', 'makeStreamAnswer')->name('stream.answer');
+        Route::post('/offer__call', 'offer__call')->name('call.offer');
+        Route::post('/ans__call', 'ans__call')->name('call.answer');
+        Route::post('/toggle__voice', 'toggle__voice')->name('call.action.mic');
     });
     Route::get("auth__group/{groupId}", function (Request $request) {
         $auth = false;
@@ -366,3 +376,4 @@ Route::post('update_seen', function (Request $request) {
     }
 });
 Route::get('/{any}', 'AppController@index')->where('any', '.*')->middleware('auth');
+

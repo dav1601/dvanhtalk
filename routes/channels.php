@@ -26,3 +26,16 @@ Broadcast::channel('group-chat-{id}', function ($user) {
 Broadcast::channel('notify-{id}', function () {
     return Auth::user();
 });
+Broadcast::channel('call-chat-{id}', function ($user) {
+    return $user;
+});
+// Dynamic Presence Channel for Streaming
+
+
+// Signaling Offer and Answer Channels
+Broadcast::channel('call-signal-channel-{streamId}', function ($user) {
+    return $user;
+});
+Broadcast::channel('notify-call-{userId}', function ($user) {
+    return $user;
+});

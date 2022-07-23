@@ -27,23 +27,10 @@ class MessagesRepository implements MessagesInterface
         if (!$group || !$username || !array_key_exists($action, $arrayMessage))
             return false;
         $message_system = $username . $arrayMessage[$action];
-        $message->message = $message_system;
-        $message->type = 4;
-        if (!$message->save()) {
-            $message->delete();
+        $user_message = $this->store_message($group_id, $message_system, 4, null, 1, 1);
+        if (!$user_message) {
             return false;
         }
-        $user_message->msg_id = (int)$message->id;
-        $user_message->sd_id = (int)$group->founder->id;
-        $user_message->rcv_group_id = (int) $group_id;
-        $user_message->seen = 1;
-        $user_message->type = 1;
-        $user_message->type_msg = 4;
-        if (!$user_message->save()) {
-            $user_message->delete();
-            return false;
-        }
-        $user_message->message = $message;
         $user_message->sender = $group->founder;
         return $user_message;
     }
@@ -124,16 +111,12 @@ class MessagesRepository implements MessagesInterface
                 $user_message->created_at =  $created_at;
                 $user_message->msg_reply_id = $parent_id;
                 $user_message->save();
-                $user_message->message =  $store_message;
-                if ($parent_id == null) {
-                    $user_message->message_parent = null;
-                } else {
-                    $user_message->message_parent = Message::where('id', $parent_id)->first();
-                }
-                $user_message->group_created_at = $this->format_created_at($created_at);
+                $setupRelation = ["message", "message_parent" , "call_infor"];
                 if ($for == 1) {
-                    $user_message->sender = User::where('id',  $user_message->sd_id)->first();
+                    $setupRelation[] = "sender";
                 }
+                $user_message->load($setupRelation);
+                $user_message->group_created_at = $this->format_created_at($created_at);
                 return $user_message;
             } catch (\Exception $e) {
                 $store_message->delete();

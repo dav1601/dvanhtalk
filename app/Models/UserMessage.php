@@ -23,6 +23,10 @@ class UserMessage extends Model
     {
         return $this->belongsTo('App\Models\Message',  'msg_id');
     }
+    public function call_infor()
+    {
+        return $this->hasOne('App\Models\CallInfor', 'user_message_id');
+    }
     public function message_parent()
     {
         return $this->belongsTo('App\Models\Message',  'msg_reply_id');

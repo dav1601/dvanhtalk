@@ -66,7 +66,7 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('message_store', 'store')->name('messages.store');
         Route::post('message_store_reaction', 'storeReaction')->name('messages.store.reaction');
         Route::post('message_delete_reaction', 'message_delete_reaction')->name('messages.delete.reaction');
-        Route::post('message_create_room_call', 'create__room__call__chat')->name('message.create.room.call');
+        Route::post('message_store_call', 'store__message__call')->name('messages.store.call');
     });
     Route::controller(UserController::class)->group(function () {
         Route::get('user/{id}', 'user')->name('user.user');
@@ -376,4 +376,3 @@ Route::post('update_seen', function (Request $request) {
     }
 });
 Route::get('/{any}', 'AppController@index')->where('any', '.*')->middleware('auth');
-

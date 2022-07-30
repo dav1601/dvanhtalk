@@ -68,6 +68,9 @@ export default {
         calling() {
             return this.$store.getters["message/calling"];
         },
+        incomingCall() {
+            return this.$store.getters["message/incomingCall"];
+        },
         id() {
             return this.$store.getters["auth/id"];
         },
@@ -123,6 +126,9 @@ export default {
         },
         setCalling(calling = true) {
             return this.$store.commit("message/setCalling", calling);
+        },
+        setIcmc(icmc) {
+            return this.$store.commit("message/setIncomingCall", icmc);
         },
         debounceSearchUser: debounce(function (e) {
             this.isLoadingUsers = true;

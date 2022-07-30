@@ -187,6 +187,26 @@
                 </audio>
             </div>
             <div
+                class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-call"
+                v-if="typeMessage == 5"
+            >
+                <div
+                    class="d-flex px-3 justify-content-start align-items-center call-item"
+                >
+                    <v-btn fab dark small :color="colorIcon" class="mr-2">
+                        <v-icon dark> {{ renderIconCall }} </v-icon>
+                    </v-btn>
+                    <div class="call-item-cap">
+                        <span class="call-item-cap-text d-block">{{
+                            textCall
+                        }}</span>
+                        <span class="call-item-cap-time d-block">{{
+                            timeCall
+                        }}</span>
+                    </div>
+                </div>
+            </div>
+            <div
                 class="message__actions my-auto"
                 v-if="showActions || showDialog"
             >
@@ -259,6 +279,7 @@ export default {
         "last",
         "lastMe",
         "allSystemMsg",
+        "LT",
     ],
     mixins: [user],
     components: {
@@ -277,6 +298,68 @@ export default {
         };
     },
     computed: {
+        renderIconCall() {
+            if (!this.isCallMsg) {
+                return;
+            }
+            if (this.itMe) {
+                return "mdi-phone-outgoing";
+            }
+            if (this.data.call_info.process == "ended") {
+                return "mdi-phone-incoming";
+            }
+            if (this.data.call_info.process == "missed") {
+                return "mdi-phone-missed";
+            }
+            return "mdi-phone-remove";
+        },
+        textCall() {
+            if (!this.isCallMsg) {
+                return;
+            }
+            if (this.isCallMsg) {
+                if (this.itMe) {
+                    return this.data.message.message;
+                } else {
+                    if (this.data.call_info.process == "ended") {
+                        return this.data.message.message;
+                    } else {
+                        return "Bạn " + this.data.call_info.status;
+                    }
+                }
+            }
+            return;
+        },
+        timeCall() {
+            if (this.isCallMsg) {
+                if (this.data.call_info.process == "ended") {
+                    const time = this.$helpers.fancyTimeFormat(
+                        Math.floor(this.data.call_info.duration)
+                    );
+                    return time;
+                } else {
+                    return this.LT;
+                }
+            }
+            return;
+        },
+        colorIcon() {
+            if (!this.isCallMsg) {
+                return;
+            }
+
+            if (this.itMe) {
+                return "secondary";
+            } else {
+                if (this.data.call_info.process != "ended") {
+                    return "red darken-4";
+                }
+                return "secondary";
+            }
+        },
+        isCallMsg() {
+            return this.data.type_msg == 5 || this.data.call_info != null;
+        },
         MakeMessage2() {
             const id = this.data.message.id;
             let goUrl = "",
@@ -370,12 +453,6 @@ export default {
                 return false;
             }
             return Number(this.lastMe.msg_id) === Number(this.data.msg_id);
-        },
-        encryptedId() {
-            return this.$CryptoJS.AES.encrypt(
-                this.data.message.id + "",
-                "Secret ID"
-            ).toString();
         },
         images() {
             return this.arrayImage.length > 1;
@@ -553,6 +630,31 @@ export default {
 .wp-chat-item:not(.wp-chat-item-audio) {
     position: relative;
     max-width: 60%;
+}
+.wp-chat-item-call {
+    max-width: 250px;
+    border-radius: 8px;
+    background: #3a3b3c;
+    .call-item {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        &-cap {
+            &-text {
+                color: #e4e6eb;
+                font-size: 15px;
+                font-weight: 600;
+                line-height: 19.9995px;
+                text-align: left;
+            }
+            &-time {
+                color: #b0b3b8;
+                font-size: 13px;
+                line-height: 16.0004px;
+                padding: 0px 0px 1px;
+                text-align: left;
+            }
+        }
+    }
 }
 .msg-time-left {
     padding-left: 50px;

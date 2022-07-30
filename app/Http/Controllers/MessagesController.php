@@ -11,6 +11,7 @@ use App\Models\UserMessage;
 use Illuminate\Http\Request;
 use Laravel\Ui\Presets\React;
 use App\Events\SendMessageGroup;
+use App\Models\CallInfor;
 use App\Models\ReactionMessage;
 use App\Models\RoomCallChat;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +37,7 @@ class MessagesController extends Controller
             $arrayMessages = array();
             $page =  $request->has('page') && $request->page != null ? $request->page : 1;
             $limit = $page * $item_page;
-            $setupRelation = ['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'call_infor'];
+            $setupRelation = ['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'call_info'];
             if ($type == 0) {
                 $queryMsg = UserMessage::where(function ($q) use ($conversationId) {
                     $q->where('sd_id', '=', Auth::id())
@@ -182,11 +183,7 @@ class MessagesController extends Controller
             }
             $data = new stdClass();
             $data->action = $action;
-            if ($type == 0) {
-                $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user'])->where('msg_id', $msg_id)->first();
-            } else {
-                $data->message = UserMessage::with(['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'sender'])->where('msg_id', $msg_id)->first();
-            }
+            $data->message = $this->dav2_messages->getUserMessage($msg_id, $type);
             $data->created_at =  $this->dav2_messages->format_created_at($data->message->created_at);
             $event = "reaction.message";
             if ($type == 0) {
@@ -197,7 +194,7 @@ class MessagesController extends Controller
             broadcast(new CustomEvent($data, $event, $channel))->toOthers();
             return response()->json($data);
         } catch (\Exception $e) {
-            return response()->json(['error' => "Lỗi xử lý dữ liệu"], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
     public function message_delete_reaction(Request $request)
@@ -222,17 +219,34 @@ class MessagesController extends Controller
         }
         return response()->json(['error' => "Gỡ cảm xúc thất bại"], 500);
     }
-    public function create__room__call__chat(Request $request)
+    public function store__message__call(Request $request)
     {
-        $to = (int) $request->to;
+        $process = $request->process;
+        $status = $request->status;
+        $duration = $request->duration;
+        $rcv = $request->receiverId;
+        $for = $request->for;
+        $message = $request->hasVideo ? "Cuộc gọi video" : "Cuộc gọi thoại";
+        $call_info = new CallInfor();
+        $user_message = $this->dav2_messages->store_message($rcv, $message, 5, null, 1, $for);
+        if (!$user_message) {
+            return response()->json(['error' => "Lưu tin nhắn cuộc gọi thất bại"], 500);
+        }
         try {
-            $room = new RoomCallChat();
-            $room->from = Auth::id();
-            $room->to = $to;
-            $room->save();
-            return response()->json($room, 200);
+            $call_info->user_message_id = $user_message->id;
+            $call_info->duration = $duration;
+            $call_info->process = $process;
+            $call_info->status = $status;
+            $call_info->save();
+            $user_message->call_info = $call_info;
+            if ($for == 0) {
+                broadcast(new SendMessage($user_message));
+            } else {
+                broadcast(new SendMessageGroup($user_message));
+            }
+            return response()->json($user_message, 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => "Tạo call chat thất bại"], 500);
+            return response()->json(['error' => "Lưu tin nhắn cuộc gọi thất bại"], 500);
         }
     }
 }

@@ -1,4 +1,3 @@
-
 export default {
     methods: {
         popupCenter(
@@ -45,7 +44,7 @@ export default {
 
             if (window.focus) newWindow.focus();
         },
-        getPermissions() {
+        async getPermissions() {
             // Older browsers might not implement mediaDevices at all, so we set an empty object first
             if (navigator.mediaDevices === undefined) {
                 navigator.mediaDevices = {};
@@ -86,11 +85,53 @@ export default {
                 navigator.mediaDevices.getUserMedia ||
                 navigator.webkitGetUserMedia ||
                 navigator.mozGetUserMedia;
-
+            const audioInput = JSON.parse(localStorage.getItem("audioInput"));
+            const videoInput = JSON.parse(localStorage.getItem("videoInput"));
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            let existDevAu = false;
+            let existDevVid = false;
+            if (audioInput && !this.$helpers.isEmpty(audioInput)) {
+                const check1 = devices.filter((dev) => {
+                    return dev.deviceId == audioInput.deviceId;
+                });
+                const check2 = devices.filter((dev) => {
+                    return dev.deviceId == videoInput.deviceId;
+                });
+                if (check1) {
+                    existDevAu = true;
+                }
+                if (check2) {
+                    existDevVid = true;
+                }
+            }
+            console.log({
+                ex1: existDevAu,
+                ex2: existDevVid,
+            });
+            const video =
+                videoInput && existDevVid ? videoInput.deviceId : "undefined";
+            const audio =
+                audioInput && existDevAu ? audioInput.deviceId : "undefined";
+            console.log({
+                dev1: video,
+                dev2: audio,
+                full1: videoInput,
+                full2: audioInput,
+            });
             return new Promise((resolve, reject) => {
                 navigator.mediaDevices
-                    .getUserMedia({ video: true, audio: true })
+                    .getUserMedia({
+                        video: {
+                            deviceId: video ? { exact: video } : undefined,
+                        },
+                        audio: {
+                            deviceId: audio ? { exact: audio } : undefined,
+                        },
+                    })
                     .then((stream) => {
+                        console.log({
+                            stream: stream,
+                        });
                         resolve(stream);
                     })
                     .catch((err) => {

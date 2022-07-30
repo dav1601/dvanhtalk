@@ -1,7 +1,24 @@
 <template>
     <v-container
         class="m-auto call h-100 position-relative d-flex align-items-center"
+        ref="ChatCall"
     >
+        <div v-if="hasVideo">
+            <video
+                autoplay
+                playsinline
+                ref="localVoice"
+                class="localVoice"
+                id="localCam"
+            ></video>
+            <video
+                autoplay
+                playsinline
+                ref="friendVoice"
+                class="friendVoice"
+                id="friendCam"
+            ></video>
+        </div>
         <audio
             controls
             muted
@@ -24,22 +41,6 @@
                 @timeupdate="updateTimeCall"
             ></audio>
         </div>
-        <div class="d-none" v-else>
-            <video
-                v-if="hasVideo"
-                autoplay
-                playsinline
-                ref="localVoice"
-                class="localVoice"
-            ></video>
-            <video
-                v-if="hasVideo"
-                autoplay
-                playsinline
-                ref="friendVoice"
-                class="friendVoice"
-            ></video>
-        </div>
         <div class="m-auto d-flex justify-content-center align-items-center">
             <div
                 class="d-flex justify-content-center align-items-center flex-column"
@@ -57,7 +58,7 @@
                     this.status != "connected" ? this.status : ""
                 }}</span>
                 <v-btn
-                    v-if="denyOrMiss"
+                    v-if="showRecall"
                     class="mt-2"
                     @click="startCall(true)"
                     color="primary"
@@ -127,6 +128,7 @@ export default {
                     calling: "Đang gọi",
                     connecting: "Đang kết nối.....",
                     connected: "Đã kết nối",
+                    connFail: "Kết nối thất bại",
                     unanswered: "Không trả lời",
                     accepted: "Đã chấp nhận",
                     deny: "Từ chối cuộc gọi",
@@ -135,6 +137,7 @@ export default {
                     haveCall: "Đang trong 1 cuộc gọi khác vui lòng gọi lại sau",
                 },
             },
+            showRecall: false,
             isFocusMyself: true,
             callPlaced: true,
             mutedAudio: false,
@@ -148,6 +151,7 @@ export default {
             process: "",
             videoCallParams: {
                 duration: "00:00",
+                timeCall: null,
                 users: [],
                 stream: null,
                 receivingCall: false,
@@ -176,10 +180,6 @@ export default {
         };
     },
     created() {
-        window.addEventListener("beforeunload", (event) => {
-            event.preventDefault();
-            return (event.returnValue = "Changes you made may not be saved");
-        });
         if (this.isBroadcaster) {
             this.setCalling(true);
             this.setProcess("calling");
@@ -219,10 +219,10 @@ export default {
             return this.$route.query.receiver;
         },
         hasVideo() {
-            if (this.$route.query.hasVideo) {
-                return this.$route.query.has_video;
-            }
-            return false;
+            return this.$route.query.has_video == "true";
+        },
+        typeCall() {
+            return this.$route.query.type;
         },
 
         //  Nếu như isbr thì xử lý broad còn không thì xử lý theo viewer
@@ -240,27 +240,12 @@ export default {
         },
         updateTimeCall() {
             const time = this.$refs.friendVoice.currentTime;
-            this.videoCallParams.duration = this.fancyTimeFormat(
+            this.videoCallParams.timeCall = time;
+            this.videoCallParams.duration = this.$helpers.fancyTimeFormat(
                 Math.floor(time)
             );
         },
-        fancyTimeFormat(duration) {
-            // Hours, minutes and seconds
-            var hrs = ~~(duration / 3600);
-            var mins = ~~((duration % 3600) / 60);
-            var secs = ~~duration % 60;
 
-            // Output like "1:01" or "4:03:59" or "123:03:59"
-            var ret = "";
-
-            if (hrs > 0) {
-                ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
-            }
-
-            ret += "" + mins + ":" + (secs < 10 ? "0" : "");
-            ret += "" + secs;
-            return ret;
-        },
         async startCall(reCall = false) {
             this.initChannel();
             if (this.isBroadcaster) {
@@ -280,6 +265,9 @@ export default {
             }
         },
         resetCall() {
+            if (this.videoCallParams.peer1) {
+                this.videoCallParams.peer1.destroy();
+            }
             clearTimeout(this.timeOutCall);
             this.mutedAudio = false;
             this.mutedVideo = false;
@@ -299,6 +287,8 @@ export default {
             this.videoCallParams.channel = null;
             this.videoCallParams.peer1 = null;
             this.videoCallParams.peer2 = null;
+            this.videoCallParams.duration = "00:00";
+            this.videoCallParams.timeCall = null;
         },
         getMediaPermission() {
             return this.getPermissions()
@@ -342,7 +332,6 @@ export default {
                             (data) => data.id === user.id
                         );
                     this.videoCallParams.users.splice(leavingUserIndex, 1);
-                    this.endCall();
                 })
                 // listen to incomming call
                 .listen("CallChat", (e) => {
@@ -396,12 +385,16 @@ export default {
                 stream: this.videoCallParams.stream,
                 config: this.servers,
             });
+            console.log("created broadcaster peer");
             this.videoCallParams.peer1.on("signal", async (data) => {
-                if (
-                    this.process == "calling" ||
-                    (this.process == "reCalling" && this.isBroadcaster)
-                ) {
-                    await this.offerCall();
+                if (this.isBroadcaster) {
+                    console.log("singal broadcaster");
+                    if (
+                        this.process == "calling" ||
+                        this.process == "reCalling"
+                    ) {
+                        await this.offerCall();
+                    }
                 }
                 axios
                     .post(route("stream.offer"), {
@@ -410,7 +403,11 @@ export default {
                         from: this.id,
                         streamId: this.streamId,
                     })
-                    .then(() => {})
+                    .then((req) => {
+                        if (this.process == "reCalling") {
+                            console.log("stream.offer");
+                        }
+                    })
                     .catch((error) => {
                         console.log(error);
                     });
@@ -428,6 +425,7 @@ export default {
             });
 
             this.videoCallParams.peer1.on("error", (err) => {
+                this.setProcess("connFail");
                 console.log(err);
             });
 
@@ -445,10 +443,10 @@ export default {
                 audio.pause();
             }
         },
-        async offerCall(type = "offer") {
+        async offerCall(type = "offer", rcv = this.receiverId) {
             const urlJoin = type == "offer" ? this.$route.fullPath : "";
             await this.$store.dispatch("message/offerCall", {
-                receiver: this.receiverId,
+                receiver: rcv,
                 type: type,
                 action: "call",
                 urlJoin: urlJoin,
@@ -498,14 +496,29 @@ export default {
             });
             this.videoCallParams.peer2.signal(peer1);
         },
-        setMuteAudio(muted = false) {
+        setMuteAudio(muted = false, stop = false) {
+            const friendVoice = this.$refs.friendVoice;
+            const myVoice = this.$refs.localVoice;
             if (this.hasVideo) {
-                this.$refs.friendVoice.srcObject.getAudioTracks()[0].enabled =
-                    !muted;
+                friendVoice.muted = !muted;
             } else {
-                this.$refs.friendVoice.muted = muted;
+                friendVoice.muted = muted;
             }
             this.mutedAudio = muted;
+            if (stop) {
+                if (!this.hasVideo) {
+                    friendVoice.pause();
+                    myVoice.pause();
+                    friendVoice.currentTime = 0;
+                    myVoice.currentTime = 0;
+                } else {
+                    friendVoice.muted = true;
+                    friendVoice.pause();
+                    myVoice.pause();
+                    friendVoice.src = "";
+                    myVoice.src = "";
+                }
+            }
         },
         toggleMutedAudio(muted = true) {
             this.enabledAudio = !muted;
@@ -523,13 +536,14 @@ export default {
             await this.setCalling(false);
             clearTimeout(this.timeOutCall);
             this.setProcess("ended");
-            this.setMuteAudio(true);
+            this.setMuteAudio(true, true);
             this.ended = true;
             this.connected = false;
-            await this.offerCall("ended");
             if (this.isBroadcaster) {
+                await this.offerCall("ended");
                 this.videoCallParams.peer1.destroy();
             } else {
+                await this.offerCall("ended", this.broadcasterId);
                 this.videoCallParams.peer2.destroy();
             }
             Echo.leave(this.channelName);
@@ -540,12 +554,23 @@ export default {
     },
     watch: {
         async process(process) {
+            if (
+                process == "unanswered" ||
+                process == "deny" ||
+                process == "cancel" ||
+                process == "missed" ||
+                process == "ended" ||
+                process == "connFail"
+            ) {
+                this.showRecall = true;
+            } else {
+                this.showRecall = false;
+            }
             if (this.isBroadcaster) {
                 clearTimeout(this.timeOutCall);
                 if (
                     process == "unanswered" ||
                     process == "deny" ||
-                    process == "cancel" ||
                     process == "missed" ||
                     process == "ended"
                 ) {
@@ -553,6 +578,9 @@ export default {
                         process: process,
                         status: this.getStatus(process),
                         receiver: this.receiverId,
+                        duration: this.videoCallParams.timeCall,
+                        for: this.typeCall,
+                        hasVideo: this.hasVideo,
                     });
                 }
                 if (
@@ -560,7 +588,6 @@ export default {
                     process == "deny" ||
                     process == "haveCall"
                 ) {
-                    this.videoCallParams.peer1.destroy();
                     this.denyOrMiss = true;
                 }
                 if (process != "calling" && process != "reCalling") {
@@ -577,6 +604,20 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+#friendCam {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+}
+#localCam {
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    width: 200px;
+    min-height: 200px;
+}
 .call {
     &__actions {
         bottom: 10px;

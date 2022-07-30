@@ -23,7 +23,7 @@ class UserMessage extends Model
     {
         return $this->belongsTo('App\Models\Message',  'msg_id');
     }
-    public function call_infor()
+    public function call_info()
     {
         return $this->hasOne('App\Models\CallInfor', 'user_message_id');
     }

@@ -8,12 +8,12 @@ export default {
     },
     methods: {
         deleteSavedScroll() {
-            return localStorage.setItem("saveScrollHeight", 0);
+            localStorage.setItem("saveScrollHeight", 0);
         },
         scrollEnd(
             foc = false,
             deleteSavedScroll = false,
-            limit = 300,
+            limitScrollBlock = 300,
             returnBackIfNot = false
         ) {
             if (deleteSavedScroll) {
@@ -24,7 +24,13 @@ export default {
             if (el) {
                 let scroll = el.scrollHeight;
                 let sum = Number(scroll - saveScrollHeight);
-                if (!this.isPointBlockScroll(limit, returnBackIfNot) || foc) {
+                if (
+                    !this.isPointBlockScroll(
+                        limitScrollBlock,
+                        returnBackIfNot
+                    ) ||
+                    foc
+                ) {
                     el.scrollTo({
                         top: sum,
                     });
@@ -99,7 +105,19 @@ export default {
                 });
         },
         server(idReceiver) {
-            Echo.join(`chat-${idReceiver}`);
+            Echo.join(`chat-${idReceiver}`).listen("SendMessage", async (e) => {
+                const authId = Number(this.$store.getters["auth/id"]);
+                if (
+                    e.user_message.type_msg == 5 &&
+                    e.user_message.sd_id == authId
+                ) {
+                    await this.$store.commit(
+                        "message/pushMessage",
+                        e.user_message
+                    );
+                    this.scrollEnd(true);
+                }
+            });
             ////////////////////////////////////////////////////////////////////////////////////////
         },
         async myChannelChat() {
@@ -133,12 +151,17 @@ export default {
                 })
                 .listen("SendMessage", async (e) => {
                     await this.$store.dispatch("message/getTyping", false);
-                    if (e.user_message.seen == 0) {
+                    const authId = Number(this.$store.getters["auth/id"]);
+                    const rcvId = Number(
+                        this.$store.getters["message/receiver"].id
+                    );
+                    const userMessage = e.user_message;
+                    if (userMessage.seen == 0) {
                         let el = document.getElementById(
-                            "queue-" + e.user_message.sd_id
+                            "queue-" + userMessage.sd_id
                         );
                         let plus = 1;
-                        if (e.user_message.message_images) {
+                        if (userMessage.message_images) {
                             plus = 2;
                         }
                         let countQueue =
@@ -150,8 +173,8 @@ export default {
                         }
                     }
                     if (
-                        Number(e.user_message.rcv_id) ==
-                        Number(this.$store.getters["auth/id"])
+                        Number(userMessage.rcv_id) == authId ||
+                        userMessage.call_info
                     ) {
                         this.chatting = true;
                         const blocking = this.isPointBlockScroll();
@@ -165,18 +188,13 @@ export default {
                                 "message/setBlockLoadImg",
                                 false
                             );
-
                         }
                         await this.$store.dispatch(
                             "message/getMessage",
-                            e.user_message
+                            userMessage
                         );
 
-                        if (
-                            Number(
-                                this.$store.getters["message/receiver"].id
-                            ) == Number(e.user_message.sd_id)
-                        ) {
+                        if (rcvId == Number(userMessage.sd_id)) {
                             await this.$store.dispatch(
                                 "message/getIsChatting",
                                 true
@@ -185,6 +203,8 @@ export default {
                                 this.scrollEnd(true);
                             }
                         }
+                        const tone = this.$refs.msgTone;
+                        tone.play();
                     }
                 })
                 .listen("CustomEvent", (e) => {

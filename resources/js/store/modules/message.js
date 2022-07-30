@@ -13,6 +13,7 @@ const state = () => ({
     dialogReaction: false,
     typeChat: null,
     calling: false,
+    incomingCall: false,
     rcvInRoom: false,
     blockLoadImg: false,
 });
@@ -20,6 +21,9 @@ const state = () => ({
 const getters = {
     rcvInRoom(s) {
         return s.rcvInRoom;
+    },
+    incomingCall(s) {
+        return s.incomingCall;
     },
     blockLoadImg(s) {
         return s.blockLoadImg;
@@ -84,6 +88,9 @@ const mutations = {
             return (s.rcvInRoom = true);
         }
         return;
+    },
+    setIncomingCall(s, p) {
+        return (s.incomingCall = p);
     },
     setCalling(s, p) {
         return (s.calling = p);
@@ -438,7 +445,25 @@ const actions = {
                 });
         });
     },
-    createMessageCall(c, p) {},
+    createMessageCall(c, p) {
+        const data = new FormData();
+        data.append("duration", p.duration);
+        data.append("receiverId", p.receiver);
+        data.append("status", p.status);
+        data.append("process", p.process);
+        data.append("for", p.for);
+        data.append("hasVideo", p.hasVideo);
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("messages.store.call"), data)
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
     saveReaction(c, p) {
         const data = new FormData();
         data.append("type", c.getters["typeChat"]);

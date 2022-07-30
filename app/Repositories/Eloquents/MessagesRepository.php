@@ -111,7 +111,7 @@ class MessagesRepository implements MessagesInterface
                 $user_message->created_at =  $created_at;
                 $user_message->msg_reply_id = $parent_id;
                 $user_message->save();
-                $setupRelation = ["message", "message_parent" , "call_infor"];
+                $setupRelation = ["message", "message_parent"];
                 if ($for == 1) {
                     $setupRelation[] = "sender";
                 }
@@ -126,5 +126,17 @@ class MessagesRepository implements MessagesInterface
         }
         $store_message->delete();
         return false;
+    }
+    public function getUserMessage($msg_id, $for)
+    {
+        $setupRelation = ['message', 'message_parent', "call_info", 'message.reaction', 'message.reaction.user'];
+        if ($for == 1) {
+            $setupRelation[] = "sender";
+        }
+        $user_message =  UserMessage::with($setupRelation)->where('msg_id', $msg_id)->first();
+        if ($user_message) {
+            return $user_message;
+        }
+        return NULL;
     }
 }

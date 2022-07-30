@@ -10,4 +10,5 @@ interface MessagesInterface
     public function created_at();
     public function format_created_at($created_at);
     public function getLastMessage($friendId);
+    public function getUserMessage($msg_id, $for);
 }

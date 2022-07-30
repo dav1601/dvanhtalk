@@ -164,14 +164,41 @@
                 <div
                     class="--actions d-flex justify-content-end align-items-center"
                 >
-                    <v-icon
-                        dark
-                        color="primary"
-                        size="30"
-                        class="cursor-pointer mr-8"
-                        @click="offerCall(false)"
-                        >mdi-phone</v-icon
-                    >
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-icon
+                                color="primary"
+                                class="ma-2 white--text mr-8"
+                                fab
+                                size="30"
+                                v-bind="attrs"
+                                v-on="on"
+                                @click.stop="dialogSettingCall = true"
+                                dark
+                                >mdi-cog</v-icon
+                            >
+                        </template>
+                        <span>Cài đặt cuộc gọi</span>
+                    </v-tooltip>
+                    <setting-call
+                        :dialogSettingCall="dialogSettingCall"
+                        @setting-call="settingCall"
+                    ></setting-call>
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-icon
+                                dark
+                                v-bind="attrs"
+                                v-on="on"
+                                color="primary"
+                                size="30"
+                                class="cursor-pointer mr-8"
+                                @click="offerCall(false)"
+                                >mdi-phone</v-icon
+                            >
+                        </template>
+                        <span>Cuộc gọi thoại</span>
+                    </v-tooltip>
                     <v-icon
                         dark
                         color="primary"
@@ -444,6 +471,7 @@ import SkItemUser from "../components/skeleton/SkItemUser.vue";
 import ChatBarMobile from "../components/layout/ChatBarMobile";
 import TextSmall from "../components/ui/TextSmall";
 import chatCall from "../mixin/servers/chatCall";
+import SettingCall from "../components/chat/SettingCall.vue";
 export default {
     components: {
         ItemMsg,
@@ -459,6 +487,7 @@ export default {
         SkItemUser,
         ChatBarMobile,
         TextSmall,
+        SettingCall,
     },
     mixins: [user, chat, chatCall],
     props: ["friendId"],
@@ -496,6 +525,7 @@ export default {
             tabReationActive: "all",
             showChatInfo: false,
             friendInRoom: false,
+            dialogSettingCall: false,
         };
     },
     beforeCreate() {
@@ -657,6 +687,9 @@ export default {
     },
 
     methods: {
+        settingCall(p) {
+            this.dialogSettingCall = p;
+        },
         urlCall(hasVideo = false) {
             const route = this.$router.resolve({
                 name: "call__chat",
@@ -805,7 +838,6 @@ export default {
                     elBody.style.height = sum;
                 }
             }
-            this.scrollEnd();
         },
         toggleFormatMessage() {
             return (this.showFormatMessage = !this.showFormatMessage);
@@ -1035,6 +1067,7 @@ export default {
             this.showEmoji = false;
             this.tabReationActive = "all";
             this.showChatInfo = false;
+            this.dialogSettingCall = false;
         },
     },
     watch: {

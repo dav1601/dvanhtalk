@@ -1,7 +1,7 @@
 <template>
     <div class="grouped__msg">
         <div class="pb-4 chat-message-system small" v-if="!checkAllSystemMsg">
-            {{ handleTime() }}
+            {{ handleTime(false) }}
         </div>
         <div v-if="type == 0">
             <item-msg
@@ -13,6 +13,7 @@
                 :index="key"
                 :data="message"
                 :typeUserMsg="type"
+                :LT="handleTime(true)"
                 @open-gll="openGll"
                 @loaded="loaded"
                 :allSystemMsg="checkAllSystemMsg"
@@ -111,7 +112,7 @@ export default {
         loaded(sd_id) {
             return this.$emit("loaded", sd_id);
         },
-        handleTime() {
+        handleTime(noPrefix = false) {
             const MSGTIME = this.$moment(this.groupMsg.created_at);
             const NOW = this.$moment();
             const TODAY = MSGTIME.clone().startOf("day");
@@ -125,6 +126,9 @@ export default {
             }
             if (ISYESTERDAY) {
                 return "Hôm qua " + MSGTIME.format("LT");
+            }
+            if (noPrefix) {
+                return MSGTIME.format("LT");
             }
             return this.formatTime2(this.groupMsg.created_at);
         },

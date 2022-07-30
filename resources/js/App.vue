@@ -2,9 +2,15 @@
     <!-- App.vue -->
 
     <v-app class="fix__layout">
-        <audio controls autoplay muted class="d-none" id="ringCallRcv">
+        <audio loop class="d-none" ref="ringCallRcv">
             <source
                 :src="$helpers.getAssetsPath('audio/facebook_call.mp3')"
+                type="audio/mp3"
+            />
+        </audio>
+        <audio class="d-none" ref="msgTone">
+            <source
+                :src="$helpers.getAssetsPath('audio/messenger_tone.mp3')"
                 type="audio/mp3"
             />
         </audio>
@@ -234,7 +240,6 @@ export default {
                 .getAttribute("content")
         ),
         menu: false,
-        incomingCall: false,
         answerCallDialog: false,
         timeOutCall: null,
         statusCall: null,
@@ -261,13 +266,24 @@ export default {
         },
     },
     methods: {
+        checkHaveWindowOpen() {
+            const chatCall = this.$refs.ChatCall;
+            if (chatCall) {
+                console.log("yes");
+                this.setCalling(true);
+            } else {
+                console.log("no");
+                this.setCalling(false);
+            }
+        },
+
         async setMe() {
             await this.$store.dispatch("auth/getMe", this.authUser);
         },
 
         resetCall(calling = false) {
             clearTimeout(this.timeOutCall);
-            this.incomingCall = false;
+            this.answerCallDialog = false;
             this.timeOutCall = null;
             this.statusCall = null;
             this.urlJoin = null;
@@ -294,12 +310,12 @@ export default {
                 });
         },
         ring(r = true) {
-            let audio = document.getElementById("ringCallRcv");
-            audio.currentTime = 0;
+            const audio = this.$refs.ringCallRcv;
             if (r) {
-                audio.muted = false;
+                audio.currentTime = 0;
+                audio.play();
             } else {
-                audio.muted = true;
+                audio.pause();
             }
         },
         initMyChannel() {
@@ -352,25 +368,22 @@ export default {
                 })
                 .listen("NotifyCall", async (e) => {
                     if (e.data.type == "offer") {
+                        this.caller = e.data.broadcaster;
                         if (!this.calling) {
                             if (!this.incomingCall) {
-                                this.incomingCall = true;
-                                this.caller = e.data.broadcaster;
+                                this.answerCallDialog = true;
                                 this.urlJoin = e.data.urlJoin;
                             }
-                            if (!this.answerCallDialog && this.incomingCall) {
-                                this.answerCallDialog = true;
-                            }
                         } else {
-                            this.answerCall("haveCall");
+                            this.$nextTick(() => {
+                                this.answerCall("haveCall");
+                            });
                         }
                     }
                     if (e.data.type == "ended") {
-                        if (!this.calling && this.incomingCall) {
-                            this.ring(false);
-                            await this.setCalling(false);
-                            this.resetCall();
-                        }
+                        this.ring(false);
+                        await this.setCalling(false);
+                        this.resetCall();
                     }
                 });
             // ///////////////////////
@@ -402,8 +415,8 @@ export default {
     watch: {
         incomingCall(incomingCall) {
             if (incomingCall) {
-                this.answerCallDialog = true;
                 this.ring();
+                this.answerCallDialog = true;
                 this.timeOutCall = setTimeout(
                     () => (
                         (this.incomingCall = false),
@@ -417,9 +430,12 @@ export default {
                 this.answerCallDialog = false;
             }
         },
+
         answerCallDialog(open) {
             if (!open) {
-                this.incomingCall = false;
+                this.setIcmc(false);
+            } else {
+                this.setIcmc(true);
             }
         },
     },

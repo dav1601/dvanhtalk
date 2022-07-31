@@ -419,13 +419,14 @@ export default {
                 this.answerCallDialog = true;
                 this.timeOutCall = setTimeout(
                     () => (
-                        (this.incomingCall = false),
+                        this.setIcmc(false),
                         (this.statusCall = "no answer"),
                         this.answerCall("missed")
                     ),
                     60000
                 );
             } else {
+                clearTimeout(this.timeOutCall);
                 this.ring(false);
                 this.answerCallDialog = false;
             }

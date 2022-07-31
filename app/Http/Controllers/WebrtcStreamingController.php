@@ -50,9 +50,9 @@ class WebrtcStreamingController extends Controller
     }
     public function toggle__voice(Request $request)
     {
-        $data['type'] = "toggleMic";
-        $data['muted'] = $request->muted;
+        $data['type'] = $request->type;
         $data['streamId'] = $request->streamId;
+        $data['enable'] = $request->enable;
         broadcast(new CallChat($data))->toOthers();
     }
 }

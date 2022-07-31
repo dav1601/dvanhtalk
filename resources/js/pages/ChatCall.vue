@@ -1,5 +1,6 @@
 <template>
     <v-container
+        :class="[connected && hasVideo ? ['p-0', 'm-0'] : '']"
         class="m-auto call h-100 position-relative d-flex align-items-center"
         ref="ChatCall"
     >
@@ -51,6 +52,7 @@
                     :username="contactPerson.name"
                     :img="contactPerson.avatar"
                     :fullWH="false"
+                    :class="[connected && hasVideo ? ['d-none'] : '']"
                     width="120px"
                     height="120px"
                 ></item-avatar>
@@ -75,6 +77,7 @@
             <span v-else class="d-inline-block"> Đang load dữ liệu..... </span>
         </div>
         <div
+            id="call__actions"
             class="call__actions position-absolute d-flex justify-content-center align-items-center w-100"
         >
             <v-btn
@@ -83,7 +86,7 @@
                 dark
                 small
                 v-if="enabledAudio"
-                @click="toggleMutedAudio(true)"
+                @click="enabledAudio = false"
                 :disabled="!connected"
             >
                 <v-icon dark> mdi-microphone </v-icon>
@@ -95,13 +98,33 @@
                 small
                 color="pink"
                 :disabled="!connected"
-                @click="toggleMutedAudio(false)"
+                @click="enabledAudio = true"
                 v-else
             >
                 <v-icon dark> mdi-microphone-off </v-icon>
             </v-btn>
-            <v-btn class="mx-3" fab dark small :disabled="!connected">
+            <v-btn
+                class="mx-3"
+                v-if="enabledVideo"
+                fab
+                dark
+                small
+                @click="enabledVideo = false"
+                :disabled="!connected"
+            >
                 <v-icon dark> mdi-video </v-icon>
+            </v-btn>
+            <v-btn
+                class="mx-3"
+                v-else
+                color="pink"
+                fab
+                dark
+                small
+                @click="enabledVideo = true"
+                :disabled="!connected"
+            >
+                <v-icon dark> mdi-video-off </v-icon>
             </v-btn>
             <v-btn class="mx-3" fab dark small color="pink" @click="endCall">
                 <v-icon dark> mdi-phone-hangup </v-icon>
@@ -268,11 +291,15 @@ export default {
             if (this.videoCallParams.peer1) {
                 this.videoCallParams.peer1.destroy();
             }
+            if (this.videoCallParams.peer2) {
+                this.videoCallParams.peer2.destroy();
+            }
             clearTimeout(this.timeOutCall);
             this.mutedAudio = false;
             this.mutedVideo = false;
             this.timeOutCall = null;
             this.enabledAudio = true;
+            this.enabledVideo = true;
             this.ended = false;
             this.denyOrMiss = false;
             this.connected = false;
@@ -345,8 +372,10 @@ export default {
                         this.acceptedCall(updatedSignal);
                     }
                     if (data.type == "toggleMic") {
-                        console.log(data);
-                        this.setMuteAudio(data.muted);
+                        this.mutedAudio = !data.enable;
+                    }
+                    if (data.type == "toggleVideo") {
+                        this.mutedVideo = !data.enable;
                     }
                     if (data.type == "callAccepted") {
                         if (data.signal.renegotiate) {
@@ -496,47 +525,76 @@ export default {
             });
             this.videoCallParams.peer2.signal(peer1);
         },
-        setMuteAudio(muted = false, stop = false) {
-            const friendVoice = this.$refs.friendVoice;
-            const myVoice = this.$refs.localVoice;
+
+        setMutedAudio(mute = false) {
+            // FETCH LẠI MESSAGE KHI LỖI + LÀM 1 SỐ BACKGROUND CHO CALL + UPDATE DURATION CALL CHAT
+            const friendStr = this.$refs.friendVoice;
+            console.log(friendStr.srcObject.getVideoTracks());
             if (this.hasVideo) {
-                friendVoice.muted = !muted;
+                friendStr.srcObject.getAudioTracks()[0].enabled = !mute;
             } else {
-                friendVoice.muted = muted;
-            }
-            this.mutedAudio = muted;
-            if (stop) {
-                if (!this.hasVideo) {
-                    friendVoice.pause();
-                    myVoice.pause();
-                    friendVoice.currentTime = 0;
-                    myVoice.currentTime = 0;
-                } else {
-                    friendVoice.muted = true;
-                    friendVoice.pause();
-                    myVoice.pause();
-                    friendVoice.src = "";
-                    myVoice.src = "";
-                }
+                friendStr.muted = mute;
             }
         },
-        toggleMutedAudio(muted = true) {
-            this.enabledAudio = !muted;
+        setEnabledVideo(enable) {
+            const friendStr = this.$refs.friendVoice;
+            friendStr.srcObject.getVideoTracks()[0].enabled = enable;
+            console.log(friendStr.srcObject.getVideoTracks()[0]);
+        },
+        stopAll() {
+            const friendStr = this.$refs.friendVoice;
+            const myStr = this.$refs.localVoice;
+            friendStr.currentTime = 0;
+            myStr.currentTime = 0;
+            if (!this.hasVideo) {
+                friendStr.pause();
+                myStr.pause();
+            } else {
+                friendStr.srcObject.getVideoTracks().forEach((track) => {
+                    track.stop();
+                    friendStr.srcObject.removeTrack(track);
+                });
+                myStr.srcObject.getVideoTracks().forEach((track) => {
+                    track.stop();
+                    myStr.srcObject.removeTrack(track);
+                });
+
+                friendStr.pause();
+                myStr.pause();
+                friendStr.src = "";
+                myStr.src = "";
+            }
+        },
+        toggleAuido(enable = true) {
+            this.enabledAudio = enable;
             this.$nextTick(() => {
                 axios.post(route("call.action.mic"), {
                     type: "toggleMic",
-                    muted: muted,
+                    enable: enable,
                     streamId: this.streamId,
                 });
             });
         },
-
+        toggleVideo(enable = true) {
+            this.enabledVideo = enable;
+            this.$nextTick(() => {
+                axios
+                    .post(route("call.action.mic"), {
+                        type: "toggleVideo",
+                        enable: enable,
+                        streamId: this.streamId,
+                    })
+                    .then((req) => {
+                        console.log("asdasd");
+                    });
+            });
+        },
         async endCall() {
             // if video or audio is muted, enable it so that the stopStreamedVideo method will work
             await this.setCalling(false);
             clearTimeout(this.timeOutCall);
             this.setProcess("ended");
-            this.setMuteAudio(true, true);
+            this.stopAll();
             this.ended = true;
             this.connected = false;
             if (this.isBroadcaster) {
@@ -546,6 +604,7 @@ export default {
                 await this.offerCall("ended", this.broadcasterId);
                 this.videoCallParams.peer2.destroy();
             }
+            this.resetCall();
             Echo.leave(this.channelName);
             setTimeout(() => {
                 this.callPlaced = false;
@@ -600,6 +659,18 @@ export default {
                 clearTimeout(this.timeOutCall);
             }
         },
+        enabledAudio(enable) {
+            this.toggleAuido(enable);
+        },
+        mutedAudio(muteee) {
+            this.setMutedAudio(muteee);
+        },
+        enabledVideo(enable) {
+            this.toggleVideo(enable);
+        },
+        mutedVideo(muted) {
+            this.setEnabledVideo(!muted);
+        },
     },
 };
 </script>
@@ -610,17 +681,20 @@ export default {
     bottom: 0;
     width: 100vw;
     height: 100vh;
+    z-index: 99;
 }
 #localCam {
     position: fixed;
     right: 10px;
     bottom: 10px;
     width: 200px;
-    min-height: 200px;
+    height: 200px;
+    z-index: 100;
 }
 .call {
     &__actions {
         bottom: 10px;
+        z-index: 101;
     }
 }
 </style>

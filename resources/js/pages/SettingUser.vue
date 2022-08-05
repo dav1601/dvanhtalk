@@ -41,7 +41,7 @@
                     </v-card-actions>
                 </v-card>
             </v-dialog>
-            <v-card dark v-if="loadedMe">
+            <v-card dark>
                 <v-card-title class="setting__user-title">
                     Cài đặt tài khoản chung
                 </v-card-title>
@@ -271,12 +271,23 @@
             <!-- --------------- -->
             <v-card dark>
                 <v-card-title class="setting__user-title">
-                    Bảo Mật Và Đăng Nhập
+                    Cài Đặt Cuộc Gọi
                 </v-card-title>
+                <v-btn
+                    color="primary"
+                    class="mb-3 ml-3"
+                    @click="dialgSettingCall = true"
+                    >Mở cài đặt
+                    <v-icon right dark> mdi-phone-dial </v-icon>
+                </v-btn>
+                <setting-call
+                    :dialogSettingCall="dialgSettingCall"
+                    @setting-call="settingCall"
+                ></setting-call>
             </v-card>
 
             <!-- --------------- -->
-            <v-card dark v-if="!loadedMe">
+            <!-- <v-card dark v-if="!loadedMe">
                 <v-skeleton-loader
                     type="heading"
                     class="p-4"
@@ -296,7 +307,6 @@
                         type="button"
                         class="ske__button--settingUser"
                     ></v-skeleton-loader>
-                    <!-- ----------------- -->
                     <div
                         class="d-flex justify-content-start px-8 mb-2 w-100 align-items-center"
                         v-for="i in 3"
@@ -313,17 +323,17 @@
                             class="ske__button--settingUserPen"
                         ></v-skeleton-loader>
                     </div>
-                    <!-- ---------------- -->
                 </div>
-            </v-card>
+            </v-card> -->
         </div>
     </v-container>
 </template>
 <script>
 import user from "../mixin/user";
 import AvatarEditor from "../components/users/AvatarEditor";
+import SettingCall from "../components/chat/SettingCall.vue";
 export default {
-    components: { AvatarEditor },
+    components: { AvatarEditor, SettingCall },
     mixins: [user],
     props: ["loadedMe"],
     data() {
@@ -339,6 +349,7 @@ export default {
             resetImage: false,
             borderRadius: 200,
             dialgUpdateAvatar: false,
+            dialgSettingCall: false,
             nameRules: [
                 (v) => !!v || "Tên người dùng không được để trống",
                 (v) =>
@@ -359,6 +370,10 @@ export default {
         };
     },
     methods: {
+        settingCall(v) {
+            this.dialgSettingCall = v;
+        },
+
         changeAvatar(e) {
             const file = e.target.files[0];
             this.fileUpload = file;

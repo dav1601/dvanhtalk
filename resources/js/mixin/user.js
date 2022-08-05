@@ -99,7 +99,11 @@ export default {
             return this.$store.getters["users/users"];
         },
         listUsersOnline() {
-            return this.$store.getters["users/usersOnline"];
+            const userOnline = this.$store.getters["users/usersOnline"];
+            const filter = userOnline.filter((user) => {
+                return user.id != this.id;
+            });
+            return filter;
         },
         receiver() {
             if (this.isReceiver) {
@@ -172,6 +176,15 @@ export default {
                 return 1;
             }
             return 0;
+        },
+        getAbsoluteHeight(el) {
+            // Get the DOM Node if you pass in a string
+            var styles = window.getComputedStyle(el);
+            var margin =
+                parseFloat(styles["marginTop"]) +
+                parseFloat(styles["marginBottom"]);
+
+            return Math.ceil(el.offsetHeight + margin);
         },
     },
 };

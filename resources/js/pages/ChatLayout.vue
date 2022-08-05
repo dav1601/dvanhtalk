@@ -5,8 +5,8 @@
         :class="[
             !isGroup
                 ? ['position-relative', 'row', 'g-0', 'mx-0']
-                : ['col-12', 'row', 'mx-0', 'g-0'],
-            windowWidth > 1024 ? ['col-80'] : ['col-100'],
+                : ['col-100', 'row', 'mx-0', 'g-0'],
+            isIpadProUp && !isGroup ? ['col-80'] : ['col-100'],
         ]"
     >
         <!-- start dialog setting for group -->
@@ -104,11 +104,9 @@
             class="position-relative d-flex flex-column justify-between px-0 py-0 h-100 chat__layout"
             :class="[
                 isGroup ? ['col-80'] : '',
-                windowWidth <= 1024 ? ['col-100'] : '',
-                isChat && showChatInfo && windowWidth > 1024 ? ['col-70'] : '',
-                isChat && !showChatInfo && windowWidth > 1024
-                    ? ['col-100']
-                    : '',
+                !isIpadProUp ? ['col-100'] : '',
+                isChat && showChatInfo && isIpadProUp ? ['col-70'] : '',
+                isChat && !showChatInfo && isIpadProUp ? ['col-100'] : '',
             ]"
         >
             <v-snackbar
@@ -145,30 +143,28 @@
                             <strong>{{ receiver.name }}</strong>
                             <text-small :text="statusText"></text-small>
                         </div>
-                        <div>
-                            <v-btn
-                                :loading="setting"
-                                :disabled="setting"
-                                v-if="isManage"
-                                color="primary"
-                                class="ma-2 white--text"
-                                fab
-                                small
-                                @click.stop="dialog = true"
-                            >
-                                <v-icon dark>mdi-cog</v-icon>
-                            </v-btn>
-                        </div>
                     </div>
                 </div>
                 <div
                     class="--actions d-flex justify-content-end align-items-center"
                 >
+                    <v-btn
+                        :loading="setting"
+                        :disabled="setting"
+                        v-if="isManage && isGroup"
+                        color="primary"
+                        class="white--text action__chat"
+                        fab
+                        small
+                        @click.stop="dialog = true"
+                    >
+                        <v-icon dark>mdi-pencil</v-icon>
+                    </v-btn>
                     <v-tooltip top>
                         <template v-slot:activator="{ on, attrs }">
                             <v-icon
                                 color="primary"
-                                class="ma-2 white--text mr-8"
+                                class="white--text action__chat"
                                 fab
                                 size="30"
                                 v-bind="attrs"
@@ -192,7 +188,7 @@
                                 v-on="on"
                                 color="primary"
                                 size="30"
-                                class="cursor-pointer mr-8"
+                                class="cursor-pointer action__chat"
                                 @click="offerCall(false)"
                                 >mdi-phone</v-icon
                             >
@@ -203,7 +199,7 @@
                         dark
                         color="primary"
                         size="30"
-                        class="cursor-pointer mr-8"
+                        class="cursor-pointer action__chat"
                         @click="offerCall(true)"
                         >mdi-video</v-icon
                     >
@@ -212,7 +208,7 @@
                         color="primary"
                         size="30"
                         @click="showChatInfo = !showChatInfo"
-                        class="cursor-pointer mr-8"
+                        class="cursor-pointer action__chat"
                         >mdi-alert-circle</v-icon
                     >
                 </div>
@@ -226,7 +222,7 @@
                         :loading="setting"
                         :disabled="setting"
                         color="blue-grey"
-                        class="ma-2 white--text"
+                        class="white--text action__chat"
                         fab
                         small
                         v-if="btnGoEndChat"
@@ -265,6 +261,7 @@
             </div>
             <div
                 class="flex-grow-0 flex-1 d-flex position-relative chat__layout--footer"
+                :class="[mediaRecord != null ? 'border-top' : '']"
             >
                 <v-btn
                     :loading="setting"
@@ -336,7 +333,13 @@
                     </v-scroll-y-transition>
                     <v-icon dark>mdi-plus</v-icon>
                 </v-btn>
-
+                <!-- end btn format messsage -->
+                <vue-record-audio
+                    mode="hold"
+                    @stream="onStream"
+                    @result="onResult"
+                />
+                <!-- end btn record audio -->
                 <div style="flex: 1" class="dav__wp-chat--input">
                     <div
                         class="preview__images--wp w-100 p-2"
@@ -409,6 +412,7 @@
                                 />
                             </div>
                             <v-icon
+                                v-if="!mediaRecord"
                                 dark
                                 size="22"
                                 @click.stop="showEmoji = true"
@@ -416,6 +420,7 @@
                             >
                         </div>
                         <v-textarea
+                            v-if="!mediaRecord"
                             @click:append-outer="sendMessage(1)"
                             append-outer-icon="mdi-send"
                             counter
@@ -434,6 +439,33 @@
                             @keyup="isTyping"
                             :loading="sending"
                         ></v-textarea>
+                        <div
+                            v-else
+                            class="w-100 v-text-field--filled d-flex justify-content-start align-items-center"
+                            style="height: 65px"
+                        >
+                            <v-icon
+                                size="30"
+                                color="pink"
+                                class="cursor-pointer"
+                                @click="mediaRecord = null"
+                                >mdi-close-octagon</v-icon
+                            >
+                            <audio
+                                :src="srcRecord"
+                                ref="audioRecord"
+                                class="mx-2"
+                                style="border-radius: inherit; flex: 1"
+                                controls
+                            ></audio>
+                            <v-icon
+                                size="30"
+                                color="primary"
+                                class="cursor-pointer"
+                                @click="sendMessage(6)"
+                                >mdi-send</v-icon
+                            >
+                        </div>
                     </div>
                 </div>
             </div>
@@ -472,6 +504,7 @@ import ChatBarMobile from "../components/layout/ChatBarMobile";
 import TextSmall from "../components/ui/TextSmall";
 import chatCall from "../mixin/servers/chatCall";
 import SettingCall from "../components/chat/SettingCall.vue";
+import responsive from "../mixin/responsive";
 export default {
     components: {
         ItemMsg,
@@ -489,7 +522,7 @@ export default {
         TextSmall,
         SettingCall,
     },
-    mixins: [user, chat, chatCall],
+    mixins: [user, chat, chatCall, responsive],
     props: ["friendId"],
     data() {
         return {
@@ -517,15 +550,17 @@ export default {
             showFormatMessage: false,
             arrayImages: ["1", "2"],
             arrayFileAudio: [],
+            mediaRecord: null,
+            srcRecord: null,
             showPreviewImg: false,
-            windowHeight: null,
-            windowWidth: null,
             startImage: null,
             showEmoji: false,
             tabReationActive: "all",
             showChatInfo: false,
             friendInRoom: false,
             dialogSettingCall: false,
+            reFetchRcv: 0,
+            reFetchMessages: 0,
         };
     },
     beforeCreate() {
@@ -546,7 +581,6 @@ export default {
         }
     },
     async created() {
-        this.getDimensions();
         this.setType();
         this.$store.dispatch("message/reset");
         this.setup();
@@ -568,7 +602,6 @@ export default {
             this.setHeightChatLayoutBody();
             this.getMessages(false);
             this.updateSeen(this.friendId);
-            window.addEventListener("resize", this.getDimensions);
         });
     },
     updated() {
@@ -704,6 +737,11 @@ export default {
             return route.href;
         },
         async offerCall(hasVideo = false) {
+            if (this.isGroup) {
+                return alert(
+                    "The feature will develop in the future because the device is not enough for testing at the moment"
+                );
+            }
             this.popupCenter(
                 this.urlCall(hasVideo),
                 "Cuộc hội thoại của dav-chat"
@@ -751,16 +789,7 @@ export default {
             }
             return 0;
         },
-        getDimensions() {
-            this.windowHeight = document.documentElement.clientHeight;
-            this.windowWidth = document.documentElement.clientWidth;
-            // console.log({
-            //     hh: this.windowHeight,
-            //     ww: this.windowWidth,
-            //     h: document.documentElement.clientHeight,
-            //     w: document.documentElement.clientWidth,
-            // });
-        },
+
         updateSrcImg() {
             for (let i = 0; i < this.images.length; i++) {
                 let reader = new FileReader();
@@ -787,20 +816,13 @@ export default {
             this.deleteSavedScroll();
             return this.scrollEnd(true);
         },
-        getAbsoluteHeight(el) {
-            // Get the DOM Node if you pass in a string
 
-            var styles = window.getComputedStyle(el);
-            var margin =
-                parseFloat(styles["marginTop"]) +
-                parseFloat(styles["marginBottom"]);
-
-            return Math.ceil(el.offsetHeight + margin);
-        },
         setHeightChatLayoutBody(height = 0, width = 0) {
             let elMain = this.windowHeight;
-            if (this.windowWidth > 1024) {
-                elMain = elMain - 60;
+            const header = document.getElementById("main__app__bar");
+
+            if (this.isIpadProUp) {
+                elMain = elMain - header.offsetHeight;
             }
             const elTextInput = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
@@ -871,6 +893,7 @@ export default {
                     type: this.typeChat,
                 })
                 .then((req) => {
+                    this.reFetchRcv = 0;
                     if (this.typeChat == 1) {
                         if (
                             !this.receiver.members.find(
@@ -883,10 +906,26 @@ export default {
                         this.checking = false;
                     }
                     this.loadedRcv = true;
+                })
+                .catch((err) => {
+                    if (this.reFetchRcv > 4) {
+                        this.notification = true;
+                        this.text =
+                            "Load tin người nhận thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
+                    } else {
+                        this.reFetchRcv++;
+                        this.setReceiver();
+                    }
                 });
         },
-
-        async getMessages(up = false) {
+        onStream(data) {
+            console.log(data);
+        },
+        onResult(data) {
+            this.mediaRecord = data;
+            this.srcRecord = window.URL.createObjectURL(data);
+        },
+        async getMessages(up = false, msgId = null) {
             if (this.endPage == null || this.endPage == 0) {
                 this.isLoading = true;
                 const elLayoutChat = document.getElementById("chatLayout");
@@ -900,8 +939,10 @@ export default {
                         conversationId: this.friendId,
                         type: this.typeChat,
                         page: this.page,
+                        msgId: msgId,
                     })
                     .then((req) => {
+                        this.reFetchMessages = 0;
                         this.endPage = req.data.endPage;
                         this.isLoading = false;
                         this.loadedMsg = true;
@@ -916,9 +957,14 @@ export default {
                     })
                     .catch((err) => {
                         this.isLoading = false;
-                        this.notification = true;
-                        this.text =
-                            "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
+                        if (this.reFetchMessages > 4) {
+                            this.notification = true;
+                            this.text =
+                                "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
+                        } else {
+                            this.reFetchMessages++;
+                            this.getMessages(up);
+                        }
                         this.$nextTick(() => {
                             this.scrollEnd(true, true);
                             this.endSetup();
@@ -973,8 +1019,9 @@ export default {
                 this.scrollEnd(true);
             }
         },
-
+        //   THUẬT TOÁN ĐỂ LOAD REPLY : LÂY SỐ ITEM CÓ ĐƯỢC VD 134 CELI(134/20) = PAGE LOAD THEO PAGE XONG SCROLL TOP TO VIẾT TRONG HÀM MESSAGES
         resetAll() {
+            this.mediaRecord = null;
             this.sending = false;
             this.disableChat = false;
             this.message = "";
@@ -1008,7 +1055,12 @@ export default {
                 seen = 1;
             }
 
-            if (!this.message && this.images.length <= 0 && this.audio == "") {
+            if (
+                !this.message &&
+                this.images.length <= 0 &&
+                !this.audio &&
+                !this.mediaRecord
+            ) {
                 this.resetAll();
             } else {
                 this.sending = true;
@@ -1023,6 +1075,7 @@ export default {
                         seen: seen,
                         // this type for text,file,audio message
                         type: type,
+                        record: this.mediaRecord,
                         images: this.images,
                         audio: this.audio,
                         // that type for 1: pers 2: group
@@ -1068,6 +1121,10 @@ export default {
             this.tabReationActive = "all";
             this.showChatInfo = false;
             this.dialogSettingCall = false;
+            this.reFetchRcv = 0;
+            this.reFetchMessages = 0;
+            this.mediaRecord = null;
+            this.srcRecord = null;
         },
     },
     watch: {
@@ -1112,11 +1169,11 @@ export default {
         },
         windowHeight(newVal) {
             this.setHeightChatLayoutBody();
-            this.scrollEnd();
+            this.scrollEnd(true);
         },
         windowWidth(newVal) {
             this.setHeightChatLayoutBody();
-            this.scrollEnd();
+            this.scrollEnd(true);
         },
     },
 };
@@ -1127,6 +1184,14 @@ export default {
         flex: 0 0 80%;
         max-width: 80%;
     }
+}
+.action__chat {
+    margin-right: 40px;
+}
+.vue-audio-recorder {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 8px !important;
 }
 #chatLayout {
     padding-left: 10px !important;
@@ -1336,7 +1401,7 @@ export default {
     left: 0;
 }
 .v-main {
-    padding: 64px 0 0 0 !important;
+    padding: 100px 0 0 0 !important;
 }
 .va__setting--group {
     .v-toolbar__content {

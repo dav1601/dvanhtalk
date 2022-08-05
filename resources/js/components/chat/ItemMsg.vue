@@ -1,6 +1,7 @@
 <template>
     <div
         class="package__msg"
+        :id="'pack__msg--' + data.id"
         @mouseover="showActions = true"
         @mouseleave="showActions = false"
     >
@@ -183,8 +184,43 @@
                 v-if="typeMessage == 3"
             >
                 <audio controls crossorigin playsinline class="message__audio">
-                    <source :src="data.message.message" type="audio/mp3" />
+                    <source :src="data.message.message" />
                 </audio>
+            </div>
+            <div
+                class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-audio d-flex align-items-center"
+                v-if="typeMessage == 6"
+            >
+                <v-btn
+                    class="mx-2"
+                    fab
+                    dark
+                    color="primary"
+                    style="height: 30px; width: 30px"
+                    v-if="!playRecord"
+                    @click="playRecord = true"
+                >
+                    <v-icon dark> mdi-play </v-icon>
+                </v-btn>
+                <v-btn
+                    class="mx-2"
+                    fab
+                    dark
+                    color="primary"
+                    style="height: 30px; width: 30px"
+                    v-else
+                    @click="playRecord = false"
+                >
+                    <v-icon dark> mdi-pause </v-icon>
+                </v-btn>
+                <av-waveform
+                    class="record"
+                    :class="bindClassRecord"
+                    :audio-src="data.message.message"
+                    :canv-width="setWidthCanva"
+                    :canv-height="54"
+                    @ended="playRecord = false"
+                ></av-waveform>
             </div>
             <div
                 class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-call"
@@ -267,6 +303,7 @@
 </template>
 <script>
 import user from "../../mixin/user";
+import responsive from "../../mixin/responsive";
 import TheRole from "../role/TheRole.vue";
 import ItemMsgReply from "./ItemMsgReply.vue";
 import ReactionMsg from "./ReactionMsg.vue";
@@ -281,7 +318,7 @@ export default {
         "allSystemMsg",
         "LT",
     ],
-    mixins: [user],
+    mixins: [user, responsive],
     components: {
         // VuetifyAudio: () => import("vuetify-audio"),
         TheRole,
@@ -295,9 +332,13 @@ export default {
             showActions: false,
             search: "",
             showDialog: false,
+            playRecord: false,
         };
     },
     computed: {
+        bindClassRecord() {
+            return "record-" + this.data.id;
+        },
         renderIconCall() {
             if (!this.isCallMsg) {
                 return;
@@ -342,6 +383,12 @@ export default {
                 }
             }
             return;
+        },
+        setWidthCanva() {
+            if (this.windowWidth <= 414) {
+                return "200";
+            }
+            return "300";
         },
         colorIcon() {
             if (!this.isCallMsg) {
@@ -525,6 +572,9 @@ export default {
                 );
             }
         },
+        scrollToMsg(msgId) {
+            const el = document.getElementById("pack__msg--" + msgId);
+        },
         onlyUnique(value, index, self) {
             return self.indexOf(value) === index;
         },
@@ -624,12 +674,27 @@ export default {
             });
         },
     },
+    watch: {
+        playRecord(play) {
+            const record = document.getElementsByClassName(
+                "record-" + this.data.id
+            )[0].children[0].children[0];
+            if (play) {
+                record.play();
+            } else {
+                record.pause();
+            }
+        },
+    },
 };
 </script>
 <style lang="scss">
 .wp-chat-item:not(.wp-chat-item-audio) {
     position: relative;
     max-width: 60%;
+}
+.record div audio {
+    display: none;
 }
 .wp-chat-item-call {
     max-width: 250px;

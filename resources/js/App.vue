@@ -89,26 +89,34 @@
         <v-app-bar
             app
             class="b-b"
-            :class="{ 'd-ipp-none': !isHome }"
+            :class="{ 'd-ipp-none': !isHome || !isIpadProUp }"
             v-if="!isCallChat"
+            id="main__app__bar"
         >
-            <v-container class="d-flex justify-content-end">
+            <v-container
+                class="d-flex justify-content-between align-items-center"
+            >
                 <!-- <app-bar-mobile v-if="!isHome"></app-bar-mobile> -->
+                <router-link
+                    :to="{ name: 'home' }"
+                    style="width: 100px; height: 100px"
+                >
+                    <img
+                        :src="$helpers.getAssetsPath('images/logo.svg')"
+                        alt="logo"
+                        height="100%"
+                        width="100%"
+                    />
+                </router-link>
                 <v-menu
-                    class="d-ipp-none"
+                    :class="[isHome ? '' : 'd-ipp-none']"
                     v-model="menu"
                     :close-on-content-click="false"
                     :nudge-width="200"
                     offset-x
                 >
                     <template v-slot:activator="{ on, attrs }">
-                        <v-btn
-                            color="indigo"
-                            class="d-ipp-none"
-                            dark
-                            v-bind="attrs"
-                            v-on="on"
-                        >
+                        <v-btn color="indigo" dark v-bind="attrs" v-on="on">
                             Hi! {{ name }}
                         </v-btn>
                     </template>
@@ -186,7 +194,13 @@
         <!-- Sizes your content based upon application components -->
         <v-main>
             <!-- Provides the application the proper gutter -->
-            <v-container :class="{ full: !isHome }" class="p-0 h-100">
+            <v-container
+                :class="[
+                    !isHome ? 'full' : '',
+                    !isIpadProUp ? ['m-0', 'w-100', 'max-w-100'] : '',
+                ]"
+                class="p-0 h-100"
+            >
                 <!-- <div class="card" :class="{ fix1: isHome }">
           <v-slide-x-transition mode="out-in">
             <router-view></router-view>
@@ -217,6 +231,7 @@ import ItemReq from "./components/users/ItemReq";
 import JoinChat from "./components/users/group/effect/JoinChat";
 import ItemAvatar from "./components/users/ItemAvatar";
 import chatCall from "./mixin/servers/chatCall";
+import responsive from "./mixin/responsive";
 export default {
     components: {
         ListUser,
@@ -227,7 +242,7 @@ export default {
         ItemAvatar,
     },
     props: ["auth"],
-    mixins: [user, chat, chatCall],
+    mixins: [user, chat, chatCall, responsive],
     name: "App",
     data: () => ({
         fav: true,
@@ -454,7 +469,12 @@ $roles: 0, 1, 2;
         }
     }
 }
-
+.max-w-100 {
+    max-width: 100% !important;
+}
+.overflow-y-scroll {
+    overflow-y: scroll !important;
+}
 :root {
     scrollbar-color: var(--bs-gray-dark) #3e4042 !important;
     scrollbar-width: auto !important;
@@ -563,14 +583,18 @@ html::-webkit-scrollbar {
 }
 .v-main {
     padding: 0 !important;
-    height: calc(100vh - 64px);
+    height: calc(100vh - 100px) !important;
 }
 .request__group {
     bottom: 30px !important;
     right: 20px !important;
     width: 400px !important;
 }
+.v-toolbar__content {
+    height: 100% !important;
+}
 header {
+    height: 100px !important;
     position: unset !important;
 }
 .fix1 {

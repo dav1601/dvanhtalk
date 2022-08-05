@@ -36,8 +36,13 @@ class MessagesController extends Controller
             $messenger_media = [];
             $arrayMessages = array();
             $page =  $request->has('page') && $request->page != null ? $request->page : 1;
+            $msg_id = $request->has('msg_id') ? $request->msg_id : NULL;
             $limit = $page * $item_page;
             $setupRelation = ['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'call_info'];
+            if ($msg_id) {
+                $countMsg =  UserMessage::where('id', '>=', $msg_id)->count();
+                $page = (int) ceil($countMsg / $item_page);
+            }
             if ($type == 0) {
                 $queryMsg = UserMessage::where(function ($q) use ($conversationId) {
                     $q->where('sd_id', '=', Auth::id())
@@ -84,7 +89,7 @@ class MessagesController extends Controller
             if ($page == 1) {
                 $messenger_media = $this->dav2_messages->getAllMessageMedia($conversationId, $type);
             }
-            return response()->json(['data' => $messages->arrayMessages,   'page' => $page, 'endPage' => $end_page, 'messenger_media' => $messenger_media,], 200);
+            return response()->json(['data' => $messages->arrayMessages,   'page' => $page, 'endPage' => $end_page, 'messenger_media' => $messenger_media, 'msg_id' => $msg_id], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -133,6 +138,12 @@ class MessagesController extends Controller
             $urlAudioUploaded =  $audio->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
             $message->message = $urlAudioUploaded;
             $message->type = 3;
+        }
+        if ($request->type == 6) {
+            $record = $request->record;
+            $urlRecordUploaded =  $record->storeOnCloudinary("user-record-" . Auth::id())->getSecurePath();
+            $message->message = $urlRecordUploaded;
+            $message->type = 6;
         }
         $message->created_at =  $created_time;
         $user_message =  $this->dav2_messages->store_message($rcv_id, $message->message, $message->type, $parent_id, $seen, $for);

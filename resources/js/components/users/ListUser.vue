@@ -1,16 +1,12 @@
 <template>
     <div
-        class="border-right listUser davList scroll-custom overflow-x-hidden"
+        class="border-right listUser davList"
+        id="listUser"
         @mouseover="toggleScroll('over')"
         @mouseleave="toggleScroll('leave')"
-        :class="[
-            isHome
-                ? ['position-relative', 'overflow-y-auto']
-                : ['overflow-y-auto'],
-        ]"
         v-if="!isGroup"
     >
-        <div class="d-none d-md-block" v-if="!isGroup">
+        <div v-if="!isGroup">
             <div class="d-flex align-items-center">
                 <div class="flex-grow-1">
                     <input
@@ -18,23 +14,35 @@
                         class="form-control my-3"
                         v-on:keyup="debounceSearchUser"
                         placeholder="Tìm 1 ai đó..."
+                        id="search__users"
                     />
                 </div>
             </div>
         </div>
-        <div v-if="!isGroup" style="margin-bottom: 69px">
+        <div
+            v-if="!isGroup"
+            id="wp__users"
+            style="margin-bottom: 100px"
+            class="scroll-custom overflow-x-hidden"
+            :class="[
+                isHome
+                    ? ['position-relative', 'overflow-y-scroll']
+                    : ['overflow-y-scroll'],
+            ]"
+        >
             <item-user
                 v-for="(user, key) in listUser"
                 :key="'Lobby-User-' + key"
                 :user="user"
                 :active="active(user.id)"
                 :link="true"
-                :isLoading="isLoadingUsers"
+                :isLoading="!loadedUsers"
+                @hook:mounted="scrollElement"
             ></item-user>
             <sk-item-user
                 v-for="i in 10"
                 :key="'Ske-User-' + i"
-                :isLoading="isLoadingUser"
+                :isLoading="!loadedUsers"
             >
                 ></sk-item-user
             >
@@ -52,10 +60,26 @@ export default {
             default: false,
         },
     },
+    data() {
+        return {
+            loadedUsers: false,
+        };
+    },
     components: { SkItemUser, ItemUser },
     mixins: [user],
-    mounted() {},
+    created() {
+        this.setUsers();
+    },
     methods: {
+        async setUsers() {
+            this.loadedUsers = false;
+            await this.$store
+                .dispatch("users/getUsers")
+                .then((req) => {
+                    this.loadedUsers = true;
+                })
+                .catch((err) => {});
+        },
         toggleScroll(type) {
             if (!this.isHome) {
                 const el = document.getElementsByClassName("listUser")[0];
@@ -72,6 +96,15 @@ export default {
         },
         active(id) {
             return id == this.$route.query.uid;
+        },
+        scrollElement() {
+            if (!this.isChat) {
+                return;
+            }
+            const activeUser = document.getElementById("currentUserChat");
+            const parent = document.getElementById("listUser");
+            const pos = activeUser.offsetTop;
+            return (parent.scrollTop = pos - 100);
         },
     },
 };

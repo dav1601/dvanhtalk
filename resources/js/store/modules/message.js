@@ -328,15 +328,19 @@ const actions = {
         });
     },
     getMessages(c, p) {
+        let _query = {
+            page: p.page,
+        };
+        if (p.msgId) {
+            _query["msg_id"] = p.msgId;
+        }
         return new Promise((rs, rj) => {
             axios
                 .get(
                     route("messages.index", {
                         conversationId: p.conversationId,
                         type: p.type,
-                        _query: {
-                            page: p.page,
-                        },
+                        _query: _query,
                     })
                 )
                 .then((req) => {
@@ -397,6 +401,7 @@ const actions = {
     },
 
     sendMessage(c, p) {
+        console.log(p);
         const config = {
             headers: {
                 "content-type": "multipart/form-data",
@@ -417,6 +422,7 @@ const actions = {
             data.append("images[" + index + "]", p.images[index]);
         }
         data.append("audio", p.audio);
+        data.append("record", p.record);
         data.append("for", c.getters["typeChat"]);
         return new Promise((rs, rj) => {
             axios

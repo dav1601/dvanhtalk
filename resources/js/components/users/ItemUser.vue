@@ -9,6 +9,7 @@
             query: { uid: user.id },
         }"
         :class="{ classUser, active: active }"
+        :id="active ? 'currentUserChat' : ''"
     >
         <div
             class="badge bg-success float-right"
@@ -109,27 +110,24 @@ export default {
             return (this.count = this.user.count.length);
         },
     },
-    mounted() {
-        if (this.isChat) {
-            this.scrollElement();
-        }
-    },
+    mounted() {},
     methods: {
-        findPos(obj) {
-            var curtop = 0;
-            if (obj.offsetParent) {
-                do {
-                    curtop += obj.offsetTop;
-                } while ((obj = obj.offsetParent));
-                return [curtop];
-            }
-        },
-        scrollElement() {
-            const el = document.getElementsByClassName("router-link-active")[0];
-            return document
-                .getElementsByClassName("listUser")[0]
-                .scroll(0, this.findPos(el) - 120);
-        },
+        // findPos(obj) {
+        //     var curtop = 0;
+        //     if (obj.offsetParent) {
+        //         do {
+        //             curtop += obj.offsetTop;
+        //         } while ((obj = obj.offsetParent));
+        //         return [curtop];
+        //     }
+        // },
+        // scrollElement() {
+        //     const el = document.getElementsByClassName("router-link-active")[0];
+        //       console.log(this.findPos(el));
+        //     return document
+        //         .getElementsByClassName("listUser")[0]
+        //         .scroll(0, this.findPos(el) - 120);
+        // },
         resetSeen() {
             this.count = 0;
             let el = document.getElementById("queue-" + this.user.id);

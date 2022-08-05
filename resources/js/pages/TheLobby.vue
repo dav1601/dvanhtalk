@@ -81,14 +81,118 @@
             </v-card>
         </v-dialog>
         <!-- end dialog -->
+
+        <!-- tabs phone -->
+        <div
+            class="w-100 h-100 col-12 py-0"
+            :class="[isChat ? ['px-0'] : '']"
+            id="wrapper__tabs"
+            v-if="!isIpadProUp"
+        >
+            <v-tabs v-model="tab" fixed-tabs v-if="isHome">
+                <v-tabs-slider></v-tabs-slider>
+                <v-tab href="#mobile-tabs-5-1" class="primary--text">
+                    <v-icon>mdi-message</v-icon>
+                </v-tab>
+
+                <v-tab href="#mobile-tabs-5-2" class="primary--text">
+                    <v-icon>mdi-account-group</v-icon>
+                </v-tab>
+
+                <v-tab href="#mobile-tabs-5-3" class="primary--text">
+                    <v-icon>mdi-account-cog</v-icon>
+                </v-tab>
+            </v-tabs>
+            <v-tabs-items v-model="tab" v-if="isHome">
+                <v-tab-item value="mobile-tabs-5-1" id="mobile-tabs-5-1">
+                    <v-card>
+                        <v-card-text>Đang hoạt động</v-card-text>
+                        <v-slide-group
+                            show-arrows
+                            v-if="listUsersOnline.length > 0"
+                        >
+                            <v-slide-item
+                                v-for="(user, index) in listUsersOnline"
+                                :key="'slide-user-online-' + index"
+                            >
+                                <router-link
+                                    :to="{
+                                        name: 'chat',
+                                        params: { friendId: user.id },
+                                        query: { uid: user.id },
+                                    }"
+                                    class="mx-3 user--online"
+                                    style="width: 60px; height: 60px"
+                                >
+                                    <item-avatar
+                                        :img="user.avatar"
+                                        :username="user.name"
+                                        height="60px"
+                                        width="60px"
+                                        fontStt="14px"
+                                        :showStt="true"
+                                        :userId="user.id"
+                                    ></item-avatar>
+                                    <span
+                                        class="d-block text-overflow user--online-name text-center"
+                                    >
+                                        {{ user.name }}</span
+                                    >
+                                </router-link>
+                            </v-slide-item>
+                        </v-slide-group>
+                        <v-card-text v-else
+                            >Hiện không có người dùng nào đang hoạt
+                            động</v-card-text
+                        >
+                    </v-card>
+                    <v-card class="w-100 h-100" style="margin-bottom: 100px">
+                        <list-user
+                            class="w-100 h-100 wrapper__layout--users"
+                        ></list-user>
+                    </v-card>
+                </v-tab-item>
+                <v-tab-item value="mobile-tabs-5-2">
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1" v-show="isHome">
+                                <input
+                                    type="text"
+                                    class="form-control my-3"
+                                    id="searchGroup"
+                                    v-on:keyup="debounceSearchGroup"
+                                    placeholder="Tìm 1 nhóm để hít drama..."
+                                />
+                            </div>
+                            <v-btn
+                                ref="addGroup"
+                                @click.stop="dialog = true"
+                                class="mx-2"
+                                fab
+                                dark
+                                color="indigo"
+                                small
+                            >
+                                <v-icon dark> mdi-plus </v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                    <list-group></list-group>
+                </v-tab-item>
+                <v-tab-item value="mobile-tabs-5-3"> test 3 </v-tab-item>
+            </v-tabs-items>
+            <router-view></router-view>
+        </div>
+        <!-- end tabs phone -->
         <div
             class="row g-0 mx-0 p-0 h-100 no-gutters"
             :class="[isHome ? ['col-6'] : 'col-12']"
+            v-if="isIpadProUp"
         >
             <list-user
                 :isLoadingUser="isLoadingUsers"
-                :class="[!isHome ? ['col-20'] : '']"
-                class="wrapper__layout--users d-ipp-none"
+                :class="[!isHome ? ['col-20', 'd-ipp-none'] : '']"
+                class="wrapper__layout--users"
             ></list-user>
 
             <!--  -->
@@ -97,12 +201,12 @@
         <!-- ----------------------- -->
         <div
             class="row g-0 mt-0 py-0 no-gutters"
-            v-if="isHome"
+            v-if="isHome && isIpadProUp"
             :class="[isHome ? ['col-6'] : 'col-12']"
             id="listGroup"
         >
             <div
-                class="col-12 col-lg-5 border-right listGroup davList scroll-custom"
+                class="col-12 col-lg-5 border-right listGroup davList"
                 :class="[
                     isHome ? ['col-xl-12', 'position-relative'] : 'col-xl-3',
                 ]"
@@ -131,48 +235,35 @@
                         </v-btn>
                     </div>
                 </div>
+                <list-group></list-group>
                 <!-- --------------- -->
-                <div class="wrapper__list--group">
-                    <item-group
-                        v-for="(group, key) in listGroup"
-                        :key="'Lobby-Group-' + key"
-                        :group="group"
-                        :isLoading="isLoadingGroup"
-                    ></item-group>
-                    <sk-item-group
-                        :isLoading="isLoadingGroup"
-                        v-for="i in 7"
-                        :key="'Ske-Group-' + i"
-                    ></sk-item-group>
-                </div>
                 <hr class="d-block d-lg-none mt-1 mb-0" />
             </div>
-
             <router-view></router-view>
         </div>
     </div>
 </template>
 
 <script>
-import SkItemGroup from "../components/skeleton/SkItemGroup.vue";
 import SkItemUser from "../components/skeleton/SkItemUser.vue";
-import ItemGroup from "../components/users/ItemGroup.vue";
 import ItemSelect from "../components/users/ItemSelect.vue";
 import ItemUser from "../components/users/ItemUser.vue";
 import ListUser from "../components/users/ListUser.vue";
+import ListGroup from "../components/group/ListGroup";
 import user from "../mixin/user";
+import responsive from "../mixin/responsive";
 export default {
     components: {
         ItemUser,
         ItemSelect,
-        ItemGroup,
-        SkItemGroup,
         SkItemUser,
         ListUser,
+        ListGroup,
     },
-    mixins: [user],
+    mixins: [user, responsive],
     data() {
         return {
+            tab: null,
             isLoading: false,
             isLoadingUsers: false,
             isLoadingGroup: false,
@@ -187,17 +278,10 @@ export default {
             successRequest: false,
         };
     },
-    created() {
-        this.setUsers();
-        this.setGroups();
+    mounted() {
+        this.watchLayoutDes();
     },
     computed: {
-        listGroup() {
-            return this.$store.getters["users/groups"];
-        },
-        myGroups() {
-            return this.$store.getters["users/myGroups"];
-        },
         bindClass() {
             return this.isHome ? "col-xl-6" : "col-xl-3";
         },
@@ -210,7 +294,7 @@ export default {
                 "";
         },
     },
-
+    //  LÀM TAB RESPONSIVE CHO LOBBY CHO MENUUUUUUUUUUUUUUUUUUUUUUUUUUU
     methods: {
         async requestsJoinGroup() {
             await this.$store
@@ -218,31 +302,31 @@ export default {
                 .then((req) => {})
                 .catch((err) => {});
         },
-        async setUsers() {
-            this.isLoadingUsers = true;
-            await this.$store
-                .dispatch("users/getUsers")
-                .then((req) => {
-                    this.isLoadingUsers = false;
-                })
-                .catch((err) => {
-                    this.isLoadingUsers = false;
-                });
-        },
-
-        async setGroups() {
-            this.isLoadingGroup = true;
-            await this.$store
-                .dispatch("users/getGroups")
-                .then((req) => {
-                    this.isLoadingGroup = false;
-                })
-                .catch((err) => {
-                    this.isLoadingGroup = false;
-                });
-        },
         open() {},
         close() {},
+        watchLayoutDes() {
+            if (this.isIpadProUp) {
+                const header = this.getAbsoluteHeight(
+                    document.getElementById("main__app__bar")
+                );
+                const searchGroup = this.getAbsoluteHeight(
+                    document.getElementById("searchGroup")
+                );
+                const searchUser = this.getAbsoluteHeight(
+                    document.getElementById("search__users")
+                );
+                const wp__groups = document.getElementById("wp__groups");
+                const wp__users = document.getElementById("wp__users");
+                const sum__groups = this.windowHeight - (header + searchGroup);
+                const sum__users = this.windowHeight - (header + searchUser);
+                wp__groups.style.height = sum__groups + "px";
+                wp__users.style.height = sum__users + "px";
+            }
+        },
+        watchLayoutPhone() {
+            if (!this.isIpadProUp) {
+            }
+        },
         saveGroup() {
             let file = document.getElementById("imageGroup").files[0];
             if (file != "undefined" && this.nameGroup != "") {
@@ -276,7 +360,24 @@ export default {
     },
 };
 </script>
-<style>
+<style lang="scss">
+#wrapper__tabs {
+    .v-tab {
+        border-bottom: 1px solid var(--bs-gray-500);
+        text-decoration: none;
+    }
+    .user--online {
+        &-name {
+            color: var(--bs-gray-500);
+        }
+        text-decoration: none;
+    }
+    #mobile-tabs-5-1 {
+        .v-slide-group__content {
+            height: 100px;
+        }
+    }
+}
 .fixLayout {
     left: 18% !important;
     width: 800px !important;
@@ -284,9 +385,7 @@ export default {
 .multiselect__content {
     padding-left: 0 !important;
 }
-.wrapper__list--group {
-    margin-bottom: 84px;
-}
+
 .multiselect__option {
     border-radius: 8px !important;
 }

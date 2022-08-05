@@ -30,20 +30,23 @@
         </div>
         <div
             v-if="message_parent.type == 3"
-            class="reply__message--audio reply__message"
+            class="reply__message chat-item"
             :class="[
                 itMe ? ['reply__message--right'] : ['reply__message--left'],
             ]"
         >
-            <vue-plyr>
-                <audio controls crossorigin playsinline>
-                    <source
-                        :src="message_parent.message"
-                        type="audio/mp3"
-                        @canplay="loaded"
-                    />
-                </audio>
-            </vue-plyr>
+            <v-icon dark class="mr-1">mdi-book-music</v-icon>
+            <span class="text-chat text-overflow"> File âm thanh </span>
+        </div>
+        <div
+            v-if="message_parent.type == 6"
+            class="reply__message chat-item"
+            :class="[
+                itMe ? ['reply__message--right'] : ['reply__message--left'],
+            ]"
+        >
+            <v-icon dark class="mr-1">mdi-record-rec</v-icon>
+            <span class="text-chat text-overflow"> File thu âm </span>
         </div>
     </div>
 </template>

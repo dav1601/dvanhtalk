@@ -64,6 +64,12 @@ $breakpoints-h: (
     .d-ipp-block {
         display: block !important;
     }
+    #wp__users {
+        height: calc(100vh - 264px);
+    }
+    #wp__groups {
+        height: calc(100vh - 100px);
+    }
     .wrapper__layout {
         &--chat {
             flex: 0 0 100%;
@@ -90,6 +96,10 @@ $breakpoints-h: (
             margin-bottom: 5px;
             margin-right: 5px;
         }
+    }
+    .action__chat {
+        font-size: 25px !important;
+        margin-right: 20px !important;
     }
     #chatLayout {
         padding-left: 5px !important;

@@ -3,7 +3,6 @@ export default {
     data() {
         return {
             isLoadingGroup: false,
-            isLoadingUsers: false,
         };
     },
     computed: {
@@ -23,8 +22,7 @@ export default {
             };
             return i18n;
         },
-
-        name: {
+        authName: {
             get() {
                 return this.$store.getters["auth/name"];
             },
@@ -71,7 +69,7 @@ export default {
         incomingCall() {
             return this.$store.getters["message/incomingCall"];
         },
-        id() {
+        authId() {
             return this.$store.getters["auth/id"];
         },
         full() {
@@ -82,6 +80,9 @@ export default {
         },
         isHome() {
             return this.$route.name == "home";
+        },
+        isSettingUser() {
+            return this.$route.name == "setting__user";
         },
         isGroup() {
             return this.$route.name == "group";
@@ -101,7 +102,7 @@ export default {
         listUsersOnline() {
             const userOnline = this.$store.getters["users/usersOnline"];
             const filter = userOnline.filter((user) => {
-                return user.id != this.id;
+                return user.id != this.authId;
             });
             return filter;
         },
@@ -128,23 +129,19 @@ export default {
             }
             return false;
         },
+        logout() {
+            const form = document.getElementById("logout-form");
+            if (form) {
+                return form.submit();
+            }
+            return;
+        },
         setCalling(calling = true) {
             return this.$store.commit("message/setCalling", calling);
         },
         setIcmc(icmc) {
             return this.$store.commit("message/setIncomingCall", icmc);
         },
-        debounceSearchUser: debounce(function (e) {
-            this.isLoadingUsers = true;
-            this.$store
-                .dispatch("users/searchUser", e.target.value)
-                .then((req) => {
-                    this.isLoadingUsers = false;
-                })
-                .catch((err) => {
-                    this.isLoadingUsers = false;
-                });
-        }, 400),
         debounceSearchGroup: debounce(function (e) {
             this.isLoadingGroup = true;
             this.$store
@@ -155,7 +152,7 @@ export default {
                 .catch((err) => {
                     this.isLoadingGroup = false;
                 });
-        }, 400),
+        }, 500),
         makeAvatar(avatar) {
             if (avatar != null) {
                 return avatar;
@@ -178,6 +175,9 @@ export default {
             return 0;
         },
         getAbsoluteHeight(el) {
+            if (!el) {
+                return 0;
+            }
             // Get the DOM Node if you pass in a string
             var styles = window.getComputedStyle(el);
             var margin =

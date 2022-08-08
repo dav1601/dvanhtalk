@@ -15,9 +15,7 @@
   </div>
 </template>
 <script>
-import user from '../../mixin/user'
 export default {
-  mixins: [user],
   props: {
     user: {},
     width: {

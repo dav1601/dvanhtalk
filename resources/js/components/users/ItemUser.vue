@@ -43,10 +43,8 @@
     </router-link>
 </template>
 <script>
-import user from "../../mixin/user";
 export default {
     props: ["user", "active", "isLoading", "link"],
-    mixins: [user],
     data() {
         return {
             count: this.user.count.length,
@@ -59,7 +57,7 @@ export default {
             }
             if (this.user.lastest_msg.type_msg == 2) {
                 let prefix = "Đã gửi";
-                if (this.user.lastest_msg.sd_id == this.id) {
+                if (this.user.lastest_msg.sd_id == this.authId) {
                     prefix = "Bạn đã gửi";
                 }
                 return (
@@ -71,7 +69,7 @@ export default {
                 );
             } else if (this.user.lastest_msg.type_msg == 3) {
                 let prefix = "Đã gửi";
-                if (this.user.lastest_msg.sd_id == this.id) {
+                if (this.user.lastest_msg.sd_id == this.authId) {
                     prefix = "Bạn đã gửi";
                 }
                 return (
@@ -83,7 +81,7 @@ export default {
                 );
             } else {
                 let prefix = "";
-                if (this.user.lastest_msg.sd_id == this.id) {
+                if (this.user.lastest_msg.sd_id == this.authId) {
                     prefix = "Bạn: ";
                 }
                 return prefix + this.user.lastest_msg.message.message;

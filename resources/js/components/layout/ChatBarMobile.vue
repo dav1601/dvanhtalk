@@ -20,9 +20,18 @@
                         width="30px"
                         height="30px"
                         :img="receiver.avatar"
+                        v-if="typeChat == 0"
                         :username="receiver.name"
                     ></item-avatar>
-                    <span class="name">{{ receiver.name }}</span>
+                    <item-avatar
+                        :fullWH="false"
+                        width="30px"
+                        height="30px"
+                        :img="receiver.group_image"
+                        v-else
+                        :username="receiver.name"
+                    ></item-avatar>
+                    <span class="name text-overflow">{{ receiver.name }}</span>
                 </div>
             </div>
             <div class="cbm__actions"></div>
@@ -33,8 +42,8 @@
 import user from "../../mixin/user";
 import routes from "../../mixin/routes";
 export default {
-    mixins: [user , routes],
-    props: ["loaded"],
+    mixins: [user, routes],
+    props: ["loaded", "typeChat"],
 };
 </script>
 <style lang="scss" scoped>

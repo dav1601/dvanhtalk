@@ -50,11 +50,9 @@
     </div>
 </template>
 <script>
-import user from "../../mixin/user";
 import NotifyHeader from "../../components/ui/Notify/NotifyHeader.vue";
 export default {
     props: ["request", "nofifyFor", "status"],
-    mixins: [user],
     components: { NotifyHeader },
 };
 </script>

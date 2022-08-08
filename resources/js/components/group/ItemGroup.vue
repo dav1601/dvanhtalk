@@ -87,10 +87,8 @@
     </div>
 </template>
 <script>
-import user from "../../mixin/user";
 export default {
     props: ["group", "isLoading"],
-    mixins: [user],
     data() {
         return {
             statusRequest: null,
@@ -113,7 +111,7 @@ export default {
 
         isMember() {
             const exist = this.group.members.find((user) => {
-                return user.users_id == this.id;
+                return user.users_id == this.authId;
             });
             if (exist) {
                 return true;
@@ -121,7 +119,7 @@ export default {
             return false;
         },
         isAdmin() {
-            if (this.group.founder.id == this.id) {
+            if (this.group.founder.id == this.authId) {
                 return true;
             }
             return false;
@@ -135,7 +133,7 @@ export default {
         request() {
             if (this.group.requests_join.length > 0) {
                 const Rq = this.group.requests_join.find((rq) => {
-                    return rq.users_id == this.id;
+                    return rq.users_id == this.authId;
                 });
                 if (Rq) {
                     return Rq;

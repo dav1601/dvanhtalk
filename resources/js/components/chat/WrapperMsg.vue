@@ -45,11 +45,9 @@
 </template>
 <script>
 import ItemMsg from "../../components/chat/ItemMsg.vue";
-import user from "../../mixin/user";
 export default {
     props: ["groupMsg", "type", "friendId"],
     emits: ["open-gll"],
-    mixins: [user],
     components: {
         ItemMsg,
     },

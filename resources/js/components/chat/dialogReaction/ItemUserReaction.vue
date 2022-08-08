@@ -20,13 +20,11 @@
     </div>
 </template>
 <script>
-import user from "../../../mixin/user";
 export default {
     props: ["data", "type"],
-    mixins: [user],
     computed: {
         meReaction() {
-            return this.id == this.data.user.id;
+            return this.authId == this.data.user.id;
         },
     },
     methods: {

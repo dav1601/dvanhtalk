@@ -1,5 +1,5 @@
 <template>
-    <v-dialog v-model="openDialog" width="500">
+    <v-dialog v-model="openDialog" max-width="500" :fullscreen="!isIpadProUp">
         <v-card dark class="p-5">
             <v-card-title class="text-uppercase"
                 >Cài đặt thiết bị cho cuộc gọi</v-card-title

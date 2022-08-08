@@ -77,14 +77,12 @@
     </v-card>
 </template>
 <script>
-import user from "../../../mixin/user";
 import ItemReq from "../group/ItemReq.vue";
 import ItemMember from "../../../components/users/ItemMember.vue";
 import ItemSelect from "../../../components/users/ItemSelect.vue";
 export default {
     components: { ItemReq, ItemMember, ItemSelect },
     props: ["isAdmin", "isMod", "isManage", "members"],
-    mixins: [user],
     emits: ["close-dialog"],
     data() {
         return {

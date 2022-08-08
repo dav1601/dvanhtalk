@@ -4,92 +4,49 @@
         class="h-100"
         style="background-color: inherit"
     >
-        <v-snackbar v-model="notValid" timeout="3500" color="error" top>
-            {{ errorText }}
-        </v-snackbar>
-        <v-snackbar v-model="successRequest" timeout="3500" color="primary" top>
-            {{ successText }}
-        </v-snackbar>
-        <v-dialog
-            v-model="dialog"
-            persistent
-            max-width="600px"
-            content-class="addGroupDg"
-        >
-            <v-card class="position-relative">
-                <base-loading :isLoading="adding"></base-loading>
-                <v-card-title>
-                    <span class="text-h5">Thêm Nhóm</span>
-                </v-card-title>
-                <v-card-text>
-                    <v-container>
-                        <v-row no-gutters>
-                            <v-col cols="12" class="px-0">
-                                <v-text-field
-                                    label="Tên Nhóm"
-                                    v-model="nameGroup"
-                                    required
-                                ></v-text-field>
-                            </v-col>
-                            <v-col cols="12" class="px-0">
-                                <v-file-input
-                                    accept="image/*"
-                                    label="Ảnh Nhóm"
-                                    id="imageGroup"
-                                    required
-                                ></v-file-input>
-                            </v-col>
-                            <v-col cols="12" class="px-0">
-                                <multiselect
-                                    v-model="selected"
-                                    selectLabel="Click để chọn"
-                                    deselectLabel="Click để bỏ chọn"
-                                    placeholder="Thêm thành viên"
-                                    label="name"
-                                    track-by="id"
-                                    :options="listUser"
-                                    :multiple="true"
-                                    :taggable="true"
-                                    @open="open"
-                                    @close="close"
-                                >
-                                    <template slot="option" slot-scope="props">
-                                        <item-select
-                                            :user="props.option"
-                                            width="40"
-                                            height="40"
-                                        ></item-select>
-                                    </template>
-                                </multiselect>
-                            </v-col>
-                        </v-row>
-                    </v-container>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn
-                        color="blue darken-1"
-                        text
-                        @click.stop="dialog = false"
+        <!-- end dialog -->
+        <v-dialog :fullscreen="true" v-model="dialogAction" id="dialog__action">
+            <v-card>
+                <div id="dialog__action__title" class="b-b-4-d">
+                    <div
+                        class="d-inline-block cursor-pointer"
+                        @click.stop="dialogAction = false"
                     >
-                        Đóng
-                    </v-btn>
-                    <v-btn color="blue darken-1" @click.stop="saveGroup" text>
-                        Lưu
-                    </v-btn>
-                </v-card-actions>
+                        <a
+                            class="d-flex justify-content-start align-items-center text-decoration-none"
+                        >
+                            <v-icon size="25" color="#fff"
+                                >mdi-keyboard-backspace</v-icon
+                            >
+                            <span class="d-block ml-4">{{
+                                payLoadDialog.title
+                            }}</span>
+                        </a>
+                    </div>
+                </div>
+                <div id="dialog__action__content">
+                    <setting-user
+                        v-if="payLoadDialog.name == 'setting__user'"
+                    ></setting-user>
+                </div>
             </v-card>
         </v-dialog>
-        <!-- end dialog -->
-
         <!-- tabs phone -->
         <div
             class="w-100 h-100 col-12 py-0"
-            :class="[isChat ? ['px-0'] : '']"
+            :class="[
+                isChat && !isIpadProUp ? ['px-0'] : '',
+                !isChat && !isIpadProUp ? ['dav-px-15'] : '',
+            ]"
             id="wrapper__tabs"
             v-if="!isIpadProUp"
         >
-            <v-tabs v-model="tab" fixed-tabs v-if="isHome">
+            <v-tabs
+                v-model="tab"
+                fixed-tabs
+                v-if="isHome"
+                id="header__mobi__tabs"
+            >
                 <v-tabs-slider></v-tabs-slider>
                 <v-tab href="#mobile-tabs-5-1" class="primary--text">
                     <v-icon>mdi-message</v-icon>
@@ -105,7 +62,7 @@
             </v-tabs>
             <v-tabs-items v-model="tab" v-if="isHome">
                 <v-tab-item value="mobile-tabs-5-1" id="mobile-tabs-5-1">
-                    <v-card>
+                    <v-card id="mobi__users__online">
                         <v-card-text>Đang hoạt động</v-card-text>
                         <v-slide-group
                             show-arrows
@@ -146,40 +103,61 @@
                             động</v-card-text
                         >
                     </v-card>
-                    <v-card class="w-100 h-100" style="margin-bottom: 100px">
+                    <v-card class="w-100 h-100">
                         <list-user
                             class="w-100 h-100 wrapper__layout--users"
                         ></list-user>
                     </v-card>
                 </v-tab-item>
                 <v-tab-item value="mobile-tabs-5-2">
-                    <div class="mb-2">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1" v-show="isHome">
-                                <input
-                                    type="text"
-                                    class="form-control my-3"
-                                    id="searchGroup"
-                                    v-on:keyup="debounceSearchGroup"
-                                    placeholder="Tìm 1 nhóm để hít drama..."
-                                />
-                            </div>
-                            <v-btn
-                                ref="addGroup"
-                                @click.stop="dialog = true"
-                                class="mx-2"
-                                fab
-                                dark
-                                color="indigo"
-                                small
-                            >
-                                <v-icon dark> mdi-plus </v-icon>
-                            </v-btn>
-                        </div>
-                    </div>
                     <list-group></list-group>
                 </v-tab-item>
-                <v-tab-item value="mobile-tabs-5-3"> test 3 </v-tab-item>
+                <v-tab-item value="mobile-tabs-5-3">
+                    <div
+                        class="w-100 d-flex justify-content-center align-items-center flex-column mt-4"
+                    >
+                        <item-avatar
+                            :fullWH="false"
+                            :img="avatar"
+                            :username="authName"
+                            height="80px"
+                            width="80px"
+                            fontStt="14px"
+                            classStyleName="auth__name"
+                            :showName="true"
+                        ></item-avatar>
+                    </div>
+                    <v-card class="list__actions-mobile">
+                        <div class="box__action">
+                            <span class="box__action-title"
+                                >Tài khoản & hỗ trợ</span
+                            >
+
+                            <div
+                                @click.stop="openDialogAction()"
+                                class="box__action-item cursor-pointer"
+                            >
+                                <action-setting
+                                    icon="mdi-cog-box"
+                                    color="#6610f2"
+                                    actionName="Cài đặt tài khoản"
+                                    size="25"
+                                ></action-setting>
+                            </div>
+                            <div
+                                @click.prevent="logout()"
+                                class="box__action-item cursor-pointer"
+                            >
+                                <action-setting
+                                    icon="mdi-logout"
+                                    color="#6c757d"
+                                    actionName="Đăng xuất"
+                                    size="25"
+                                ></action-setting>
+                            </div>
+                        </div>
+                    </v-card>
+                </v-tab-item>
             </v-tabs-items>
             <router-view></router-view>
         </div>
@@ -211,30 +189,6 @@
                     isHome ? ['col-xl-12', 'position-relative'] : 'col-xl-3',
                 ]"
             >
-                <div class="d-none d-md-block mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1" v-show="isHome">
-                            <input
-                                type="text"
-                                class="form-control my-3"
-                                id="searchGroup"
-                                v-on:keyup="debounceSearchGroup"
-                                placeholder="Tìm 1 nhóm để hít drama..."
-                            />
-                        </div>
-                        <v-btn
-                            ref="addGroup"
-                            @click.stop="dialog = true"
-                            class="mx-2"
-                            fab
-                            dark
-                            color="indigo"
-                            small
-                        >
-                            <v-icon dark> mdi-plus </v-icon>
-                        </v-btn>
-                    </div>
-                </div>
                 <list-group></list-group>
                 <!-- --------------- -->
                 <hr class="d-block d-lg-none mt-1 mb-0" />
@@ -250,8 +204,8 @@ import ItemSelect from "../components/users/ItemSelect.vue";
 import ItemUser from "../components/users/ItemUser.vue";
 import ListUser from "../components/users/ListUser.vue";
 import ListGroup from "../components/group/ListGroup";
-import user from "../mixin/user";
-import responsive from "../mixin/responsive";
+import ActionSetting from "../components/mobile/ActionSetting";
+import SettingUser from "../pages/SettingUser";
 export default {
     components: {
         ItemUser,
@@ -259,8 +213,9 @@ export default {
         SkItemUser,
         ListUser,
         ListGroup,
+        ActionSetting,
+        SettingUser,
     },
-    mixins: [user, responsive],
     data() {
         return {
             tab: null,
@@ -268,18 +223,18 @@ export default {
             isLoadingUsers: false,
             isLoadingGroup: false,
             currentContact: this.$route.query.uid,
-            dialog: false,
-            nameGroup: "",
-            notValid: false,
-            errorText: "",
-            successText: "",
-            selected: [],
-            adding: false,
-            successRequest: false,
+            dialogAction: false,
+            payLoadDialog: {
+                title: null,
+                name: null,
+            },
         };
     },
     mounted() {
-        this.watchLayoutDes();
+        this.watchLayout();
+    },
+    updated() {
+        this.watchLayout();
     },
     computed: {
         bindClass() {
@@ -296,6 +251,12 @@ export default {
     },
     //  LÀM TAB RESPONSIVE CHO LOBBY CHO MENUUUUUUUUUUUUUUUUUUUUUUUUUUU
     methods: {
+        openDialogAction(name = "setting__user", title = "Dav Messenger") {
+            alert("ok");
+            this.payLoadDialog.title = title;
+            this.payLoadDialog.name = name;
+            this.dialogAction = true;
+        },
         async requestsJoinGroup() {
             await this.$store
                 .dispatch("users/getRequestsJoinGroup")
@@ -304,63 +265,81 @@ export default {
         },
         open() {},
         close() {},
-        watchLayoutDes() {
+        watchLayout() {
+            const wp__groups = document.getElementById("wp__groups");
+            const wp__users = document.getElementById("wp__users");
+            const searchGroup = this.getAbsoluteHeight(
+                document.getElementById("searchGroup")
+            );
+            const searchUser = this.getAbsoluteHeight(
+                document.getElementById("search__users")
+            );
+            let sum__groups = 0;
+            let sum__users = 0;
             if (this.isIpadProUp) {
                 const header = this.getAbsoluteHeight(
                     document.getElementById("main__app__bar")
                 );
-                const searchGroup = this.getAbsoluteHeight(
-                    document.getElementById("searchGroup")
+                sum__groups = this.windowHeight - (header + searchGroup);
+                sum__users = this.windowHeight - (header + searchUser);
+                console.log({
+                    wh: this.windowHeight,
+                    sg: searchGroup,
+                    su: searchUser,
+                    header: header,
+                });
+            } else {
+                const header__tabs = this.getAbsoluteHeight(
+                    document.getElementById("header__mobi__tabs")
                 );
-                const searchUser = this.getAbsoluteHeight(
-                    document.getElementById("search__users")
+                const mobi__users__online = this.getAbsoluteHeight(
+                    document.getElementById("mobi__users__online")
                 );
-                const wp__groups = document.getElementById("wp__groups");
-                const wp__users = document.getElementById("wp__users");
-                const sum__groups = this.windowHeight - (header + searchGroup);
-                const sum__users = this.windowHeight - (header + searchUser);
+                sum__groups =
+                    this.windowHeight -
+                    (header__tabs + searchGroup + mobi__users__online);
+                sum__users =
+                    this.windowHeight -
+                    (header__tabs + searchUser + mobi__users__online);
+                console.log({
+                    wh: this.windowHeight,
+                    sg: searchGroup,
+                    su: searchUser,
+                    header: header__tabs,
+                    mb: mobi__users__online,
+                });
+            }
+            if (wp__groups) {
                 wp__groups.style.height = sum__groups + "px";
+            }
+            if (wp__users) {
                 wp__users.style.height = sum__users + "px";
             }
         },
-        watchLayoutPhone() {
-            if (!this.isIpadProUp) {
-            }
+    },
+    watch: {
+        tab(newTab) {
+            this.watchLayout();
         },
-        saveGroup() {
-            let file = document.getElementById("imageGroup").files[0];
-            if (file != "undefined" && this.nameGroup != "") {
-                this.notValid = false;
-                this.adding = true;
-                const data = {
-                    file: file,
-                    name: this.nameGroup,
-                    selected: this.selected,
-                };
-                this.$store
-                    .dispatch("users/addGroup", data)
-                    .then((req) => {
-                        this.adding = false;
-                        this.successRequest = true;
-                        this.successText = "Thêm nhóm thành công";
-                        this.dialog = false;
-                        this.resetForm;
-                    })
-                    .catch((err) => {
-                        this.adding = false;
-                        this.notValid = true;
-                        this.errorText = "Thêm nhóm thất bại vui lòng thử lại";
-                        this.resetForm;
-                    });
-            } else {
-                this.notValid = true;
-                this.errorText = "Bạn chưa nhập đủ thông tin của nhóm";
-            }
+        windowHeight() {
+            this.watchLayout();
+        },
+        windowWidth() {
+            this.watchLayout();
         },
     },
 };
 </script>
 <style lang="scss">
+#dialog__action {
+    &__title {
+        a {
+            padding: 10px 20px;
+            color: var(--bs-gray-100);
+            font-size: 20px;
+        }
+    }
+}
 #wrapper__tabs {
     .v-tab {
         border-bottom: 1px solid var(--bs-gray-500);
@@ -375,6 +354,37 @@ export default {
     #mobile-tabs-5-1 {
         .v-slide-group__content {
             height: 100px;
+        }
+    }
+    #mobile-tabs-5-3 {
+        .auth__name {
+            margin-top: 10px;
+            font-weight: 600;
+            font-size: 18px;
+            text-transform: capitalize;
+        }
+        .box__action {
+            &-item {
+                padding: 10px;
+                border-radius: 8px;
+                &:hover {
+                    text-decoration: none;
+                    background: #232526; /* fallback for old browsers */
+                    background: -webkit-linear-gradient(
+                        to right,
+                        #414345,
+                        #232526
+                    ); /* Chrome 10-25, Safari 5.1-6 */
+                    background: linear-gradient(to right, #414345, #232526);
+                }
+            }
+
+            &-title {
+                padding: 10px;
+                display: block;
+                font-size: 14px;
+                color: var(--bs-gray-500);
+            }
         }
     }
 }

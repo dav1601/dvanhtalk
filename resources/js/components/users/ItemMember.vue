@@ -50,7 +50,6 @@
     </div>
 </template>
 <script>
-import user from "../../mixin/user";
 import TheRole from "../role/TheRole.vue";
 import ItemAvatar from "./ItemAvatar.vue";
 export default {
@@ -63,7 +62,6 @@ export default {
         "isMod",
         "isSetting",
     ],
-    mixins: [user],
     data() {
         return {
             text: "user",

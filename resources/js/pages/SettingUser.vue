@@ -2,6 +2,7 @@
     <v-container id="setting__user">
         <div class="setting__user">
             <v-dialog
+                :fullscreen="!isIpadProUp"
                 transition="dialog-top-transition"
                 max-width="600"
                 v-model="dialgUpdateAvatar"
@@ -62,7 +63,7 @@
                                 />
                                 <item-avatar
                                     :img="null"
-                                    :username="name"
+                                    :username="authName"
                                     height="120px"
                                     width="120px"
                                     font="5vw"
@@ -75,13 +76,14 @@
                                 @click.stop="openInput"
                                 :disabled="saving"
                             >
-                                Cập nhật ảnh đại diện
+                                Cập nhật
                             </v-btn>
                             <input
                                 type="file"
                                 class="d-none"
                                 ref="inputAvatar"
                                 @change="changeAvatar"
+                                accept="image/*"
                             />
                         </div>
                         <!-- --------- -->
@@ -99,7 +101,7 @@
                                     <v-text-field
                                         label="Tên người dùng"
                                         ref="authName"
-                                        v-model="name"
+                                        v-model="authName"
                                         :loading="saving"
                                         :disabled="saving"
                                         :rules="nameRules"
@@ -132,7 +134,7 @@
                                     v-else
                                 >
                                     <span class="edit__name mr-4">{{
-                                        name
+                                        authName
                                     }}</span>
                                     <v-icon
                                         dark
@@ -287,59 +289,17 @@
             </v-card>
 
             <!-- --------------- -->
-            <!-- <v-card dark v-if="!loadedMe">
-                <v-skeleton-loader
-                    type="heading"
-                    class="p-4"
-                ></v-skeleton-loader>
-                <div
-                    class="w-100 d-flex justify-content-center flex-column align-center mb-2 setting__user-content--avatar"
-                >
-                    <div class="mb-2">
-                        <v-skeleton-loader
-                            type="avatar"
-                            max-width="120"
-                            height="120"
-                            class="ske__avatar--settingUser"
-                        ></v-skeleton-loader>
-                    </div>
-                    <v-skeleton-loader
-                        type="button"
-                        class="ske__button--settingUser"
-                    ></v-skeleton-loader>
-                    <div
-                        class="d-flex justify-content-start px-8 mb-2 w-100 align-items-center"
-                        v-for="i in 3"
-                        :key="'ske-' + i"
-                    >
-                        <v-card-text class="mr-2" style="width: 200px"
-                            ><v-skeleton-loader type="text"></v-skeleton-loader
-                        ></v-card-text>
-                        <v-card-text style="width: 200px"
-                            ><v-skeleton-loader type="text"></v-skeleton-loader
-                        ></v-card-text>
-                        <v-skeleton-loader
-                            type="button"
-                            class="ske__button--settingUserPen"
-                        ></v-skeleton-loader>
-                    </div>
-                </div>
-            </v-card> -->
-        </div>
+            </div>
     </v-container>
 </template>
 <script>
-import user from "../mixin/user";
 import AvatarEditor from "../components/users/AvatarEditor";
 import SettingCall from "../components/chat/SettingCall.vue";
 export default {
     components: { AvatarEditor, SettingCall },
-    mixins: [user],
-    props: ["loadedMe"],
     data() {
         return {
             fileUpload: null,
-            authName: null,
             saving: false,
             showCancel: false,
             valid: true,
@@ -369,6 +329,7 @@ export default {
             ],
         };
     },
+
     methods: {
         settingCall(v) {
             this.dialgSettingCall = v;

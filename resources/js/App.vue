@@ -2,6 +2,14 @@
     <!-- App.vue -->
 
     <v-app class="fix__layout">
+        <form
+            id="logout-form"
+            :action="route('logout.perform')"
+            method="POST"
+            style="display: none"
+        >
+            <input type="hidden" name="_token" :value="csrfToken" />
+        </form>
         <audio loop class="d-none" ref="ringCallRcv">
             <source
                 :src="$helpers.getAssetsPath('audio/facebook_call.mp3')"
@@ -117,7 +125,7 @@
                 >
                     <template v-slot:activator="{ on, attrs }">
                         <v-btn color="indigo" dark v-bind="attrs" v-on="on">
-                            Hi! {{ name }}
+                            Hi! {{ authName }}
                         </v-btn>
                     </template>
 
@@ -129,13 +137,13 @@
                                         height="100%"
                                         width="100%"
                                         :img="avatar"
-                                        :username="name"
+                                        :username="authName"
                                     ></item-avatar>
                                 </v-list-item-avatar>
 
                                 <v-list-item-content>
                                     <v-list-item-title>{{
-                                        name
+                                        authName
                                     }}</v-list-item-title>
                                     <v-list-item-subtitle>
                                         {{ email }}
@@ -161,23 +169,10 @@
                             <v-btn
                                 color="primary"
                                 text
-                                onclick="event.preventDefault();
-                              document.getElementById('logout-form').submit();"
+                                @click.prevent="logout()"
                             >
                                 Đăng xuất
                             </v-btn>
-                            <form
-                                id="logout-form"
-                                :action="route('logout.perform')"
-                                method="POST"
-                                style="display: none"
-                            >
-                                <input
-                                    type="hidden"
-                                    name="_token"
-                                    :value="csrfToken"
-                                />
-                            </form>
                             <v-btn
                                 text
                                 :link="true"
@@ -191,6 +186,18 @@
                 </v-menu>
             </v-container>
         </v-app-bar>
+        <div v-if="!isIpadProUp">
+            <div id="header__mobile" v-if="isSettingUser">
+                <a
+                    @click="$router.go(-1)"
+                    class="d-flex align-items-center justify-content-start text-decoration-none"
+                    ><v-icon color="#f8f9fa" size="25"
+                        >mdi-keyboard-backspace</v-icon
+                    >
+                    <span class="d-block ml-4">dav chat</span>
+                </a>
+            </div>
+        </div>
         <!-- Sizes your content based upon application components -->
         <v-main>
             <!-- Provides the application the proper gutter -->
@@ -222,7 +229,6 @@
 </template>
 
 <script>
-import user from "./mixin/user";
 import ListUser from "./pages/TheLobby.vue";
 import chat from "./mixin/servers/chat";
 import ItemJoin from "./components/users/ItemJoin.vue";
@@ -231,7 +237,6 @@ import ItemReq from "./components/users/ItemReq";
 import JoinChat from "./components/users/group/effect/JoinChat";
 import ItemAvatar from "./components/users/ItemAvatar";
 import chatCall from "./mixin/servers/chatCall";
-import responsive from "./mixin/responsive";
 export default {
     components: {
         ListUser,
@@ -242,7 +247,7 @@ export default {
         ItemAvatar,
     },
     props: ["auth"],
-    mixins: [user, chat, chatCall, responsive],
+    mixins: [chat, chatCall],
     name: "App",
     data: () => ({
         fav: true,
@@ -334,7 +339,7 @@ export default {
             }
         },
         initMyChannel() {
-            this.myChannel["notify"] = Echo.join(`notify-${this.id}`);
+            this.myChannel["notify"] = Echo.join(`notify-${this.authId}`);
             this.myChannel["lobby"] = Echo.join(`lobby`);
             this.myChannel["notify"]
                 .here((users) => {})
@@ -369,7 +374,7 @@ export default {
                             root: true,
                         });
                         if (e.data.action == "kick") {
-                            if (e.data.users_id == this.id) {
+                            if (e.data.users_id == this.authId) {
                                 this.$router.push({ name: "home" });
                             }
                         }
@@ -469,6 +474,18 @@ $roles: 0, 1, 2;
         }
     }
 }
+.b-b-4-d {
+    border-bottom: 4px solid var(--bs-gray-dark);
+}
+#header__mobile {
+    padding: 10px 20px;
+    a {
+        font-size: 20px;
+        font-weight: 600;
+        text-transform: capitalize;
+        color: var(--bs-gray-100);
+    }
+}
 .max-w-100 {
     max-width: 100% !important;
 }
@@ -520,6 +537,10 @@ $roles: 0, 1, 2;
         object-position: 50% 50%;
     }
 }
+.dav-px-15 {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}
 .fl-1 {
     flex: 1 !important;
 }
@@ -543,6 +564,12 @@ html::-webkit-scrollbar {
 .wrapper__layout--chat.col-xl-9 {
     flex: 0 0 80% !important;
     max-width: 80% !important;
+}
+.fl-center-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 .cursor-pointer {
     cursor: pointer !important;

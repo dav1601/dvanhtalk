@@ -137,14 +137,13 @@
 </template>
 <script>
 // import Peer from "simple-peer";
-import user from "../mixin/user";
 import chatCall from "../mixin/servers/chatCall";
 import ItemAvatar from "../components/users/ItemAvatar.vue";
 import Peer from "simple-peer";
 export default {
     components: { ItemAvatar },
     props: ["streamId", "auth", "myChannel"],
-    mixins: [user, chatCall],
+    mixins: [chatCall],
     data() {
         return {
             setting: {
@@ -235,7 +234,7 @@ export default {
             return `call-signal-channel-` + this.streamId;
         },
         isBroadcaster() {
-            return this.id == this.broadcasterId;
+            return this.authId == this.broadcasterId;
         },
         broadcasterId() {
             return this.$route.query.broadcaster;
@@ -461,7 +460,7 @@ export default {
                     .post(route("stream.offer"), {
                         to: this.contactPerson.id,
                         signal: data,
-                        from: this.id,
+                        from: this.authId,
                         streamId: this.streamId,
                     })
                     .then((req) => {

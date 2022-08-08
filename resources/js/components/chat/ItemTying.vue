@@ -31,10 +31,8 @@
 
 </template>
 <script>
-import user from "../../mixin/user";
 export default {
 props:['receiver' , 'typing'],
-mixins: [user],
 };
 </script>
 <style scoped>

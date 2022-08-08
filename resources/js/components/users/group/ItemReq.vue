@@ -39,12 +39,10 @@
     </div>
 </template>
 <script>
-import user from "../../../mixin/user";
 import TheRole from "../../role/TheRole.vue";
 export default {
     components: { TheRole },
     props: ["request", "isAdmin", "isManage", "isMod"],
-    mixins: [user],
     data() {
         return {
             handling: false,

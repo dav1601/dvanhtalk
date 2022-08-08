@@ -1,5 +1,11 @@
 <template>
-    <div :class="[fullWH ? ['w-100', 'h-100'] : '']" class="position-relative">
+    <div
+        :class="[
+            fullWH ? ['w-100', 'h-100'] : '',
+            showName ? ['fl-center-col'] : '',
+        ]"
+        class="position-relative"
+    >
         <img
             v-if="img != null"
             :src="img"
@@ -15,10 +21,16 @@
             :style="styleIconStt"
             :class="[isOnline(userId) ? ['chat-online'] : 'chat-offline']"
         ></span>
+        <span
+            v-if="showName"
+            class="text-center text-overflow"
+            :class="classStyleName"
+        >
+            {{ username }}
+        </span>
     </div>
 </template>
 <script>
-import user from "../../mixin/user";
 import Avatar from "vue-avatar";
 export default {
     components: {
@@ -61,8 +73,15 @@ export default {
             type: String,
             default: "12px",
         },
+        showName: {
+            type: Boolean,
+            default: false,
+        },
+        classStyleName: {
+            type: String,
+            default: "",
+        },
     },
-    mixins: [user],
     computed: {
         style() {
             return (

@@ -17,12 +17,12 @@ export default {
         getDimensions() {
             this.windowHeight = document.documentElement.clientHeight;
             this.windowWidth = document.documentElement.clientWidth;
-            // console.log({
-            //     hh: this.windowHeight,
-            //     ww: this.windowWidth,
-            //     h: document.documentElement.clientHeight,
-            //     w: document.documentElement.clientWidth,
-            // });
+            console.log({
+                hh: this.windowHeight,
+                ww: this.windowWidth,
+                h: document.documentElement.clientHeight,
+                w: document.documentElement.clientWidth,
+            });
         },
     },
 };

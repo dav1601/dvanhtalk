@@ -121,7 +121,7 @@ export default {
             ////////////////////////////////////////////////////////////////////////////////////////
         },
         async myChannelChat() {
-            await Echo.private(`chat-${this.id}`).listenForWhisper(
+            await Echo.private(`chat-${this.authId}`).listenForWhisper(
                 "typing",
                 async (e) => {
                     if (
@@ -137,7 +137,7 @@ export default {
                 }
             );
 
-            await Echo.join(`chat-${this.id}`)
+            await Echo.join(`chat-${this.authId}`)
                 .here((users) => {
                     this.$store.dispatch("users/getUsersMyRoom", users);
                 })

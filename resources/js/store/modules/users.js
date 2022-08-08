@@ -315,7 +315,7 @@ const actions = {
     searchUser(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get(route("users"), { params: { keyword: p } })
+                .get(route("user.users", { _query: { keyword: p } }))
                 .then((req) => {
                     c.commit("setUsers", req.data);
                     rs(req);
@@ -328,9 +328,9 @@ const actions = {
     searchGroup(c, p) {
         return new Promise((rs, rj) => {
             axios
-                .get("/groups", { params: { keyword: p } })
+                .get(route("group.list", { _query: { keyword: p } }))
                 .then((req) => {
-                    c.commit("setGroups", req.data);
+                    c.commit("setGroups", req.data.groups);
                     rs(req);
                 })
                 .catch((err) => {

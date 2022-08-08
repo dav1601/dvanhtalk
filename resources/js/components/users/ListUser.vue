@@ -12,7 +12,7 @@
                     <input
                         type="text"
                         class="form-control my-3"
-                        v-on:keyup="debounceSearchUser"
+                        @keyup="debounceSearchUser"
                         placeholder="Tìm 1 ai đó..."
                         id="search__users"
                     />
@@ -50,9 +50,9 @@
     </div>
 </template>
 <script>
-import user from "../../mixin/user";
 import SkItemUser from "../../components/skeleton/SkItemUser.vue";
 import ItemUser from "../../components/users/ItemUser.vue";
+import { debounce } from "debounce";
 export default {
     props: {
         isLoadingUser: {
@@ -66,11 +66,21 @@ export default {
         };
     },
     components: { SkItemUser, ItemUser },
-    mixins: [user],
     created() {
         this.setUsers();
     },
     methods: {
+        debounceSearchUser: debounce(function (e) {
+            this.loadedUsers = false;
+            this.$store
+                .dispatch("users/searchUser", e.target.value)
+                .then((req) => {
+                    this.loadedUsers = true;
+                })
+                .catch((err) => {
+                    this.loadedUsers = false;
+                });
+        }, 500),
         async setUsers() {
             this.loadedUsers = false;
             await this.$store
@@ -98,11 +108,11 @@ export default {
             return id == this.$route.query.uid;
         },
         scrollElement() {
-            if (!this.isChat) {
-                return;
-            }
             const activeUser = document.getElementById("currentUserChat");
             const parent = document.getElementById("listUser");
+            if (!this.isChat || !activeUser || !parent) {
+                return;
+            }
             const pos = activeUser.offsetTop;
             return (parent.scrollTop = pos - 100);
         },

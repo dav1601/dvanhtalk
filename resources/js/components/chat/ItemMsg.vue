@@ -302,8 +302,6 @@
     </div>
 </template>
 <script>
-import user from "../../mixin/user";
-import responsive from "../../mixin/responsive";
 import TheRole from "../role/TheRole.vue";
 import ItemMsgReply from "./ItemMsgReply.vue";
 import ReactionMsg from "./ReactionMsg.vue";
@@ -318,7 +316,6 @@ export default {
         "allSystemMsg",
         "LT",
     ],
-    mixins: [user, responsive],
     components: {
         // VuetifyAudio: () => import("vuetify-audio"),
         TheRole,
@@ -386,9 +383,9 @@ export default {
         },
         setWidthCanva() {
             if (this.windowWidth <= 414) {
-                return "200";
+                return 200;
             }
-            return "300";
+            return 300;
         },
         colorIcon() {
             if (!this.isCallMsg) {
@@ -533,7 +530,7 @@ export default {
             return "background-image: radial-gradient(circle, rgba(0, 0, 0, 0) 25%, rgba(24, 24, 24, 1) 75%);background-size: cover;";
         },
         itMe() {
-            return this.data.sd_id == this.id;
+            return this.data.sd_id == this.authId;
         },
         isGroup() {
             return this.typeUserMsg == 1;

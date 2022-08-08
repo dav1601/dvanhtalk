@@ -77,7 +77,10 @@
             :index="startImage"
         ></dav-gallery-slide-show>
         <!-- end gllImage -->
-        <div class="col-20 border-right davList scroll-custom" v-if="isGroup">
+        <div
+            class="col-20 border-right davList scroll-custom"
+            v-if="isGroup && isIpadProUp"
+        >
             <div v-if="loadedRcv">
                 <item-member
                     v-for="(user, key) in members"
@@ -119,17 +122,19 @@
             </v-snackbar>
             <base-loading :isLoading="isLoading"></base-loading>
             <div
-                class="px-4 py-4 border-bottom chat__layout--header d-flex justify-content-between align-center"
+                class="py-4 border-bottom chat__layout--header d-flex justify-content-between align-center"
+                :class="[isIpadProUp ? ['px-4'] : ['px-1']]"
             >
                 <chat-bar-mobile
                     :loaded="loadedRcv"
+                    :typeChat="typeChat"
                     class="d-ipp-block"
                 ></chat-bar-mobile>
                 <div class="d-ipp-none">
                     <div class="d-flex align-items-center" v-if="loadedRcv">
                         <div class="position-relative">
                             <item-avatar
-                                v-if="isChat"
+                                v-if="isChat && typeChat == 0"
                                 height="45px"
                                 width="45px"
                                 :username="receiver.name"
@@ -160,7 +165,8 @@
                     >
                         <v-icon dark>mdi-pencil</v-icon>
                     </v-btn>
-                    <v-tooltip top>
+
+                    <v-tooltip bottom>
                         <template v-slot:activator="{ on, attrs }">
                             <v-icon
                                 color="primary"
@@ -180,7 +186,7 @@
                         :dialogSettingCall="dialogSettingCall"
                         @setting-call="settingCall"
                     ></setting-call>
-                    <v-tooltip top>
+                    <v-tooltip bottom>
                         <template v-slot:activator="{ on, attrs }">
                             <v-icon
                                 dark
@@ -193,24 +199,38 @@
                                 >mdi-phone</v-icon
                             >
                         </template>
-                        <span>Cuộc gọi thoại</span>
+                        <span>Bắt đầu gọi thoại</span>
                     </v-tooltip>
-                    <v-icon
-                        dark
-                        color="primary"
-                        size="30"
-                        class="cursor-pointer action__chat"
-                        @click="offerCall(true)"
-                        >mdi-video</v-icon
-                    >
-                    <v-icon
-                        dark
-                        color="primary"
-                        size="30"
-                        @click="showChatInfo = !showChatInfo"
-                        class="cursor-pointer action__chat"
-                        >mdi-alert-circle</v-icon
-                    >
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-icon
+                                v-bind="attrs"
+                                v-on="on"
+                                dark
+                                color="primary"
+                                size="30"
+                                class="cursor-pointer action__chat"
+                                @click="offerCall(true)"
+                                >mdi-video</v-icon
+                            >
+                        </template>
+                        <span>Bắt đầu gọi video</span>
+                    </v-tooltip>
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-icon
+                                v-bind="attrs"
+                                v-on="on"
+                                dark
+                                color="primary"
+                                size="30"
+                                @click="showChatInfo = !showChatInfo"
+                                class="cursor-pointer action__chat"
+                                >mdi-alert-circle</v-icon
+                            >
+                        </template>
+                        <span>Thông tin về cuộc trò chuyện</span>
+                    </v-tooltip>
                 </div>
             </div>
 
@@ -488,7 +508,6 @@
 </template>
 <script>
 import ItemMsg from "../components/chat/ItemMsg.vue";
-import user from "../mixin/user";
 import chat from "../mixin/servers/chat";
 import ItemUser from "../components/users/ItemUser.vue";
 import ItemMember from "../components/users/ItemMember.vue";
@@ -522,7 +541,7 @@ export default {
         TextSmall,
         SettingCall,
     },
-    mixins: [user, chat, chatCall, responsive],
+    mixins: [chat, chatCall],
     props: ["friendId"],
     data() {
         return {
@@ -622,7 +641,7 @@ export default {
             return this.$store.getters["message/rcvInRoom"];
         },
         streamId() {
-            return this.id + this.makeStreamId(10);
+            return this.authId + this.makeStreamId(10);
         },
         statusText() {
             if (this.isOnline(this.receiver.id)) {
@@ -682,13 +701,13 @@ export default {
         },
         isAdmin() {
             if (this.isGroup && this.loadedRcv) {
-                return this.id == this.receiver.users_id;
+                return this.authId == this.receiver.users_id;
             }
         },
         isMod() {
             if (this.loadedRcv && this.isGroup) {
                 const user = this.receiver.members.find(
-                    (user) => user.users_id == this.id
+                    (user) => user.users_id == this.authId
                 );
                 if (user) {
                     if (user.role == 1) {
@@ -726,10 +745,10 @@ export default {
         urlCall(hasVideo = false) {
             const route = this.$router.resolve({
                 name: "call__chat",
-                params: { streamId: this.id + this.makeStreamId(15) },
+                params: { streamId: this.authId + this.makeStreamId(15) },
                 query: {
                     receiver: this.receiver.id,
-                    broadcaster: this.id,
+                    broadcaster: this.authId,
                     type: this.typeChat,
                     has_video: hasVideo,
                 },
@@ -897,7 +916,7 @@ export default {
                     if (this.typeChat == 1) {
                         if (
                             !this.receiver.members.find(
-                                (user) => user.users_id == this.id
+                                (user) => user.users_id == this.authId
                             )
                         ) {
                             this.checking = false;
@@ -1003,7 +1022,7 @@ export default {
                     typing = true;
                 }
                 Echo.private(`chat-${this.receiver.id}`).whisper("typing", {
-                    sender_id: this.id,
+                    sender_id: this.authId,
                     typing: typing,
                 });
             } else {
@@ -1014,7 +1033,7 @@ export default {
             console.log({
                 block: this.blockLoadImg,
             });
-            if (!this.blockLoadImg || sd_id == this.id) {
+            if (!this.blockLoadImg || sd_id == this.authId) {
                 console.log("loaded");
                 this.scrollEnd(true);
             }
@@ -1069,7 +1088,7 @@ export default {
                 this.$store
                     .dispatch("message/sendMessage", {
                         to: this.friendId,
-                        from: this.id,
+                        from: this.authId,
                         msg: this.message,
                         messageReply: this.messageReply,
                         seen: seen,

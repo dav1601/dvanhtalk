@@ -18,8 +18,8 @@ class GroupController extends Controller
     }
     public function index(Request $request)
     {
-        $groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->when($request->has('keyword'), function ($q) {
-            return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
+        $groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->when($request->has('keyword'), function ($q) use ($request) {
+            return $q->where('name', 'LIKE', '%' . $request->keyword . '%');
         })->get();
         $my_groups_joined = MembersGroup::with(['group', 'group.members', 'group.founder', 'group.requestsJoin', 'group.requestsJoin.sender', 'group.members.info'])->where('users_id', Auth::id())->get();
         $my_groups = Groups::with(['members', 'founder', 'requestsJoin', 'requestsJoin.sender', 'members.info'])->where('users_id', Auth::id())->get();

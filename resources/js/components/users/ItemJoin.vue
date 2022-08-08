@@ -8,12 +8,12 @@
     </div>
 </template>
 <script>
-import user from '../../mixin/user';
+
 import TheRole from '../role/TheRole.vue';
 export default {
   components: { TheRole },
   props:['user'],
-mixins:[user]
+
 }
 </script>
 <style lang="scss" scoped>

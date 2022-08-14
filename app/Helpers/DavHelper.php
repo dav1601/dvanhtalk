@@ -1,6 +1,6 @@
 <?php
 
-function text__err__request($name = "", $type)
+function text__err__request($name = "", $type, $option = "")
 {
     switch ($type) {
         case "string":
@@ -18,6 +18,13 @@ function text__err__request($name = "", $type)
         case "numeric":
             return $name . " " . "bắt buộc là chữ số";
             break;
+        case "min":
+            return $name . " " . "bắt buộc lớn hơn hoặc bằng " . $option . " kí tự";
+            break;
+        case "max":
+            return $name . " " . "bắt buộc bé hơn hoặc bằng " . $option . " kí tự";
+            break;
+
         default:
             return "";
     }

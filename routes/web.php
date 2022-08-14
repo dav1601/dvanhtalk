@@ -72,6 +72,8 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('user/{id}', 'user')->name('user.user');
         Route::get('user/simple/{id}', 'simple__user')->name('user.simple');
         Route::get('users', 'index')->name('user.users');
+        Route::post('send__otp', 'send__otp')->name('user.password.otp');
+        Route::post('change__password', 'change__password')->name('user.password.change');
     });
     Route::controller(WebrtcStreamingController::class)->group(function () {
         Route::post('/stream__offer', 'makeStreamOffer')->name('stream.offer');

@@ -87,54 +87,50 @@ export default {
                 navigator.mozGetUserMedia;
             const audioInput = JSON.parse(localStorage.getItem("audioInput"));
             const videoInput = JSON.parse(localStorage.getItem("videoInput"));
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            let existDevAu = false;
-            let existDevVid = false;
-            if (audioInput && !this.$helpers.isEmpty(audioInput)) {
-                const check1 = devices.filter((dev) => {
-                    return dev.deviceId == audioInput.deviceId;
-                });
-                const check2 = devices.filter((dev) => {
-                    return dev.deviceId == videoInput.deviceId;
-                });
-                if (check1) {
-                    existDevAu = true;
-                }
-                if (check2) {
-                    existDevVid = true;
-                }
-            }
-            console.log({
-                ex1: existDevAu,
-                ex2: existDevVid,
-            });
-            const video =
-                videoInput && existDevVid ? videoInput.deviceId : "undefined";
-            const audio =
-                audioInput && existDevAu ? audioInput.deviceId : "undefined";
+            // let existDevAu = false;
+            // let existDevVid = false;
+            // if (audioInput && !this.$helpers.isEmpty(audioInput)) {
+            //     const check1 = devices.filter((dev) => {
+            //         return dev.deviceId == audioInput.deviceId;
+            //     });
+            //     const check2 = devices.filter((dev) => {
+            //         return dev.deviceId == videoInput.deviceId;
+            //     });
+            //     if (check1) {
+            //         existDevAu = true;
+            //     }
+            //     if (check2) {
+            //         existDevVid = true;
+            //     }
+            // }
+
+            const video = videoInput
+                ? {
+                      deviceId: videoInput.deviceId,
+                      width: { ideal: 4096 },
+                      height: { ideal: 2160 },
+                  }
+                : true;
+            const audio = audioInput ? { deviceId: audioInput.deviceId } : true;
             console.log({
                 dev1: video,
                 dev2: audio,
                 full1: videoInput,
                 full2: audioInput,
             });
+
             return new Promise((resolve, reject) => {
                 navigator.mediaDevices
                     .getUserMedia({
-                        video: {
-                            deviceId: video ? { exact: video } : undefined,
-                        },
-                        audio: {
-                            deviceId: audio ? { exact: audio } : undefined,
-                        },
+                        audio: audio,
+                        video: video,
                     })
                     .then((stream) => {
-                        console.log({
-                            stream: stream,
-                        });
+                        console.log(stream);
                         resolve(stream);
                     })
                     .catch((err) => {
+                        console.log(err);
                         reject(err);
                         //   throw new Error(`Unable to fetch stream ${err}`);
                     });

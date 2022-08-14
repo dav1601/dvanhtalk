@@ -1,7 +1,13 @@
 <template>
     <!-- App.vue -->
 
-    <v-app class="fix__layout">
+    <v-app
+        :class="[
+            !isSettingUser
+                ? ['fix__layout']
+                : ['overflow-y-scroll', 'scroll-custom'],
+        ]"
+    >
         <form
             id="logout-form"
             :action="route('logout.perform')"
@@ -199,7 +205,7 @@
             </div>
         </div>
         <!-- Sizes your content based upon application components -->
-        <v-main>
+        <v-main :class="[!isSettingUser ? 'fix-v-main' : 'p-0']">
             <!-- Provides the application the proper gutter -->
             <v-container
                 :class="[
@@ -451,7 +457,6 @@ export default {
                 this.answerCallDialog = false;
             }
         },
-
         answerCallDialog(open) {
             if (!open) {
                 this.setIcmc(false);
@@ -474,6 +479,32 @@ $roles: 0, 1, 2;
         }
     }
 }
+.vgs__gallery {
+    display: unset !important;
+}
+.fix-padding {
+    padding: 100px 0 0 0 !important;
+}
+.v-main {
+    padding: 0 !important;
+}
+.fix-v-main {
+    padding: 0 !important;
+    height: calc(100vh - 100px);
+}
+.dav-text-14-g {
+    font-size: 14px !important;
+    color: var(--bs-gray-500) !important;
+}
+.dav-text-15-g {
+    font-size: 15px !important;
+    color: var(--bs-gray-500) !important;
+}
+.dav-text-16-g {
+    font-size: 16px !important;
+    color: var(--bs-gray-500) !important;
+}
+
 .b-b-4-d {
     border-bottom: 4px solid var(--bs-gray-dark);
 }
@@ -545,12 +576,13 @@ $roles: 0, 1, 2;
     flex: 1 !important;
 }
 #app {
-    height: 100%;
+    height: 100vh;
 }
 html::-webkit-scrollbar {
     display: none;
 }
 .text-overflow {
+    display: block !important;
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
@@ -574,9 +606,9 @@ html::-webkit-scrollbar {
 .cursor-pointer {
     cursor: pointer !important;
 }
-.chat-item {
-    max-width: 564px !important;
-}
+// .chat-item {
+//     width: 100%;
+// }
 
 .chat-item.haveLink {
     max-width: 300px !important;
@@ -608,10 +640,7 @@ html::-webkit-scrollbar {
 .list-group-item {
     border-radius: 8px !important;
 }
-.v-main {
-    padding: 0 !important;
-    height: calc(100vh - 100px) !important;
-}
+
 .request__group {
     bottom: 30px !important;
     right: 20px !important;
@@ -658,10 +687,10 @@ header {
     background: #a29bfe;
     color: #fff;
 }
-.davList {
-    height: 100vh;
-    overflow: auto;
-}
+// .davList {
+//     // height: 100vh;
+//     // overflow: auto;
+// }
 .list-group-item.active {
     border-radius: 8px;
     background: #a29bfe !important;

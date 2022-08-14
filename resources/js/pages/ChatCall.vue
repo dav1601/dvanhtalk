@@ -5,6 +5,33 @@
         ref="ChatCall"
         :style="styleBgVidOff"
     >
+        <!-- VIẾT SNACKBAR -->
+
+        <v-slide-x-reverse-transition :group="true">
+            <v-snackbar
+                top
+                right
+                dark
+                :key="snackbar.audioConnected.text"
+                v-model="snackbar.audioConnected.open"
+                :timeout="4000"
+                style="margin-top: 20px"
+            >
+                {{ snackbar.audioConnected.text }}
+            </v-snackbar>
+            <v-snackbar
+                style="margin-top: 100px"
+                top
+                right
+                dark
+                :key="snackbar.videoConnected.text"
+                v-model="snackbar.videoConnected.open"
+                :timeout="3000"
+            >
+                {{ snackbar.videoConnected.text }}
+            </v-snackbar>
+        </v-slide-x-reverse-transition>
+
         <div v-if="hasVideo">
             <video
                 autoplay
@@ -173,6 +200,18 @@ export default {
             ended: false,
             denyOrMiss: false,
             timeOutCall: null,
+            snackbar: {
+                timeOut: 4000,
+                audioConnected: {
+                    open: false,
+                    text: null,
+                },
+                videoConnected: {
+                    open: false,
+                    text: null,
+                },
+            },
+
             process: "",
             videoCallParams: {
                 duration: "00:00",
@@ -356,6 +395,20 @@ export default {
                     console.log(error);
                 });
         },
+        setDeviceConnected() {
+            const stream = this.videoCallParams.stream;
+            if (!stream) {
+                return;
+            }
+            this.snackbar.audioConnected.text =
+                "Microphone được kết nối: " + stream.getAudioTracks()[0].label;
+            this.snackbar.audioConnected.open = true;
+            if (this.hasVideo) {
+                this.snackbar.videoConnected.text =
+                    "Camera được kết nối: " + stream.getVideoTracks()[0].label;
+                this.snackbar.videoConnected.open = true;
+            }
+        },
         initChannel() {
             this.videoCallParams.channel = Echo.join(this.channelName);
             this.videoCallParams.channel
@@ -440,6 +493,7 @@ export default {
         },
         async caller() {
             await this.getMediaPermission();
+            await this.setDeviceConnected();
             this.videoCallParams.peer1 = new Peer({
                 initiator: true,
                 trickle: false,
@@ -514,6 +568,7 @@ export default {
         },
         async acceptedCall(peer1) {
             await this.getMediaPermission();
+            await this.setDeviceConnected();
             this.videoCallParams.peer2 = new Peer({
                 initiator: false,
                 trickle: false,

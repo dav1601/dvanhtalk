@@ -97,9 +97,44 @@ const actions = {
         const data = new FormData();
         data.append("file", p);
         return new Promise((rs, rj) => {
-            axios.post(route("test"), data).then((req) => {
+            axios.post(route("test"), data, config).then((req) => {
                 console.log(req);
             });
+        });
+    },
+    sendingCode(c, p) {
+        const data = new FormData();
+        data.append("email", p);
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("user.password.otp"), data)
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
+        });
+    },
+    savePass(c, p) {
+        const data = new FormData();
+        data.append("type", p.type);
+        data.append("password", p.newPass);
+        data.append("password_confirmation", p.newPassConf);
+        if (p.type == 1) {
+            data.append("old_password", p.oldPass);
+        } else {
+            data.append("email", p.email);
+        }
+        return new Promise((rs, rj) => {
+            axios
+                .post(route("user.password.change"), data)
+                .then((req) => {
+                    rs(req);
+                })
+                .catch((err) => {
+                    rj(err);
+                });
         });
     },
 };

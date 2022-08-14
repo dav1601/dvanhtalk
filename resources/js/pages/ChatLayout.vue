@@ -9,6 +9,21 @@
             isIpadProUp && !isGroup ? ['col-80'] : ['col-100'],
         ]"
     >
+        <input
+            type="file"
+            accept="image/*"
+            multiple
+            class="d-none"
+            ref="messageImage"
+            @change="changeToSendMessage"
+        />
+        <input
+            type="file"
+            accept="audio/*"
+            class="d-none"
+            ref="messageAudio"
+            @change="changeAudioToSendMessage"
+        />
         <!-- start dialog setting for group -->
         <v-dialog
             :fullscreen="true"
@@ -241,17 +256,15 @@
                     <v-btn
                         :loading="setting"
                         :disabled="setting"
-                        color="blue-grey"
-                        class="white--text action__chat"
+                        color="#343a40"
+                        class="white--text action__chat mb-2"
                         fab
                         small
                         v-if="btnGoEndChat"
                         style="z-index: 200"
                         @click.stop="handleClickToBot()"
                     >
-                        <v-icon dark color="primary"
-                            >mdi-arrow-down-thin</v-icon
-                        >
+                        <v-icon dark color="#fff">mdi-arrow-down-thin</v-icon>
                     </v-btn>
                 </div>
                 <div
@@ -300,21 +313,6 @@
                             v-show="showFormatMessage"
                             v-dav-click-outside="closeEvent"
                         >
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                class="d-none"
-                                ref="messageImage"
-                                @change="changeToSendMessage"
-                            />
-                            <input
-                                type="file"
-                                accept="audio/*"
-                                class="d-none"
-                                ref="messageAudio"
-                                @change="changeAudioToSendMessage"
-                            />
                             <div
                                 class="position-relative w-100 h-100 center-start flex-column"
                             >
@@ -376,46 +374,52 @@
                                 :icon="false"
                                 @delete-img-preview="deleteImgPreview"
                             ></item-pre-img>
-                            <item-pre-img :icon="true"></item-pre-img>
+                            <item-pre-img
+                                :icon="true"
+                                :addImg="true"
+                                @add-img="uploadFileImage"
+                            ></item-pre-img>
                         </div>
                     </div>
 
                     <div
-                        class="preview__images--wp w-100 p-2 preview--reply position-relative"
+                        class="preview__images--wp p-2 preview--reply w-100 position-relative"
                         v-if="messageReply != null"
                     >
-                        <v-icon
-                            dark
-                            size="22"
-                            @click.stop="
-                                $store.commit('message/deleteMsgReply')
-                            "
-                            class="close__preview--reply position-absolute"
-                            style="top: 10px; right: 40px; cursor: pointer"
-                            >mdi-close</v-icon
-                        >
-                        <div
-                            class="d-flex justify-content-start align-items-start w-100 flex-column"
-                        >
-                            <span class="small"
-                                >Đang trả lời {{ receiver.name }}</span
+                        <div>
+                            <v-icon
+                                dark
+                                size="22"
+                                @click.stop="
+                                    $store.commit('message/deleteMsgReply')
+                                "
+                                class="close__preview--reply position-absolute"
+                                style="top: 10px; right: 40px; cursor: pointer"
+                                >mdi-close</v-icon
                             >
-                            <span
-                                class="text-overflow"
-                                v-if="messageReply.type_msg == 1"
+                            <div
+                                class="d-flex justify-content-start align-items-start flex-column"
                             >
-                                {{ messageReply.message.message }}
-                            </span>
-                            <span v-if="messageReply.type_msg == 2">
-                                {{
-                                    messageReply.message.message.split(",")
-                                        .length
-                                }}
-                                Hình Ảnh
-                            </span>
-                            <span v-if="messageReply.type_msg == 3">
-                                Tệp Âm Thanh
-                            </span>
+                                <span class="small"
+                                    >Đang trả lời {{ receiver.name }}</span
+                                >
+                                <span
+                                    class="text-overflow message__pre__reply"
+                                    v-if="messageReply.type_msg == 1"
+                                >
+                                    {{ messageReply.message.message }}
+                                </span>
+                                <span v-if="messageReply.type_msg == 2">
+                                    {{
+                                        messageReply.message.message.split(",")
+                                            .length
+                                    }}
+                                    Hình Ảnh
+                                </span>
+                                <span v-if="messageReply.type_msg == 3">
+                                    Tệp Âm Thanh
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="position-relative">
@@ -634,6 +638,9 @@ export default {
         },
     },
     computed: {
+        activeReply() {
+            return this.$store.getters["message/activeReply"];
+        },
         blockLoadImg() {
             return this.$store.getters["message/blockLoadImg"];
         },
@@ -739,6 +746,34 @@ export default {
     },
 
     methods: {
+        goToReply(msgId) {
+            const prefix = "pack__msg--";
+            const id = prefix + msgId;
+            const el = document.getElementById(id);
+            const listMsg = document.getElementsByClassName("activeReply");
+            const parent = document.getElementById("chatLayout");
+            if (listMsg.length > 0) {
+                Array.from(listMsg).forEach((ele) => {
+                    ele.classList.remove("activeReply");
+                });
+            }
+            if (el) {
+                el.classList.add("activeReply");
+                this.scrollElement(el);
+                // this.$store.commit("message/setActiveReply", null);
+            } else {
+                this.getMessages(false, msgId);
+            }
+        },
+        scrollElement(child) {
+            const activeMsg = child;
+            const parent = document.getElementById("chatLayout");
+            if (!this.isChat || !activeMsg || !parent) {
+                return;
+            }
+            const pos = activeMsg.offsetTop;
+            return (parent.scrollTop = pos - 200);
+        },
         settingCall(p) {
             this.dialogSettingCall = p;
         },
@@ -966,15 +1001,19 @@ export default {
                         this.isLoading = false;
                         this.loadedMsg = true;
                         this.$nextTick(() => {
-                            if (up) {
+                            if (up && !msgId) {
                                 this.scrollEnd(true);
                             } else {
                                 this.scrollEnd(true, true);
+                            }
+                            if (msgId) {
+                                this.goToReply(msgId);
                             }
                             this.endSetup();
                         });
                     })
                     .catch((err) => {
+                        console.log("err");
                         this.isLoading = false;
                         if (this.reFetchMessages > 4) {
                             this.notification = true;
@@ -997,6 +1036,7 @@ export default {
         handleScroll(e) {
             const elLayoutChat = document.getElementById("chatLayout");
             const scrollTop = elLayoutChat.scrollTop;
+
             if (this.isPointBlockScroll()) {
                 this.blockSroll = true;
                 this.btnGoEndChat = true;
@@ -1004,6 +1044,7 @@ export default {
                 this.blockSroll = false;
                 this.btnGoEndChat = false;
             }
+
             if (scrollTop == 0) {
                 if (this.endPage != 1 && this.endPage != null) {
                     this.blockSroll = false;
@@ -1030,11 +1071,14 @@ export default {
             }
         },
         loaded(sd_id) {
-            console.log({
-                block: this.blockLoadImg,
-            });
-            if (!this.blockLoadImg || sd_id == this.authId) {
-                console.log("loaded");
+            if (
+                !this.blockLoadImg ||
+                sd_id == this.authId ||
+                !this.isPointBlockScroll()
+            ) {
+                if (this.activeReply) {
+                    return;
+                }
                 this.scrollEnd(true);
             }
         },
@@ -1068,7 +1112,8 @@ export default {
             this.updateSrcImg();
             this.setHeightChatLayoutBody();
         },
-        sendMessage(type) {
+        async sendMessage(type) {
+            await this.$store.dispatch("message/setActiveReply", null);
             let seen = 0;
             if (this.inRoom) {
                 seen = 1;
@@ -1085,7 +1130,7 @@ export default {
                 this.sending = true;
                 this.disableChat = true;
                 this.showPreviewImg = false;
-                this.$store
+                await this.$store
                     .dispatch("message/sendMessage", {
                         to: this.friendId,
                         from: this.authId,
@@ -1194,10 +1239,24 @@ export default {
             this.setHeightChatLayoutBody();
             this.scrollEnd(true);
         },
+        activeReply(msgId) {
+            if (msgId != null) {
+                this.goToReply(msgId);
+            }
+        },
     },
 };
 </script>
 <style lang="scss">
+.message__pre__reply {
+    max-width: 450px;
+}
+.activeReply {
+    .wp-chat-item {
+        border: 2px solid #6610f2 !important;
+        border-radius: inherit;
+    }
+}
 .wrapper__layout {
     &--chat {
         flex: 0 0 80%;

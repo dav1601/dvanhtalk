@@ -1,5 +1,9 @@
 <template>
-    <div class="img__item mb-3 rounded-2" :class="{ iconAdd: icon }">
+    <div
+        class="img__item mb-3 rounded-2"
+        :class="{ iconAdd: icon }"
+        @click.stop="addImg"
+    >
         <img
             width="100%"
             height="100%"
@@ -24,6 +28,12 @@ export default {
     methods: {
         deleteImg() {
             return this.$emit("delete-img-preview", this.index);
+        },
+        addImg() {
+            if (this.icon) {
+                return this.$emit("add-img");
+            }
+            return;
         },
     },
 };

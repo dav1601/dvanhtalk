@@ -36,13 +36,13 @@ class MessagesController extends Controller
             $messenger_media = [];
             $arrayMessages = array();
             $page =  $request->has('page') && $request->page != null ? $request->page : 1;
-            $msg_id = $request->has('msg_id') ? $request->msg_id : NULL;
-            $limit = $page * $item_page;
+            $msg_id = $request->has('msg_id') ? (int) $request->msg_id : NULL;
             $setupRelation = ['message', 'message_parent', 'message.reaction', 'message.reaction.user', 'call_info'];
-            if ($msg_id) {
-                $countMsg =  UserMessage::where('id', '>=', $msg_id)->count();
+            if ($msg_id != NULL) {
+                $countMsg =  UserMessage::where('msg_id', '>=', $msg_id)->count();
                 $page = (int) ceil($countMsg / $item_page);
             }
+            $limit = $page * $item_page;
             if ($type == 0) {
                 $queryMsg = UserMessage::where(function ($q) use ($conversationId) {
                     $q->where('sd_id', '=', Auth::id())
@@ -55,7 +55,7 @@ class MessagesController extends Controller
                 })->with($setupRelation);
                 $count = $queryMsg->count();
                 if ($limit >= $count) {
-                    $end_page = 1;
+                    $end_page = true;
                     $messages = $queryMsg->get();
                 } else {
                     $offset = $count - $limit;
@@ -86,9 +86,7 @@ class MessagesController extends Controller
                 unset($obj);
             }
             $messages->arrayMessages = $arrayMessages;
-            if ($page == 1) {
-                $messenger_media = $this->dav2_messages->getAllMessageMedia($conversationId, $type);
-            }
+            $messenger_media = $this->dav2_messages->getAllMessageMedia($conversationId, $type);
             return response()->json(['data' => $messages->arrayMessages,   'page' => $page, 'endPage' => $end_page, 'messenger_media' => $messenger_media, 'msg_id' => $msg_id], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

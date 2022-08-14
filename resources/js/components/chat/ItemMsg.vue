@@ -1,7 +1,7 @@
 <template>
     <div
         class="package__msg"
-        :id="'pack__msg--' + data.id"
+        :id="'pack__msg--' + data.message.id"
         @mouseover="showActions = true"
         @mouseleave="showActions = false"
     >
@@ -569,6 +569,7 @@ export default {
                 );
             }
         },
+
         scrollToMsg(msgId) {
             const el = document.getElementById("pack__msg--" + msgId);
         },

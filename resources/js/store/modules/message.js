@@ -16,6 +16,7 @@ const state = () => ({
     incomingCall: false,
     rcvInRoom: false,
     blockLoadImg: false,
+    activeReply: null,
 });
 
 const getters = {
@@ -31,7 +32,9 @@ const getters = {
     calling(s) {
         return s.calling;
     },
-
+    activeReply(s) {
+        return s.activeReply;
+    },
     messages(s) {
         return s.messages;
     },
@@ -95,6 +98,10 @@ const mutations = {
     setCalling(s, p) {
         return (s.calling = p);
     },
+    setActiveReply(s, p) {
+        s.activeReply = p;
+    },
+
     pushMedia(s, p) {
         const arrayMedia = p.message.split(",");
         console.log(arrayMedia);
@@ -151,6 +158,7 @@ const mutations = {
         s.groupReaction = null;
         s.dialogReaction = false;
         s.blockLoadImg = false;
+        s.activeReply = null;
     },
     actionDialogReaction(s, p) {
         if (p == "open") {
@@ -344,14 +352,13 @@ const actions = {
                     })
                 )
                 .then((req) => {
+                    console.log(req);
                     const data = req.data.data;
                     c.commit("setMessages", {
                         data: data,
                         type: p.type,
                     });
-                    if (p.page == 1) {
-                        c.commit("setMessemgerMedia", req.data.messenger_media);
-                    }
+                    c.commit("setMessemgerMedia", req.data.messenger_media);
                     rs(req);
                 })
                 .catch((err) => {

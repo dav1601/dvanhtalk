@@ -98,7 +98,6 @@ export default {
                 return img.url;
             }
         },
-
         alt() {
             const img = this.images[this.imgIndex];
             if (typeof img === "object") {
@@ -169,9 +168,12 @@ export default {
             if (!this.$refs.gallery) {
                 return;
             }
-            const galleryWidth = document.documentElement.clientWidth + 270;
+            const bonus = this.isIpadProUp ? 270 : 0;
+            const galleryWidth = document.documentElement.clientWidth + bonus;
             const currThumbsWidth = this.imgIndex * this.thumbnailWidth;
             const maxThumbsWidth = this.images.length * this.thumbnailWidth;
+            const point = this.isIpadProUp ? 0 : 1000;
+            console.log(point);
             const centerPos =
                 Math.floor(galleryWidth / (this.thumbnailWidth * 2)) *
                 this.thumbnailWidth;
@@ -190,11 +192,12 @@ export default {
                 this.galleryXPos = -(
                     this.images.length * this.thumbnailWidth -
                     galleryWidth -
+                    point -
                     8
                 );
             } else {
                 this.galleryXPos =
-                    -(this.imgIndex * this.thumbnailWidth) + centerPos;
+                    -(this.imgIndex * this.thumbnailWidth - point) + centerPos;
             }
         },
     },
@@ -249,8 +252,8 @@ $screen-md-max: ($screen-lg - 1);
     display: table;
 }
 .vgs {
-     @include modal-mask();
-     background: #000;
+    @include modal-mask();
+    background: #000;
     &__close {
         position: absolute;
         top: 20px;

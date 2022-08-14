@@ -25,10 +25,17 @@
                         >
                         </avatar-editor>
                     </div>
-                    <v-card-actions class="justify-end">
+                    <v-card-actions
+                        :class="[
+                            isIpadProUp
+                                ? 'justify-content-end'
+                                : 'justify-content-center',
+                        ]"
+                        class="mt-3"
+                    >
                         <v-btn
                             :disabled="saving"
-                            text
+                            color="secondary"
                             @click="dialgUpdateAvatar = false"
                             >Huỷ</v-btn
                         >
@@ -71,7 +78,7 @@
                                 ></item-avatar>
                             </div>
                             <v-btn
-                                color="blue-grey"
+                                color="#0984e3"
                                 class="ma-2 white--text"
                                 @click.stop="openInput"
                                 :disabled="saving"
@@ -88,12 +95,12 @@
                         </div>
                         <!-- --------- -->
                         <div
-                            class="d-flex justify-content-center mb-2"
+                            class="d-flex justify-content-start mb-2 flex-wrap"
                             :class="{
                                 'align-items-center': activeEdit != 'name',
                             }"
                         >
-                            <v-card-text style="width: 200px"
+                            <v-card-text class="pl-0" style="width: 200px"
                                 >Tên người dùng</v-card-text
                             >
                             <div style="flex: 1">
@@ -148,12 +155,12 @@
                         </div>
                         <!-- -------------- -->
                         <div
-                            class="d-flex justify-content-start mb-2"
+                            class="d-flex justify-content-start flex-wrap mb-2"
                             :class="{
                                 'align-items-center': activeEdit != 'email',
                             }"
                         >
-                            <v-card-text style="width: 200px"
+                            <v-card-text class="pl-0" style="width: 200px"
                                 >Email</v-card-text
                             >
                             <div style="flex: 1">
@@ -208,13 +215,13 @@
                         </div>
                         <!-- -------------- -->
                         <div
-                            class="d-flex justify-content-start mb-2 pb-10"
+                            class="d-flex justify-content-start flex-wrap mb-2 pb-10"
                             :class="{
                                 'align-items-center':
                                     activeEdit != 'phoneNumber',
                             }"
                         >
-                            <v-card-text style="width: 200px"
+                            <v-card-text class="pl-0" style="width: 200px"
                                 >Số điện thoại</v-card-text
                             >
                             <div style="flex: 1">
@@ -287,16 +294,23 @@
                     @setting-call="settingCall"
                 ></setting-call>
             </v-card>
+            <v-card dark>
+                <v-card-title class="setting__user-title">
+                    Tài khoản & hỗ trợ
+                </v-card-title>
+                <change-pass></change-pass>
+            </v-card>
 
             <!-- --------------- -->
-            </div>
+        </div>
     </v-container>
 </template>
 <script>
 import AvatarEditor from "../components/users/AvatarEditor";
 import SettingCall from "../components/chat/SettingCall.vue";
+import ChangePass from "../components/users/auth/ChangePass.vue";
 export default {
-    components: { AvatarEditor, SettingCall },
+    components: { AvatarEditor, SettingCall, ChangePass },
     data() {
         return {
             fileUpload: null,

@@ -151,6 +151,7 @@ export default {
                 })
                 .listen("SendMessage", async (e) => {
                     await this.$store.dispatch("message/getTyping", false);
+                    await this.$store.commit("message/setActiveReply", null);
                     const authId = Number(this.$store.getters["auth/id"]);
                     const rcvId = Number(
                         this.$store.getters["message/receiver"].id

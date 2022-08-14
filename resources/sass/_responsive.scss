@@ -87,6 +87,12 @@ $breakpoints-h: (
     }
 }
 @include responsive_v(iphone6-7-8plus, down) {
+    .reply__message {
+        max-width: 300px;
+    }
+    .message__pre__reply {
+        max-width: 260px;
+    }
     .message__image {
         &--item {
             flex: 0 0 100px;

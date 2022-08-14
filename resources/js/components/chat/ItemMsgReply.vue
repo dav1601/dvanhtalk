@@ -1,19 +1,26 @@
 <template>
-    <div class="reply d-flex" :id="'reply-' + message_parent.id">
+    <div
+        class="reply d-flex"
+        :id="'reply-' + message_parent.id"
+        :class="[itMe ? ['chat-message-right'] : ['chat-message-left']]"
+    >
         <div
             v-if="message_parent.type == 1"
-            class="reply__message chat-item"
+            class="reply__message chat-item cursor-pointer"
+            @click="setActiveReply"
             :class="[
                 itMe ? ['reply__message--right'] : ['reply__message--left'],
             ]"
         >
+            <!-- VIẾT SỰ KIỆN CLICK NỮA LÀ XONG NHA BÀ -->
             <span class="text-chat text-overflow">
                 {{ message_parent.message }}
             </span>
         </div>
         <div
             v-if="message_parent.type == 2"
-            class="reply__message--img"
+            class="reply__message--img cursor-pointer"
+            @click="setActiveReply"
             :class="[
                 itMe
                     ? ['reply__message--right --img']
@@ -30,7 +37,8 @@
         </div>
         <div
             v-if="message_parent.type == 3"
-            class="reply__message chat-item"
+            class="reply__message chat-item cursor-pointer"
+            @click="setActiveReply"
             :class="[
                 itMe ? ['reply__message--right'] : ['reply__message--left'],
             ]"
@@ -40,7 +48,8 @@
         </div>
         <div
             v-if="message_parent.type == 6"
-            class="reply__message chat-item"
+            class="reply__message chat-item cursor-pointer"
+            @click="setActiveReply"
             :class="[
                 itMe ? ['reply__message--right'] : ['reply__message--left'],
             ]"
@@ -56,6 +65,12 @@ export default {
     methods: {
         loaded() {
             return this.$emit("load");
+        },
+        async setActiveReply() {
+            await this.$store.commit(
+                "message/setActiveReply",
+                this.message_parent.id
+            );
         },
     },
     computed: {
@@ -80,6 +95,8 @@ export default {
         background: #3e4042;
         position: relative;
         top: 8px;
+        max-width: 414px;
+
         &--img {
             position: relative;
             top: 8px;
@@ -97,11 +114,11 @@ export default {
         }
         &--right {
             margin-left: auto;
-            margin-right: 10px;
+            margin-right: 35px;
         }
         &--left {
             margin-right: auto;
-            margin-left: 32px;
+            margin-left: 35px;
         }
     }
 }

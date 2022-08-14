@@ -28,6 +28,10 @@
                     <setting-user
                         v-if="payLoadDialog.name == 'setting__user'"
                     ></setting-user>
+                    <change-pass
+                        :dialog="dialogAction"
+                        v-if="payLoadDialog.name == 'change__password'"
+                    ></change-pass>
                 </div>
             </v-card>
         </v-dialog>
@@ -145,6 +149,22 @@
                                 ></action-setting>
                             </div>
                             <div
+                                @click.stop="
+                                    openDialogAction(
+                                        'change__password',
+                                        'Đổi mật khẩu'
+                                    )
+                                "
+                                class="box__action-item cursor-pointer"
+                            >
+                                <action-setting
+                                    icon="mdi-shield-lock"
+                                    color="#00C853"
+                                    actionName="Đổi mật khẩu"
+                                    size="25"
+                                ></action-setting>
+                            </div>
+                            <div
                                 @click.prevent="logout()"
                                 class="box__action-item cursor-pointer"
                             >
@@ -206,6 +226,7 @@ import ListUser from "../components/users/ListUser.vue";
 import ListGroup from "../components/group/ListGroup";
 import ActionSetting from "../components/mobile/ActionSetting";
 import SettingUser from "../pages/SettingUser";
+import ChangePass from "../components/users/auth/ChangePass.vue";
 export default {
     components: {
         ItemUser,
@@ -215,6 +236,7 @@ export default {
         ListGroup,
         ActionSetting,
         SettingUser,
+        ChangePass,
     },
     data() {
         return {
@@ -252,7 +274,6 @@ export default {
     //  LÀM TAB RESPONSIVE CHO LOBBY CHO MENUUUUUUUUUUUUUUUUUUUUUUUUUUU
     methods: {
         openDialogAction(name = "setting__user", title = "Dav Messenger") {
-            alert("ok");
             this.payLoadDialog.title = title;
             this.payLoadDialog.name = name;
             this.dialogAction = true;
@@ -282,12 +303,12 @@ export default {
                 );
                 sum__groups = this.windowHeight - (header + searchGroup);
                 sum__users = this.windowHeight - (header + searchUser);
-                console.log({
-                    wh: this.windowHeight,
-                    sg: searchGroup,
-                    su: searchUser,
-                    header: header,
-                });
+                // console.log({
+                //     wh: this.windowHeight,
+                //     sg: searchGroup,
+                //     su: searchUser,
+                //     header: header,
+                // });
             } else {
                 const header__tabs = this.getAbsoluteHeight(
                     document.getElementById("header__mobi__tabs")
@@ -301,13 +322,13 @@ export default {
                 sum__users =
                     this.windowHeight -
                     (header__tabs + searchUser + mobi__users__online);
-                console.log({
-                    wh: this.windowHeight,
-                    sg: searchGroup,
-                    su: searchUser,
-                    header: header__tabs,
-                    mb: mobi__users__online,
-                });
+                // console.log({
+                //     wh: this.windowHeight,
+                //     sg: searchGroup,
+                //     su: searchUser,
+                //     header: header__tabs,
+                //     mb: mobi__users__online,
+                // });
             }
             if (wp__groups) {
                 wp__groups.style.height = sum__groups + "px";

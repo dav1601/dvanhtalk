@@ -278,7 +278,7 @@
                 </v-form>
             </v-card>
             <!-- --------------- -->
-            <v-card dark>
+            <v-card dark class="my-3">
                 <v-card-title class="setting__user-title">
                     Cài Đặt Cuộc Gọi
                 </v-card-title>

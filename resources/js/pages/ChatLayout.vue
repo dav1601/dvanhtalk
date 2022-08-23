@@ -796,10 +796,7 @@ export default {
                     "The feature will develop in the future because the device is not enough for testing at the moment"
                 );
             }
-            this.popupCenter(
-                this.urlCall(hasVideo),
-                "Cuộc hội thoại của dav-chat"
-            );
+            this.goCallRoom(this.urlCall(hasVideo));
         },
         makeStreamId(length) {
             var result = "";

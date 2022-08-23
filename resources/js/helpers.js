@@ -25,7 +25,7 @@ export default {
         return ret;
     },
     isEmpty(obj) {
-        if (obj == "undefined" || obj == "null") {
+        if (!obj) {
             return true;
         }
         return Object.keys(obj).length === 0;

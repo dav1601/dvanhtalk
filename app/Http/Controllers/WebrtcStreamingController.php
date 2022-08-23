@@ -38,7 +38,7 @@ class WebrtcStreamingController extends Controller
         $data->type = $request->type;
         $data->action = $request->action;
         $data->urlJoin = $request->urlJoin;
-        broadcast(new NotifyCall($data));
+        broadcast(new NotifyCall($data))->toOthers();
     }
     public function ans__call(Request $request)
     {

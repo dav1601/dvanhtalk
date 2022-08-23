@@ -7,6 +7,12 @@ export default {
         };
     },
     methods: {
+        goCallRoom(url = "") {
+            if (this.isMobile || !this.isIpadProUp) {
+                return this.$router.push(url);
+            }
+            return this.popupCenter(url, "Cuộc hội thoại của dav-chat");
+        },
         deleteSavedScroll() {
             localStorage.setItem("saveScrollHeight", 0);
         },

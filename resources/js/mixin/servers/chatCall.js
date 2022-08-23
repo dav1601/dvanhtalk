@@ -1,3 +1,5 @@
+import Log from "laravel-mix/src/Log";
+
 export default {
     methods: {
         popupCenter(
@@ -44,7 +46,7 @@ export default {
 
             if (window.focus) newWindow.focus();
         },
-        async getPermissions() {
+        async getPermissions(facingMode = "user") {
             // Older browsers might not implement mediaDevices at all, so we set an empty object first
             if (navigator.mediaDevices === undefined) {
                 navigator.mediaDevices = {};
@@ -87,38 +89,22 @@ export default {
                 navigator.mozGetUserMedia;
             const audioInput = JSON.parse(localStorage.getItem("audioInput"));
             const videoInput = JSON.parse(localStorage.getItem("videoInput"));
-            // let existDevAu = false;
-            // let existDevVid = false;
-            // if (audioInput && !this.$helpers.isEmpty(audioInput)) {
-            //     const check1 = devices.filter((dev) => {
-            //         return dev.deviceId == audioInput.deviceId;
-            //     });
-            //     const check2 = devices.filter((dev) => {
-            //         return dev.deviceId == videoInput.deviceId;
-            //     });
-            //     if (check1) {
-            //         existDevAu = true;
-            //     }
-            //     if (check2) {
-            //         existDevVid = true;
-            //     }
-            // }
 
+            let valueVideo = true;
+            if (this.isMobile) {
+                valueVideo = {
+                    facingMode: facingMode,
+                };
+            }
             const video = videoInput
                 ? {
                       deviceId: videoInput.deviceId,
                       width: { ideal: 4096 },
                       height: { ideal: 2160 },
                   }
-                : true;
+                : valueVideo;
             const audio = audioInput ? { deviceId: audioInput.deviceId } : true;
-            console.log({
-                dev1: video,
-                dev2: audio,
-                full1: videoInput,
-                full2: audioInput,
-            });
-
+             
             return new Promise((resolve, reject) => {
                 navigator.mediaDevices
                     .getUserMedia({
@@ -130,7 +116,6 @@ export default {
                         resolve(stream);
                     })
                     .catch((err) => {
-                        console.log(err);
                         reject(err);
                         //   throw new Error(`Unable to fetch stream ${err}`);
                     });

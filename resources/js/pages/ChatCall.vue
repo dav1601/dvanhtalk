@@ -1,7 +1,7 @@
 <template>
-    <v-container
+    <div
         :class="[connected && hasVideo ? ['p-0', 'm-0'] : '']"
-        class="m-auto call h-100 position-relative d-flex align-items-center"
+        class="call h-100 w-100 position-relative d-flex align-items-center"
         ref="ChatCall"
         :style="styleBgVidOff"
     >
@@ -12,9 +12,9 @@
                 top
                 right
                 dark
-                :key="snackbar.audioConnected.text"
                 v-model="snackbar.audioConnected.open"
                 :timeout="4000"
+                key="snackbarAudio"
                 style="margin-top: 20px"
             >
                 {{ snackbar.audioConnected.text }}
@@ -24,7 +24,7 @@
                 top
                 right
                 dark
-                :key="snackbar.videoConnected.text"
+                key="snackbarVideo"
                 v-model="snackbar.videoConnected.open"
                 :timeout="3000"
             >
@@ -39,6 +39,7 @@
                 ref="localVoice"
                 class="localVoice"
                 id="localCam"
+                :style="styleLocalCam"
             ></video>
             <video
                 autoplay
@@ -86,7 +87,7 @@
                     width="120px"
                     height="120px"
                 ></item-avatar>
-                <span class="d-block mt-2">{{
+                <span class="mt-2" :class="{ 'd-none': mutedVideo }">{{
                     this.status != "connected" ? this.status : ""
                 }}</span>
                 <v-btn
@@ -108,7 +109,7 @@
         </div>
         <div
             id="call__actions"
-            class="call__actions position-absolute d-flex justify-content-center align-items-center w-100"
+            class="call__actions position-absolute d-flex justify-content-center align-items-center w-100 mb-2"
         >
             <v-btn
                 class="mx-3"
@@ -135,24 +136,35 @@
             </v-btn>
             <v-btn
                 class="mx-3"
+                v-if="isMobile"
+                fab
+                dark
+                small
+                @click="switchCam()"
+                :disabled="!connected || !hasVideo"
+            >
+                <v-icon dark> mdi-camera-flip </v-icon>
+            </v-btn>
+            <v-btn
+                class="mx-3"
                 v-if="enabledVideo"
                 fab
                 dark
                 small
                 @click="enabledVideo = false"
-                :disabled="!connected"
+                :disabled="!connected || !hasVideo"
             >
                 <v-icon dark> mdi-video </v-icon>
             </v-btn>
             <v-btn
                 class="mx-3"
-                v-else
+                v-if="!enabledVideo"
                 color="pink"
                 fab
                 dark
                 small
                 @click="enabledVideo = true"
-                :disabled="!connected"
+                :disabled="!connected || !hasVideo"
             >
                 <v-icon dark> mdi-video-off </v-icon>
             </v-btn>
@@ -160,7 +172,7 @@
                 <v-icon dark> mdi-phone-hangup </v-icon>
             </v-btn>
         </div>
-    </v-container>
+    </div>
 </template>
 <script>
 // import Peer from "simple-peer";
@@ -189,6 +201,7 @@ export default {
                     haveCall: "Đang trong 1 cuộc gọi khác vui lòng gọi lại sau",
                 },
             },
+            facingMode: "user",
             showRecall: false,
             isFocusMyself: true,
             callPlaced: true,
@@ -200,6 +213,7 @@ export default {
             ended: false,
             denyOrMiss: false,
             timeOutCall: null,
+            switchingCam: false,
             snackbar: {
                 timeOut: 4000,
                 audioConnected: {
@@ -247,9 +261,17 @@ export default {
         if (this.isBroadcaster) {
             this.setProcess("calling");
         } else {
-            this.setProcess("connecting");
+            const existBrd = this.videoCallParams.users.findIndex(
+                (user) => user.id == this.broadcasterId
+            );
+            if (existBrd < 0) {
+                this.setProcess("connecting");
+            } else {
+                this.setProcess("ended");
+            }
         }
     },
+
     mounted() {
         if (this.callPlaced) {
             const idPartner = this.isBroadcaster
@@ -266,6 +288,12 @@ export default {
         }
     },
     computed: {
+        styleLocalCam() {
+            if (!this.isMobile || this.isIpadProUp) {
+                return "bottom:15px; width: 200px; height: 200px;";
+            }
+            return "top:15px; width:100px; height:200px";
+        },
         callAccepted() {
             return this.videoCallParams.callAccepted;
         },
@@ -315,6 +343,21 @@ export default {
         },
     },
     methods: {
+        async switchCam() {
+            this.switchingCam = true;
+            if (this.facingMode == "user") {
+                this.facingMode = "environment";
+            } else {
+                this.facingMode = "user";
+            }
+            this.$nextTick(async () => {
+                if (this.isBroadcaster) {
+                    await this.caller();
+                } else {
+                    await this.acceptedCall();
+                }
+            });
+        },
         getStatus(status) {
             if (this.setting.arrayStatus[status]) {
                 return this.setting.arrayStatus[status];
@@ -361,6 +404,7 @@ export default {
                 this.videoCallParams.peer2.destroy();
             }
             clearTimeout(this.timeOutCall);
+            this.facingMode = "user";
             this.mutedAudio = false;
             this.mutedVideo = false;
             this.timeOutCall = null;
@@ -384,12 +428,11 @@ export default {
             this.videoCallParams.timeCall = null;
         },
         getMediaPermission() {
-            return this.getPermissions()
+            return this.getPermissions(this.facingMode)
                 .then((stream) => {
                     this.videoCallParams.stream = stream;
                     this.$refs.localVoice.srcObject = stream;
                     this.$refs.localVoice.muted = true;
-                    console.log("created stream");
                 })
                 .catch((error) => {
                     console.log(error);
@@ -397,7 +440,7 @@ export default {
         },
         setDeviceConnected() {
             const stream = this.videoCallParams.stream;
-            if (!stream) {
+            if (!stream || this.isMobile) {
                 return;
             }
             this.snackbar.audioConnected.text =
@@ -413,8 +456,12 @@ export default {
             this.videoCallParams.channel = Echo.join(this.channelName);
             this.videoCallParams.channel
                 .here((users) => {
-                    console.log(users);
                     this.videoCallParams.users = users;
+                    if (!this.isBroadcaster) {
+                        if (users.length < 2) {
+                            this.setProcess("ended");
+                        }
+                    }
                 })
 
                 .joining((user) => {
@@ -463,6 +510,9 @@ export default {
                         this.mutedVideo = !data.enable;
                     }
                     if (data.type == "callAccepted") {
+                        if (this.process == "ended") {
+                            this.offerCall(this.process);
+                        }
                         if (data.signal.renegotiate) {
                             console.log("renegotating");
                         }
@@ -475,17 +525,17 @@ export default {
                         }
                     }
                 });
-            if (this.isBroadcaster) {
-                this.myChannel["notify"].listen("NotifyCall", (e) => {
-                    const data = e.data;
-                    console.log({
-                        ans: data,
-                    });
-                    if (data.type == "answer") {
-                        this.handleAnswer(data.answer);
-                    }
-                });
-            }
+
+            this.myChannel["notify"].listen("NotifyCall", (e) => {
+                const data = e.data;
+                console.log(data);
+                if (data.type == "answer" && this.isBroadcaster) {
+                    this.handleAnswer(data.answer);
+                }
+                if (!this.isBroadcaster && data.type == "ended") {
+                    this.endCall();
+                }
+            });
         },
         handleAnswer(answer) {
             clearTimeout(this.timeOutCall);
@@ -494,13 +544,13 @@ export default {
         async caller() {
             await this.getMediaPermission();
             await this.setDeviceConnected();
+            console.log("create peer 1 ");
             this.videoCallParams.peer1 = new Peer({
                 initiator: true,
                 trickle: false,
                 stream: this.videoCallParams.stream,
                 config: this.servers,
             });
-            console.log("created broadcaster peer");
             this.videoCallParams.peer1.on("signal", async (data) => {
                 if (this.isBroadcaster) {
                     if (
@@ -535,7 +585,7 @@ export default {
                 this.setProcess("connected");
                 this.connected = true;
                 clearTimeout(this.timeOutCall);
-                console.log("peer connected 1");
+                this.switchingCam = false;
             });
 
             this.videoCallParams.peer1.on("error", (err) => {
@@ -569,6 +619,7 @@ export default {
         async acceptedCall(peer1) {
             await this.getMediaPermission();
             await this.setDeviceConnected();
+            console.log("create peer 2");
             this.videoCallParams.peer2 = new Peer({
                 initiator: false,
                 trickle: false,
@@ -582,7 +633,9 @@ export default {
                         to: this.broadcasterId,
                         streamId: this.streamId,
                     })
-                    .then(() => {})
+                    .then((req) => {
+                        console.log("log1");
+                    })
                     .catch((error) => {
                         console.log(error);
                     });
@@ -597,7 +650,7 @@ export default {
                 this.setProcess("connected");
                 this.connected = true;
                 clearTimeout(this.timeOutCall);
-                console.log("peer 2 connected");
+                this.switchingCam = false;
             });
 
             this.videoCallParams.peer2.on("error", (err) => {
@@ -770,16 +823,13 @@ export default {
     position: fixed;
     right: 0;
     bottom: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     z-index: 99;
 }
 #localCam {
     position: fixed;
-    right: 10px;
-    bottom: 10px;
-    width: 200px;
-    height: 200px;
+    right: 15px;
     z-index: 100;
 }
 .call {

@@ -29,7 +29,7 @@
             />
         </audio>
         <v-dialog v-model="answerCallDialog" v-if="caller != null" width="300">
-            <v-card dark>
+            <v-card dark class="p-2">
                 <div
                     class="info__broadcaster d-flex flex-column justify-content-center align-center"
                 >
@@ -49,7 +49,7 @@
                     >
                 </div>
                 <div
-                    class="action__call d-flex justify-content-center align-center"
+                    class="action__call d-flex justify-content-center align-center my-2"
                 >
                     <v-btn
                         class="mx-3"
@@ -116,7 +116,7 @@
                     style="width: 100px; height: 100px"
                 >
                     <img
-                        :src="$helpers.getAssetsPath('images/logo.svg')"
+                        :src="$helpers.getAssetsPath('images/logo.png')"
                         alt="logo"
                         height="100%"
                         width="100%"
@@ -193,7 +193,7 @@
             </v-container>
         </v-app-bar>
         <div v-if="!isIpadProUp">
-            <div id="header__mobile" v-if="isSettingUser">
+            <div id="header__mobile" v-if="isSettingUser || isCallChat">
                 <a
                     @click="$router.go(-1)"
                     class="d-flex align-items-center justify-content-start text-decoration-none"
@@ -318,7 +318,7 @@ export default {
         },
         answerCall(ans) {
             if (ans == "accepted") {
-                this.popupCenter(this.urlJoin, "Cuộc hội thoại của dav-chat");
+                this.goCallRoom(this.urlJoin);
                 this.resetCall(true);
             } else {
                 this.sendAns(ans);
@@ -468,6 +468,9 @@ export default {
 };
 </script>
 <style lang="scss">
+html {
+    overflow: hidden;
+}
 @import "../sass/_variables.scss";
 @import "../sass/_responsive.scss";
 $roles: 0, 1, 2;
@@ -509,6 +512,7 @@ $roles: 0, 1, 2;
     border-bottom: 4px solid var(--bs-gray-dark);
 }
 #header__mobile {
+    z-index: 50000;
     padding: 10px 20px;
     a {
         font-size: 20px;

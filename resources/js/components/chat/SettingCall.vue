@@ -81,8 +81,21 @@ export default {
         };
     },
     methods: {
+        async start() {
+            navigator.mediaDevices
+                .getUserMedia({
+                    audio: true,
+                    video: true,
+                })
+                .then((stream) => {
+                    this.getCameraSelection();
+                })
+                .catch((err) => console.log("no"));
+            this.getCameraSelection();
+        },
         async getCameraSelection() {
             this.loadedDevices = false;
+            console.log("get");
             const devices = await navigator.mediaDevices.enumerateDevices();
             // localStorage.removeItem("audioOutput");
             // localStorage.removeItem("audioInput");
@@ -90,19 +103,19 @@ export default {
             const audioOutput = this.$helpers.isEmpty(
                 localStorage.getItem("audioOutput")
             )
-                ? undefined
+                ? null
                 : JSON.parse(localStorage.getItem("audioOutput"));
 
             const audioInput = this.$helpers.isEmpty(
                 localStorage.getItem("audioInput")
             )
-                ? undefined
+                ? null
                 : JSON.parse(localStorage.getItem("audioInput"));
 
             const videoInput = this.$helpers.isEmpty(
                 localStorage.getItem("videoInput")
             )
-                ? undefined
+                ? null
                 : JSON.parse(localStorage.getItem("videoInput"));
 
             let existAOP = false;
@@ -112,6 +125,7 @@ export default {
                 dev1: audioOutput,
                 dev2: audioInput,
                 dev3: videoInput,
+                devices: devices,
             });
             if (audioOutput && !this.$helpers.isEmpty(audioOutput)) {
                 if (this.checkExist(devices, audioOutput.deviceId)) {
@@ -207,8 +221,8 @@ export default {
                         );
                         this.selectAuInp = this.arrayAudioInput[0];
                     } else {
-                        localStorage.setItem("audioInput", undefined);
-                        this.selectAuInp = undefined;
+                        localStorage.setItem("audioInput", null);
+                        this.selectAuInp = null;
                     }
                 }
                 if (
@@ -222,8 +236,8 @@ export default {
                         );
                         this.selectVidInp = this.arrayVideoInput[0];
                     } else {
-                        localStorage.setItem("videoInput", undefined);
-                        this.selectVidInp = undefined;
+                        localStorage.setItem("videoInput", null);
+                        this.selectVidInp = null;
                     }
                 }
                 if (
@@ -237,8 +251,8 @@ export default {
                         );
                         this.selectAuOutp = this.arrayAudioOutput[0];
                     } else {
-                        localStorage.setItem("audioOutput", undefined);
-                        this.selectAuOutp = undefined;
+                        localStorage.setItem("audioOutput", null);
+                        this.selectAuOutp = null;
                     }
                 }
                 this.loadedDevices = true;
@@ -283,7 +297,7 @@ export default {
         openDialog(open) {
             this.$emit("setting-call", open);
             if (open) {
-                this.getCameraSelection();
+                this.start();
             }
         },
     },

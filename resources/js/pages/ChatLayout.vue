@@ -793,7 +793,7 @@ export default {
         async offerCall(hasVideo = false) {
             if (this.isGroup) {
                 return alert(
-                    "The feature will develop in the future because the device is not enough for testing at the moment"
+                    "Coming Soon........."
                 );
             }
             this.goCallRoom(this.urlCall(hasVideo));

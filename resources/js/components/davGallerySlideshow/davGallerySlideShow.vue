@@ -1,6 +1,10 @@
 <template>
     <transition name="modal">
         <div v-if="imgIndex !== null" class="vgs">
+            <div
+                class="vgs-bg"
+                :style="'background-image: url(' + imageUrl + ')'"
+            ></div>
             <v-btn
                 class="mx-2 vgs__close"
                 fab
@@ -43,9 +47,7 @@
                 <div
                     v-if="images"
                     class="vgs__gallery__container"
-                    :style="{
-                        transform: 'translate(' + galleryXPos + 'px, 0)',
-                    }"
+                    :style="transformGallery"
                 >
                     <img
                         v-for="(img, i) in images"
@@ -56,6 +58,7 @@
                             'vgs__gallery__container__img--active':
                                 i === imgIndex,
                         }"
+                        :data-index="i"
                         :alt="typeof img === 'string' ? '' : img.alt"
                         @click.stop="onClickThumb(img, i)"
                     />
@@ -89,6 +92,11 @@ export default {
         };
     },
     computed: {
+        transformGallery() {
+            const pos =
+                this.galleryXPos > 0 ? -this.galleryXPos : this.galleryXPos;
+            return "transform: translate(" + pos + "px, 0)";
+        },
         imageUrl() {
             const img = this.images[this.imgIndex];
             if (typeof img === "string") {
@@ -162,23 +170,33 @@ export default {
         },
         onClickThumb(image, index) {
             this.imgIndex = index;
+            console.log(index);
+            console.log(this.imgIndex);
             this.updateThumbails();
         },
         updateThumbails() {
             if (!this.$refs.gallery) {
                 return;
             }
-            const bonus = this.isIpadProUp ? 270 : 0;
-            const galleryWidth = document.documentElement.clientWidth + bonus;
+            const bonus = this.isIpadProUp
+                ? this.thumbnailWidth * 4 - 40
+                : this.thumbnailWidth - 20;
+            const galleryWidth = document.documentElement.clientWidth;
             const currThumbsWidth = this.imgIndex * this.thumbnailWidth;
             const maxThumbsWidth = this.images.length * this.thumbnailWidth;
+            const lastBonus = this.imgIndex == this.images.length ? 480 : 0;
             const point = this.isIpadProUp ? 0 : 1000;
-            console.log(point);
+            const margin = this.isIpadProUp ? 0 : this.imgIndex * 10;
+            const posImage =
+                this.imgIndex * this.thumbnailWidth + this.imgIndex * 10;
             const centerPos =
                 Math.floor(galleryWidth / (this.thumbnailWidth * 2)) *
                 this.thumbnailWidth;
             // Prevent scrolling of images if not neede
-            if (maxThumbsWidth < galleryWidth) {
+            if (
+                maxThumbsWidth < galleryWidth ||
+                (posImage < galleryWidth && this.imgIndex != 0)
+            ) {
                 return;
             }
             if (currThumbsWidth < centerPos) {
@@ -186,18 +204,17 @@ export default {
             } else if (
                 currThumbsWidth >
                 this.images.length * this.thumbnailWidth -
+                    this.images.length * 10 -
                     galleryWidth +
                     centerPos
             ) {
-                this.galleryXPos = -(
-                    this.images.length * this.thumbnailWidth -
-                    galleryWidth -
-                    point -
-                    8
-                );
+                this.galleryXPos =
+                    -(currThumbsWidth - margin - bonus - centerPos) +
+                    this.thumbnailWidth / 2;
             } else {
                 this.galleryXPos =
-                    -(this.imgIndex * this.thumbnailWidth - point) + centerPos;
+                    -(currThumbsWidth - margin - bonus) +
+                    this.thumbnailWidth / 2;
             }
         },
     },
@@ -252,6 +269,16 @@ $screen-md-max: ($screen-lg - 1);
     display: table;
 }
 .vgs {
+    &-bg {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        filter: blur(20px);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
     @include modal-mask();
     background: #000;
     &__close {
@@ -291,29 +318,30 @@ $screen-md-max: ($screen-lg - 1);
     &__container {
         position: absolute;
         overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         cursor: pointer;
         overflow: hidden;
-        width: 100vh;
         margin: 0.5rem auto 0;
         left: 0.5rem;
         right: 0.5rem;
-        height: 60vh;
         border-radius: $radius-large;
-        background-color: $black;
-        @include respond-to(xs) {
-            width: 100%;
-            max-width: 100%;
-            top: 50%;
-            margin-top: -140px;
-            left: 0;
-            right: 0;
-            border-radius: 0;
-            height: 280px;
-        }
+        // @include respond-to(xs) {
+        //     width: 100%;
+        //     max-width: 100%;
+        //     top: 50%;
+        //     margin-top: -140px;
+        //     left: 0;
+        //     right: 0;
+        //     border-radius: 0;
+        //     height: 280px;
+        // }
         &__img {
-            width: 100%;
-            height: 100%;
+            max-width: 100vw;
+            max-height: calc(100vh - 150px);
             object-fit: contain;
+            padding-right: 1rem;
         }
     }
 }
@@ -352,7 +380,7 @@ $screen-md-max: ($screen-lg - 1);
             float: none;
             margin-right: 8px;
             cursor: pointer;
-            opacity: 0.3;
+            opacity: 0.65;
             border-radius: $radius-medium;
         }
         &__img--active {
@@ -360,6 +388,7 @@ $screen-md-max: ($screen-lg - 1);
             display: inline-block;
             float: none;
             opacity: 1;
+            border: 1px solid #fff;
         }
     }
 }

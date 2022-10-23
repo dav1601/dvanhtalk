@@ -131,8 +131,9 @@ export default {
                 "typing",
                 async (e) => {
                     if (
+                        this.$store.getters["message/receiver"] &&
                         this.$store.getters["message/receiver"].id ==
-                        e.sender_id
+                            e.sender_id
                     ) {
                         await this.$store.dispatch(
                             "message/getTyping",
@@ -159,9 +160,9 @@ export default {
                     await this.$store.dispatch("message/getTyping", false);
                     await this.$store.commit("message/setActiveReply", null);
                     const authId = Number(this.$store.getters["auth/id"]);
-                    const rcvId = Number(
-                        this.$store.getters["message/receiver"].id
-                    );
+                    const rcvId = this.isChat
+                        ? Number(this.$store.getters["message/receiver"].id)
+                        : 0;
                     const userMessage = e.user_message;
                     if (userMessage.seen == 0) {
                         let el = document.getElementById(

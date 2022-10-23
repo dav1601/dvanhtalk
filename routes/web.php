@@ -1,6 +1,5 @@
 <?php
 
-use App\Events\CustomEvent;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Events\Lobby;
@@ -9,6 +8,8 @@ use App\Models\Message;
 use App\Events\NewGroup;
 use Mockery\Expectation;
 use App\Events\HandleUser;
+use App\Events\LobbyEvent;
+use App\Events\CustomEvent;
 use App\Events\SendMessage;
 use App\Events\SenRqJoinGr;
 use App\Models\UserMessage;
@@ -16,20 +17,20 @@ use App\Events\QueueMessage;
 use App\Models\MembersGroup;
 use Illuminate\Http\Request;
 use App\Events\HandleRequest;
-use App\Events\LobbyEvent;
 use App\Events\SendMessageGroup;
 use App\Models\RequestJoinGroup;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\GroupController;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\TextUI\XmlConfiguration\Group;
 use App\Http\Controllers\MessagesController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\WebrtcStreamingController;
 use App\Repositories\Groups\GroupsInterface;
 use App\Repositories\Messages\MessagesInterface;
+use App\Http\Controllers\WebrtcStreamingController;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 /*
@@ -45,17 +46,28 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 Auth::routes();
 Route::get('/', 'AppController@index')->middleware('auth')->name('home');
+Route::get('test', function () {
+ Route::get("/sdsds");
+});
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 })->name('me');
 Route::post('update', function (Request $request, MessagesInterface $dav2_message) {
     return $request->file->storeOnCloudinary("test")->getSecurePath();
 })->name('test');
+
+
 Route::group(['middleware' => ['guest']], function () {
     Route::get('/register', 'DavAuthController@showRegister')->name('register.show');
     Route::post('/register', 'DavAuthController@register')->name('register.perform');
 });
 Route::group(['middleware' => ['auth']], function () {
+    Route::group(['middleware' => ['admin.super']], function () {
+        Route::get('admin/super/change_pass', function (Request $request) {
+            return view('admin.super.change_pass');
+        });
+        Route::post('admin/super/change_pass', 'SuperAdmin@change__pass__user__handle')->name('admin.super.change.pass');
+    });
     Route::get('/logout', 'DavAuthController@logout_perform')->name('logout.perform');
     Route::controller(GroupController::class)->group(function () {
         Route::get('groups', 'index')->name('group.list');

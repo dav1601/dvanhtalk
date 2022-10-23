@@ -15,7 +15,11 @@
         "laravel/framework": "^9.11",
         "laravel/sanctum": "^2.14.1",
         "laravel/tinker": "^2.7",
+        "laravelcollective/html": "^6.3",
+        "masbug/flysystem-google-drive-ext": "^2.2",
         "predis/predis": "^1.1",
+        "spatie/flysystem-dropbox": "^2.0",
+        "spatie/laravel-backup": "^8.1",
         "tightenco/ziggy": "^1.4"
     },
     "require-dev": {

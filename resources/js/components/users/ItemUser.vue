@@ -108,7 +108,9 @@ export default {
             return (this.count = this.user.count.length);
         },
     },
-    mounted() {},
+    mounted() {
+        // this.resetSeen();
+    },
     methods: {
         // findPos(obj) {
         //     var curtop = 0;

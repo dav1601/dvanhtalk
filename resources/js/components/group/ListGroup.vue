@@ -115,10 +115,12 @@
 <script>
 import SkItemGroup from "../skeleton/SkItemGroup.vue";
 import ItemGroup from "../group/ItemGroup.vue";
+import ItemSelect from "../users/ItemSelect.vue";
 export default {
     components: {
         SkItemGroup,
         ItemGroup,
+        ItemSelect,
     },
     computed: {
         listGroup() {

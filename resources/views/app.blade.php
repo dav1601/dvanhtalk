@@ -30,7 +30,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
     <script src="http://localhost:6001/socket.io/socket.io.js"></script>
-    <title>Dav Chat</title>
+    <title>ChillChat</title>
 </head>
 
 <body>

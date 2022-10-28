@@ -371,7 +371,7 @@ export default {
             this.rotation = 0;
         },
         block() {
-            console.log("ok");
+         
         },
         openInput() {
             return this.$refs.inputAvatar.click();

@@ -435,7 +435,7 @@ export default {
                     this.$refs.localVoice.muted = true;
                 })
                 .catch((error) => {
-                    console.log(error);
+                   
                 });
         },
         setDeviceConnected() {
@@ -494,7 +494,7 @@ export default {
                 })
                 // listen to incomming call
                 .listen("CallChat", (e) => {
-                    console.log(e);
+
                     const data = e.data;
                     if (data.type == "incomingCall") {
                         const updatedSignal = {
@@ -514,7 +514,7 @@ export default {
                             this.offerCall(this.process);
                         }
                         if (data.signal.renegotiate) {
-                            console.log("renegotating");
+
                         }
                         if (data.signal.sdp) {
                             const updatedSignal = {
@@ -528,7 +528,6 @@ export default {
 
             this.myChannel["notify"].listen("NotifyCall", (e) => {
                 const data = e.data;
-                console.log(data);
                 if (data.type == "answer" && this.isBroadcaster) {
                     this.handleAnswer(data.answer);
                 }
@@ -544,7 +543,6 @@ export default {
         async caller() {
             await this.getMediaPermission();
             await this.setDeviceConnected();
-            console.log("create peer 1 ");
             this.videoCallParams.peer1 = new Peer({
                 initiator: true,
                 trickle: false,
@@ -569,16 +567,15 @@ export default {
                     })
                     .then((req) => {
                         if (this.process == "reCalling") {
-                            console.log("stream.offer");
+
                         }
                     })
                     .catch((error) => {
-                        console.log(error);
                     });
             });
 
             this.videoCallParams.peer1.on("stream", (remoteStream) => {
-                console.log("call streaming of rcv");
+
                 this.$refs.friendVoice.srcObject = remoteStream;
             });
             this.videoCallParams.peer1.on("connect", () => {
@@ -590,12 +587,12 @@ export default {
 
             this.videoCallParams.peer1.on("error", (err) => {
                 this.setProcess("connFail");
-                console.log(err);
+
             });
 
             this.videoCallParams.peer1.on("close", () => {
                 this.endCall();
-                console.log("call closed caller");
+
             });
         },
         ring(r = true) {
@@ -619,7 +616,7 @@ export default {
         async acceptedCall(peer1) {
             await this.getMediaPermission();
             await this.setDeviceConnected();
-            console.log("create peer 2");
+
             this.videoCallParams.peer2 = new Peer({
                 initiator: false,
                 trickle: false,
@@ -634,15 +631,15 @@ export default {
                         streamId: this.streamId,
                     })
                     .then((req) => {
-                        console.log("log1");
+
                     })
                     .catch((error) => {
-                        console.log(error);
+
                     });
             });
 
             this.videoCallParams.peer2.on("stream", (remoteStream) => {
-                console.log("broadter stream");
+
                 this.$refs.friendVoice.srcObject = remoteStream;
             });
 
@@ -654,7 +651,7 @@ export default {
             });
 
             this.videoCallParams.peer2.on("error", (err) => {
-                console.log(err);
+
             });
 
             this.videoCallParams.peer2.on("close", () => {
@@ -665,7 +662,7 @@ export default {
 
         setMutedAudio(mute = false) {
             const friendStr = this.$refs.friendVoice;
-            console.log(friendStr.srcObject.getVideoTracks());
+
             if (this.hasVideo) {
                 friendStr.srcObject.getAudioTracks()[0].enabled = !mute;
             } else {
@@ -675,7 +672,7 @@ export default {
         setEnabledVideo(enable) {
             const friendStr = this.$refs.friendVoice;
             friendStr.srcObject.getVideoTracks()[0].enabled = enable;
-            console.log(friendStr.srcObject.getVideoTracks()[0]);
+
         },
         stopAll() {
             const friendStr = this.$refs.friendVoice;
@@ -721,7 +718,7 @@ export default {
                         streamId: this.streamId,
                     })
                     .then((req) => {
-                        console.log("asdasd");
+
                     });
             });
         },

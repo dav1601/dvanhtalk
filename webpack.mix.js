@@ -16,16 +16,15 @@ mix.js("resources/js/app.js", "public/js")
         ziggy: path.resolve("vendor/tightenco/ziggy/dist/vue"),
     })
     .vue()
-    .sass("resources/sass/app.scss", "public/css")
-    if (mix.inProduction()) {
-        mix.options({
-            terser: {
-                terserOptions: {
-                    compress: {
-                       drop_console: true
-                    }
+    .options({
+        terser: {
+            terserOptions: {
+                compress: {
+                    drop_console: true,
                 }
             }
-        });
-        mix.version();
-    }
+        }
+    })
+    .sass("resources/sass/app.scss", "public/css")
+    .version()
+   

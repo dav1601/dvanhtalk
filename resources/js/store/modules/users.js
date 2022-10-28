@@ -292,7 +292,6 @@ const actions = {
         c.commit("setUsersOnline", p);
     },
     getUsersMyRoom(c, p) {
-        console.log(p);
         c.commit("message/setInRoom", p, { root: true });
     },
     deleteUser(c, p) {

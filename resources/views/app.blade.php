@@ -29,7 +29,7 @@
         integrity="sha384-VHvPCCyXqtD5DqJeNxl2dtTyhF78xXNXdkwX1CZeRusQfRKp+tA7hAShOK/B/fQ2" crossorigin="anonymous">
     </script>
     <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
-    <script src="http://localhost:6001/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.4.0/socket.io.min.js"></script>
     <title>ChillChat</title>
 </head>
 

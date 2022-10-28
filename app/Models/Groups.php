@@ -24,6 +24,6 @@ class Groups extends Model
     }
     public function requestsJoin()
     {
-        return $this->hasMany('App\Models\RequestjoinGroup', 'groups_id');
+        return $this->hasMany('App\Models\RequestJoinGroup', 'groups_id');
     }
 }

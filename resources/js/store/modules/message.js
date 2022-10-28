@@ -104,7 +104,7 @@ const mutations = {
 
     pushMedia(s, p) {
         const arrayMedia = p.message.split(",");
-        console.log(arrayMedia);
+    
         arrayMedia.forEach((el, index) => {
             let data = {
                 alt: "image message",
@@ -112,7 +112,7 @@ const mutations = {
                 msg_id: p.id,
                 url: el,
             };
-            console.log(data);
+           
             s.messengerMedia.push(data);
         });
     },
@@ -175,7 +175,7 @@ const mutations = {
             const indexMessage = s.messages[index].messages.findIndex((msg) => {
                 return msg.msg_id == p.message.msg_id;
             });
-            console.log(indexMessage);
+    
             if (indexMessage != -1) {
                 await Vue.set(
                     s.messages[index].messages,
@@ -352,7 +352,7 @@ const actions = {
                     })
                 )
                 .then((req) => {
-                    console.log(req);
+                  
                     const data = req.data.data;
                     c.commit("setMessages", {
                         data: data,
@@ -408,7 +408,7 @@ const actions = {
     },
 
     sendMessage(c, p) {
-        console.log(p);
+       
         const config = {
             headers: {
                 "content-type": "multipart/form-data",
@@ -435,7 +435,7 @@ const actions = {
             axios
                 .post(route("messages.store"), data, config)
                 .then(async (req) => {
-                    console.log(req);
+            
                     let data = req.data.data;
                     await c.commit("pushMessage", data);
                     if (data.type_msg == 2) {
@@ -512,7 +512,7 @@ const actions = {
             axios
                 .post(route("messages.delete.reaction"), data)
                 .then((req) => {
-                    console.log(req);
+                   
                     // c.commit("setReactionDialog", req.data);
                     rs(req);
                 })
@@ -538,7 +538,6 @@ const actions = {
     sendMessageToPeer() {},
     offerCall(c, p) {
         const data = new FormData();
-        console.log(p);
         data.append("to", Number(p.receiver));
         data.append("type", p.type);
         data.append("action", p.action);

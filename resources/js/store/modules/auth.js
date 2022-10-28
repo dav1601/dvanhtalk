@@ -83,7 +83,6 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
-                    console.log(err);
                     rj(err);
                 });
         });
@@ -98,7 +97,6 @@ const actions = {
         data.append("file", p);
         return new Promise((rs, rj) => {
             axios.post(route("test"), data, config).then((req) => {
-                console.log(req);
             });
         });
     },

@@ -112,7 +112,6 @@ export default {
                         video: video,
                     })
                     .then((stream) => {
-                        console.log(stream);
                         resolve(stream);
                     })
                     .catch((err) => {

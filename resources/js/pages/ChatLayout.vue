@@ -596,10 +596,10 @@ export default {
                     })
                 )
                 .then((req) => {
-                   
+
                 })
                 .catch((err) => {
-                    
+
                 });
         }
     },
@@ -970,7 +970,7 @@ export default {
                 });
         },
         onStream(data) {
-           
+
         },
         onResult(data) {
             this.mediaRecord = data;
@@ -1010,7 +1010,6 @@ export default {
                         });
                     })
                     .catch((err) => {
-                       
                         this.isLoading = false;
                         if (this.reFetchMessages > 4) {
                             this.notification = true;

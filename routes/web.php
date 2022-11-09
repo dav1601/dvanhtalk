@@ -47,7 +47,10 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 Auth::routes();
 Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('test', function () {
- Route::get("/sdsds");
+    Route::get("/sdsds");
+});
+Route::get('heartt', function () {
+    return view('home');
 });
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);

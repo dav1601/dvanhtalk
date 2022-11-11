@@ -29,3 +29,17 @@ function text__err__request($name = "", $type, $option = "")
             return "";
     }
 }
+function getImageId($image, $forder = "", $ext = "")
+{
+
+    if (!$image) {
+        return "";
+    }
+    $info = pathinfo($image);
+    return $info['filename'];
+}
+function getPathDrive($image)
+{
+    $id = getImageId($image);
+    return "https://drive.google.com/uc?export=view&id=" . $id;
+}

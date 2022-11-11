@@ -23,4 +23,23 @@ class AppController extends Controller
 
         return view('app');
     }
+    ////////////////////////////////////////
+
+    public function test(Request $request)
+    {
+        $avatar = $request->file('avatar');
+        $ext = $avatar->extension();
+        $foder = "avatar/user";
+
+
+    }
+    ////////////////////////////////////////
+
+    public function testview(Request $request)
+    {
+        return view('test');
+    }
+
+    ////////////////////////////////////////
+    ////////////////////////////////////////
 }

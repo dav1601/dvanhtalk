@@ -46,12 +46,11 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 Auth::routes();
 Route::get('/', 'AppController@index')->middleware('auth')->name('home');
-Route::get('test', function () {
-    Route::get("/sdsds");
-});
-Route::get('heartt', function () {
+Route::get('heart', function () {
     return view('home');
 });
+Route::post("test", 'AppController@test')->name('handle.test');
+Route::get("test", 'AppController@testview');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);
 })->name('me');

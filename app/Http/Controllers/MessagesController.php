@@ -2,23 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\CustomEvent;
+use stdClass;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Message;
+use App\Models\CallInfor;
+use App\Events\CustomEvent;
 use App\Events\SendMessage;
 use App\Models\UserMessage;
+use App\Models\RoomCallChat;
 use Illuminate\Http\Request;
 use Laravel\Ui\Presets\React;
-use App\Events\SendMessageGroup;
-use App\Models\CallInfor;
 use App\Models\ReactionMessage;
-use App\Models\RoomCallChat;
+use App\Events\SendMessageGroup;
 use Illuminate\Support\Facades\Auth;
+// use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Repositories\Groups\GroupsInterface;
 use App\Repositories\Messages\MessagesInterface;
-use stdClass;
 
 class MessagesController extends Controller
 {
@@ -96,6 +98,10 @@ class MessagesController extends Controller
     {
         $created_time = $this->dav2_messages->created_at();
         $message = new Message();
+        $forderUpload = 'user/image/' . Auth::id();
+        $forderUploadAuido = 'user/audio/' . Auth::id();
+        $forderUploadRecord = 'user/record/' . Auth::id();
+        $storage = Storage::disk('google');
         $message_images = new Message();
         $user_message = new UserMessage();
         $rcv_id =  $request->to;
@@ -112,7 +118,9 @@ class MessagesController extends Controller
                 $images = $request->images;
                 $arrayImages = [];
                 foreach ($images as $image) {
-                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+                    // $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+                    $urlImgUploaded = $storage->put($forderUpload, $image);
+                    $urlImgUploaded = $storage->url($urlImgUploaded);
                     $arrayImages[] = $urlImgUploaded;
                 }
                 $message->message = implode(",", $arrayImages);
@@ -123,7 +131,9 @@ class MessagesController extends Controller
                 $images = $request->images;
                 $arrayImages = [];
                 foreach ($images as $image) {
-                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+                    // $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+                    $urlImgUploaded = $storage->put($forderUpload, $image);
+                    $urlImgUploaded = $storage->url($urlImgUploaded);
                     $arrayImages[] = $urlImgUploaded;
                 }
                 $message_images->message = implode(",", $arrayImages);
@@ -132,15 +142,15 @@ class MessagesController extends Controller
             }
         }
         if ($request->type == 3) {
-            $audio = $request->audio;
-            $urlAudioUploaded =  $audio->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-            $message->message = $urlAudioUploaded;
+            $audio = $request->file('audio');
+            $urlAudioUploaded = $storage->put($forderUploadAuido, $audio);
+            $message->message = $storage->url($urlAudioUploaded);
             $message->type = 3;
         }
         if ($request->type == 6) {
-            $record = $request->record;
-            $urlRecordUploaded =  $record->storeOnCloudinary("user-record-" . Auth::id())->getSecurePath();
-            $message->message = $urlRecordUploaded;
+            $record = $request->file('record');
+            $urlRecordUploaded = $storage->put($forderUploadRecord, $record);
+            $message->message = $storage->url($urlRecordUploaded);
             $message->type = 6;
         }
         $message->created_at =  $created_time;

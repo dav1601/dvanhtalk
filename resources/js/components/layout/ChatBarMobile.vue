@@ -19,19 +19,19 @@
                         :fullWH="false"
                         width="30px"
                         height="30px"
-                        :img="receiver.avatar"
+                        :img="getRcv('avatar')"
                         v-if="typeChat == 0"
-                        :username="receiver.name"
+                        :username="getRcv()"
                     ></item-avatar>
                     <item-avatar
                         :fullWH="false"
                         width="30px"
                         height="30px"
-                        :img="receiver.group_image"
+                        :img="getRcv('group_image')"
                         v-else
-                        :username="receiver.name"
+                        :username="getRcv()"
                     ></item-avatar>
-                    <span class="name text-overflow">{{ receiver.name }}</span>
+                    <span class="name text-overflow">{{ getRcv() }}</span>
                 </div>
             </div>
             <div class="cbm__actions"></div>

@@ -3,9 +3,9 @@
         <div class="pb-4 chat-message-left mt-4">
             <div class="d-flex flex-column align-items-center mr-3">
                 <img
-                    :src="makeAvatar(receiver.avatar)"
+                    :src="makeAvatar(getRcv('avatar'))"
                     class="rounded-circle mr-1"
-                    :alt="receiver.name"
+                    :alt="getRcv()"
                     width="45"
                     height="45"
                 />

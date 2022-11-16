@@ -109,7 +109,7 @@
         </div>
         <div
             id="call__actions"
-            class="call__actions position-absolute d-flex justify-content-center align-items-center w-100 mb-2"
+            class="call__actions position-absolute d-flex justify-content-center align-items-center w-100 mb-8"
         >
             <v-btn
                 class="mx-3"
@@ -192,6 +192,7 @@ export default {
                     calling: "Đang gọi",
                     connecting: "Đang kết nối.....",
                     connected: "Đã kết nối",
+                    inCall: "Đang trong cuộc gọi",
                     connFail: "Kết nối thất bại",
                     unanswered: "Không trả lời",
                     accepted: "Đã chấp nhận",
@@ -289,10 +290,20 @@ export default {
     },
     computed: {
         styleLocalCam() {
-            if (!this.isMobile || this.isIpadProUp) {
-                return "bottom:15px; width: 200px; height: 200px;";
+            const styleObj1 = {
+                bottom: "15px",
+                width: "300px",
+                height: "200px",
+            };
+            const styleObj2 = {
+                top: "65px",
+                width: "170px",
+                height: "225px",
+            };
+            if (this.isMobile || !this.isIpadProUp) {
+                return styleObj2;
             }
-            return "top:15px; width:100px; height:200px";
+            return styleObj1;
         },
         callAccepted() {
             return this.videoCallParams.callAccepted;
@@ -403,6 +414,7 @@ export default {
             if (this.videoCallParams.peer2) {
                 this.videoCallParams.peer2.destroy();
             }
+            this.setInCall(false);
             clearTimeout(this.timeOutCall);
             this.facingMode = "user";
             this.mutedAudio = false;
@@ -434,9 +446,7 @@ export default {
                     this.$refs.localVoice.srcObject = stream;
                     this.$refs.localVoice.muted = true;
                 })
-                .catch((error) => {
-                   
-                });
+                .catch((error) => {});
         },
         setDeviceConnected() {
             const stream = this.videoCallParams.stream;
@@ -489,12 +499,11 @@ export default {
                     if (this.process == "connecting") {
                         this.endCall();
                     } else {
-                        this.setCalling(false);
+                        this.setInCall(false);
                     }
                 })
                 // listen to incomming call
                 .listen("CallChat", (e) => {
-
                     const data = e.data;
                     if (data.type == "incomingCall") {
                         const updatedSignal = {
@@ -514,7 +523,6 @@ export default {
                             this.offerCall(this.process);
                         }
                         if (data.signal.renegotiate) {
-
                         }
                         if (data.signal.sdp) {
                             const updatedSignal = {
@@ -567,15 +575,12 @@ export default {
                     })
                     .then((req) => {
                         if (this.process == "reCalling") {
-
                         }
                     })
-                    .catch((error) => {
-                    });
+                    .catch((error) => {});
             });
 
             this.videoCallParams.peer1.on("stream", (remoteStream) => {
-
                 this.$refs.friendVoice.srcObject = remoteStream;
             });
             this.videoCallParams.peer1.on("connect", () => {
@@ -587,12 +592,10 @@ export default {
 
             this.videoCallParams.peer1.on("error", (err) => {
                 this.setProcess("connFail");
-
             });
 
             this.videoCallParams.peer1.on("close", () => {
                 this.endCall();
-
             });
         },
         ring(r = true) {
@@ -630,16 +633,11 @@ export default {
                         to: this.broadcasterId,
                         streamId: this.streamId,
                     })
-                    .then((req) => {
-
-                    })
-                    .catch((error) => {
-
-                    });
+                    .then((req) => {})
+                    .catch((error) => {});
             });
 
             this.videoCallParams.peer2.on("stream", (remoteStream) => {
-
                 this.$refs.friendVoice.srcObject = remoteStream;
             });
 
@@ -650,9 +648,7 @@ export default {
                 this.switchingCam = false;
             });
 
-            this.videoCallParams.peer2.on("error", (err) => {
-
-            });
+            this.videoCallParams.peer2.on("error", (err) => {});
 
             this.videoCallParams.peer2.on("close", () => {
                 this.endCall();
@@ -672,7 +668,6 @@ export default {
         setEnabledVideo(enable) {
             const friendStr = this.$refs.friendVoice;
             friendStr.srcObject.getVideoTracks()[0].enabled = enable;
-
         },
         stopAll() {
             const friendStr = this.$refs.friendVoice;
@@ -717,9 +712,7 @@ export default {
                         enable: enable,
                         streamId: this.streamId,
                     })
-                    .then((req) => {
-
-                    });
+                    .then((req) => {});
             });
         },
         async endCall() {
@@ -750,9 +743,9 @@ export default {
                 process == "reCalling" ||
                 process == "connecting"
             ) {
-                await this.setCalling(true);
+                this.setInCall(true);
             } else {
-                await this.setCalling(false);
+                this.setInCall(false);
             }
             if (
                 process == "unanswered" ||
@@ -817,17 +810,20 @@ export default {
 </script>
 <style lang="scss" scoped>
 #friendCam {
+    object-fit: cover;
     position: fixed;
     right: 0;
     bottom: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     z-index: 99;
 }
 #localCam {
+    object-fit: cover;
     position: fixed;
     right: 15px;
     z-index: 100;
+    border-radius: 8px;
 }
 .call {
     &__actions {

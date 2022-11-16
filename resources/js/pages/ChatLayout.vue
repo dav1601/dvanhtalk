@@ -152,15 +152,15 @@
                                 v-if="isChat && typeChat == 0"
                                 height="45px"
                                 width="45px"
-                                :username="receiver.name"
-                                :img="receiver.avatar"
+                                :username="getRcv()"
+                                :img="getRcv('avatar')"
                                 :fullWH="false"
                                 :showStt="true"
-                                :userId="receiver.id"
+                                :userId="getRcv('id')"
                             ></item-avatar>
                         </div>
                         <div class="flex-grow-1 pl-3">
-                            <strong>{{ receiver.name }}</strong>
+                            <strong>{{ getRcv() }}</strong>
                             <text-small :text="statusText"></text-small>
                         </div>
                     </div>
@@ -401,7 +401,7 @@
                                 class="d-flex justify-content-start align-items-start flex-column"
                             >
                                 <span class="small"
-                                    >Đang trả lời {{ receiver.name }}</span
+                                    >Đang trả lời {{ getRcv() }}</span
                                 >
                                 <span
                                     class="text-overflow message__pre__reply"
@@ -595,12 +595,8 @@ export default {
                         groupId: this.$route.params.friendId,
                     })
                 )
-                .then((req) => {
-
-                })
-                .catch((err) => {
-
-                });
+                .then((req) => {})
+                .catch((err) => {});
         }
     },
     async created() {
@@ -792,9 +788,7 @@ export default {
         },
         async offerCall(hasVideo = false) {
             if (this.isGroup) {
-                return alert(
-                    "Coming Soon........."
-                );
+                return alert("Coming Soon.........");
             }
             this.goCallRoom(this.urlCall(hasVideo));
         },
@@ -957,6 +951,7 @@ export default {
                         this.checking = false;
                     }
                     this.loadedRcv = true;
+                    console.log(this.getRcv());
                 })
                 .catch((err) => {
                     if (this.reFetchRcv > 4) {
@@ -969,9 +964,7 @@ export default {
                     }
                 });
         },
-        onStream(data) {
-
-        },
+        onStream(data) {},
         onResult(data) {
             this.mediaRecord = data;
             this.srcRecord = window.URL.createObjectURL(data);
@@ -1109,7 +1102,7 @@ export default {
             this.setHeightChatLayoutBody();
         },
         async sendMessage(type) {
-            await this.$store.dispatch("message/setActiveReply", null);
+            await this.$store.commit("message/setActiveReply", null);
             let seen = 0;
             if (this.inRoom) {
                 seen = 1;

@@ -110,19 +110,25 @@ export default {
             if (this.isReceiver) {
                 return this.$store.getters["message/receiver"];
             }
-            return null;
+            return {};
         },
         isReceiver() {
-            if (
-                this.$store.getters["message/receiver"] &&
-                this.$store.getters["message/receiver"] != null
-            ) {
-                return true;
-            }
-            return false;
+            return !this.$helpers.isEmpty(
+                this.$store.getters["message/receiver"]
+            )
+                ? true
+                : false;
         },
     },
     methods: {
+        setInCall(incall = false) {
+            return this.$store.commit("message/setInCall", incall);
+        },
+        getRcv(property = "name") {
+            return this.receiver.hasOwnProperty(String(property))
+                ? this.receiver[property]
+                : "";
+        },
         isOnline(id) {
             if (id) {
                 return this.listUsersOnline.find((user) => user.id == id);
@@ -137,7 +143,8 @@ export default {
             return;
         },
         setCalling(calling = true) {
-            return this.$store.commit("message/setCalling", calling);
+            return;
+            // return this.$store.commit("message/setCalling", calling);
         },
         setIcmc(icmc) {
             return this.$store.commit("message/setIncomingCall", icmc);

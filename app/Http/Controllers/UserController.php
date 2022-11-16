@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Repositories\Groups\GroupsInterface;
 use App\Repositories\DavUser\DavUserInterface;
 use App\Repositories\Messages\MessagesInterface;
+use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {

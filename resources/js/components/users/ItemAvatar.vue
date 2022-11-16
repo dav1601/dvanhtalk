@@ -37,6 +37,10 @@ export default {
         Avatar,
     },
     props: {
+        userId: {
+            type: [String, Number],
+            default: 0,
+        },
         height: {
             type: String,
             default: "100%",
@@ -64,10 +68,6 @@ export default {
         showStt: {
             type: Boolean,
             default: false,
-        },
-        userId: {
-            type: Number,
-            default: 0,
         },
         fontStt: {
             type: String,

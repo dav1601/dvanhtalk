@@ -33,8 +33,8 @@
                     width="28px"
                     height="28px"
                     :fullWH="false"
-                    :username="receiver.name"
-                    :img="receiver.avatar"
+                    :username="getRcv()"
+                    :img="getRcv('avatar')"
                 ></item-avatar>
                 <div
                     :class="{
@@ -52,8 +52,8 @@
                         width="14px"
                         height="14px"
                         :fullWH="false"
-                        :username="receiver.name"
-                        :img="receiver.avatar"
+                        :username="getRcv()"
+                        :img="getRcv('avatar')"
                     ></item-avatar>
                 </div>
                 <!-- <div

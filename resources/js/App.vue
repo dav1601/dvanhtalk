@@ -275,6 +275,9 @@ export default {
         streamIdCall: null,
         ringCallRcv: null,
         myChannel: {},
+        settingCall: {
+            TIMEWAITANS: 240000,
+        },
     }),
 
     async created() {
@@ -290,19 +293,11 @@ export default {
         isMedia() {
             return this.$route.name == "messengerMedia";
         },
+        inCall() {
+            return this.$store.getters["message/inCall"];
+        },
     },
     methods: {
-        checkHaveWindowOpen() {
-            const chatCall = this.$refs.ChatCall;
-            if (chatCall) {
-                console.log("yes");
-                this.setCalling(true);
-            } else {
-                console.log("no");
-                this.setCalling(false);
-            }
-        },
-
         async setMe() {
             await this.$store.dispatch("auth/getMe", this.authUser);
         },
@@ -314,7 +309,6 @@ export default {
             this.statusCall = null;
             this.urlJoin = null;
             this.caller = null;
-            this.setCalling(calling);
         },
         answerCall(ans) {
             if (ans == "accepted") {
@@ -395,20 +389,15 @@ export default {
                 .listen("NotifyCall", async (e) => {
                     if (e.data.type == "offer") {
                         this.caller = e.data.broadcaster;
-                        if (!this.calling) {
-                            if (!this.incomingCall) {
-                                this.answerCallDialog = true;
-                                this.urlJoin = e.data.urlJoin;
-                            }
+                        if (!this.inCall) {
+                            this.answerCallDialog = true;
+                            this.urlJoin = e.data.urlJoin;
                         } else {
-                            this.$nextTick(() => {
-                                this.answerCall("haveCall");
-                            });
+                            await this.answerCall("haveCall");
                         }
                     }
                     if (e.data.type == "ended") {
                         this.ring(false);
-                        await this.setCalling(false);
                         this.resetCall();
                     }
                 });
@@ -449,7 +438,7 @@ export default {
                         (this.statusCall = "no answer"),
                         this.answerCall("missed")
                     ),
-                    60000
+                    this.settingCall.TIMEWAITANS
                 );
             } else {
                 clearTimeout(this.timeOutCall);

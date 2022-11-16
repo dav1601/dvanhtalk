@@ -118,9 +118,9 @@ class MessagesController extends Controller
                 $images = $request->images;
                 $arrayImages = [];
                 foreach ($images as $image) {
-                    // $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-                    $urlImgUploaded = $storage->put($forderUpload, $image);
-                    $urlImgUploaded = $storage->url($urlImgUploaded);
+                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+                    // $urlImgUploaded = $storage->put($forderUpload, $image);
+                    // $urlImgUploaded = $storage->url($urlImgUploaded);
                     $arrayImages[] = $urlImgUploaded;
                 }
                 $message->message = implode(",", $arrayImages);
@@ -131,9 +131,9 @@ class MessagesController extends Controller
                 $images = $request->images;
                 $arrayImages = [];
                 foreach ($images as $image) {
-                    // $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-                    $urlImgUploaded = $storage->put($forderUpload, $image);
-                    $urlImgUploaded = $storage->url($urlImgUploaded);
+                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+                    // $urlImgUploaded = $storage->put($forderUpload, $image);
+                    // $urlImgUploaded = $storage->url($urlImgUploaded);
                     $arrayImages[] = $urlImgUploaded;
                 }
                 $message_images->message = implode(",", $arrayImages);
@@ -143,14 +143,16 @@ class MessagesController extends Controller
         }
         if ($request->type == 3) {
             $audio = $request->file('audio');
-            $urlAudioUploaded = $storage->put($forderUploadAuido, $audio);
-            $message->message = $storage->url($urlAudioUploaded);
+            $urlImgUploaded = $audio->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+            // $urlAudioUploaded = $storage->put($forderUploadAuido, $audio);
+            // $message->message = $storage->url($urlAudioUploaded);
             $message->type = 3;
         }
         if ($request->type == 6) {
             $record = $request->file('record');
-            $urlRecordUploaded = $storage->put($forderUploadRecord, $record);
-            $message->message = $storage->url($urlRecordUploaded);
+            $urlImgUploaded =  $record->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
+            // $urlRecordUploaded = $storage->put($forderUploadRecord, $record);
+            // $message->message = $storage->url($urlRecordUploaded);
             $message->type = 6;
         }
         $message->created_at =  $created_time;

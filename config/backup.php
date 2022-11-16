@@ -115,7 +115,7 @@ return [
              * The disk names on which the backups will be stored.
              */
             'disks' => [
-                'google'
+                'second_google'
             ],
         ],
 
@@ -165,11 +165,11 @@ return [
         'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
 
         'mail' => [
-            'to' => 'allanchillchat@gmail.com',
+            'to' => env('MAIL_TO_BACKUP', "vaone6v2@gmail.com"),
 
             'from' => [
-                'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-                'name' => env('MAIL_FROM_NAME', 'Example'),
+                'address' => env('MAIL_FROM_ADDRESS', 'vaone6v2@gmail.com'),
+                'name' => env('MAIL_FROM_NAME', 'Allan Vuong'),
             ],
         ],
 
@@ -210,7 +210,7 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['google'],
+            'disks' => ['second_google'],
             'health_checks' => [
                 \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays::class => 1,
                 \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 2000,

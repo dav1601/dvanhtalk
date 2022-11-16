@@ -3,7 +3,7 @@ const state = () => ({
     messages: [],
     messageReply: null,
     messengerMedia: [],
-    receiver: null,
+    receiver: {},
     haveReceiver: false,
     typing: false,
     isChatting: false,
@@ -17,9 +17,13 @@ const state = () => ({
     rcvInRoom: false,
     blockLoadImg: false,
     activeReply: null,
+    inCall: false,
 });
 
 const getters = {
+    inCall(s) {
+        return s.inCall;
+    },
     rcvInRoom(s) {
         return s.rcvInRoom;
     },
@@ -104,7 +108,7 @@ const mutations = {
 
     pushMedia(s, p) {
         const arrayMedia = p.message.split(",");
-    
+
         arrayMedia.forEach((el, index) => {
             let data = {
                 alt: "image message",
@@ -112,7 +116,7 @@ const mutations = {
                 msg_id: p.id,
                 url: el,
             };
-           
+
             s.messengerMedia.push(data);
         });
     },
@@ -148,7 +152,7 @@ const mutations = {
     reset(s) {
         s.messages = [];
         s.messengerMedia = [];
-        s.receiver = null;
+        s.receiver = {};
         s.haveReceiver = false;
         s.typing = false;
         s.isChatting = false;
@@ -159,6 +163,7 @@ const mutations = {
         s.dialogReaction = false;
         s.blockLoadImg = false;
         s.activeReply = null;
+        s.inCall = false;
     },
     actionDialogReaction(s, p) {
         if (p == "open") {
@@ -175,7 +180,7 @@ const mutations = {
             const indexMessage = s.messages[index].messages.findIndex((msg) => {
                 return msg.msg_id == p.message.msg_id;
             });
-    
+
             if (indexMessage != -1) {
                 await Vue.set(
                     s.messages[index].messages,
@@ -273,6 +278,9 @@ const mutations = {
     setHaveReceiver(s) {
         return (s.haveReceiver = true);
     },
+    setInCall(s, p) {
+        return (s.inCall = p);
+    },
 };
 
 const actions = {
@@ -352,7 +360,6 @@ const actions = {
                     })
                 )
                 .then((req) => {
-                  
                     const data = req.data.data;
                     c.commit("setMessages", {
                         data: data,
@@ -408,7 +415,6 @@ const actions = {
     },
 
     sendMessage(c, p) {
-       
         const config = {
             headers: {
                 "content-type": "multipart/form-data",
@@ -435,7 +441,6 @@ const actions = {
             axios
                 .post(route("messages.store"), data, config)
                 .then(async (req) => {
-            
                     let data = req.data.data;
                     await c.commit("pushMessage", data);
                     if (data.type_msg == 2) {
@@ -512,7 +517,6 @@ const actions = {
             axios
                 .post(route("messages.delete.reaction"), data)
                 .then((req) => {
-                   
                     // c.commit("setReactionDialog", req.data);
                     rs(req);
                 })

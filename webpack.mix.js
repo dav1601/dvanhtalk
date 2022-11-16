@@ -21,10 +21,9 @@ mix.js("resources/js/app.js", "public/js")
             terserOptions: {
                 compress: {
                     drop_console: true,
-                }
-            }
-        }
+                },
+            },
+        },
     })
     .sass("resources/sass/app.scss", "public/css")
-    .version()
-   
+    .version();

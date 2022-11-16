@@ -41,6 +41,13 @@ return [
             'folder' => env("GOOGLE_DRIVE_FOLDER"), // without folder is root of drive or team drive
 
         ],
+        'second_google' => [
+            'driver' => 'google',
+            'clientId' => env('BACKUP_GOOGLE_DRIVE_CLIENT_ID'),
+            'clientSecret' => env('BACKUP_GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refreshToken' => env('BACKUP_GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'folder' => env('BACKUP_GOOGLE_DRIVE_FOLDER'),
+        ],
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),

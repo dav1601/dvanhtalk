@@ -1,6 +1,5 @@
 <template>
     <!-- App.vue -->
-
     <v-app
         :class="[
             !isSettingUser
@@ -192,16 +191,18 @@
                 </v-menu>
             </v-container>
         </v-app-bar>
-        <div v-if="!isIpadProUp">
+        <div v-if="!isIpadProUp || isMobile" style="z-index: 500">
             <div id="header__mobile" v-if="isSettingUser || isCallChat">
-                <a
-                    @click="$router.go(-1)"
-                    class="d-flex align-items-center justify-content-start text-decoration-none"
-                    ><v-icon color="#f8f9fa" size="25"
-                        >mdi-keyboard-backspace</v-icon
+                <v-btn @click="$router.back()">
+                    <div
+                        class="d-flex align-items-center justify-content-start text-decoration-none"
                     >
-                    <span class="d-block ml-4">dav chat</span>
-                </a>
+                        <v-icon color="#f8f9fa" size="25"
+                            >mdi-keyboard-backspace</v-icon
+                        >
+                        <span class="d-block ml-4">dav chat</span>
+                    </div>
+                </v-btn>
             </div>
         </div>
         <!-- Sizes your content based upon application components -->

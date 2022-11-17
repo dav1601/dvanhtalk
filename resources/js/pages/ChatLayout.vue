@@ -160,7 +160,7 @@
                             ></item-avatar>
                         </div>
                         <div class="flex-grow-1 pl-3">
-                            <strong>{{ getRcv() }}</strong>
+                            <strong>{{ getRcv("name") }}</strong>
                             <text-small :text="statusText"></text-small>
                         </div>
                     </div>

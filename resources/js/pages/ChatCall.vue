@@ -110,7 +110,7 @@
         </div>
         <div
             id="call__actions"
-            class="call__actions position-absolute d-flex justify-content-center align-items-center w-100 mb-8"
+            class="call__actions position-absolute d-flex justify-content-center align-items-center w-100 mb-14"
         >
             <v-btn
                 class="mx-3"
@@ -137,18 +137,18 @@
             </v-btn>
             <v-btn
                 class="mx-3"
-                v-if="isMobile"
+                v-if="isMobile && hasVideo"
                 fab
                 dark
                 small
                 @click="switchCam()"
-                :disabled="!connected || !hasVideo"
+                :disabled="!connected"
             >
                 <v-icon dark> mdi-camera-flip </v-icon>
             </v-btn>
             <v-btn
                 class="mx-3"
-                v-if="enabledVideo"
+                v-if="enabledVideo && hasVideo"
                 fab
                 dark
                 small
@@ -159,13 +159,13 @@
             </v-btn>
             <v-btn
                 class="mx-3"
-                v-if="!enabledVideo"
+                v-if="!enabledVideo && hasVideo"
                 color="pink"
                 fab
                 dark
                 small
                 @click="enabledVideo = true"
-                :disabled="!connected || !hasVideo"
+                :disabled="!connected"
             >
                 <v-icon dark> mdi-video-off </v-icon>
             </v-btn>
@@ -291,6 +291,9 @@ export default {
         }
     },
     computed: {
+        connected() {
+            return this.process == "connected";
+        },
         styleLocalCam() {
             const styleObj1 = {
                 bottom: "15px",
@@ -298,8 +301,8 @@ export default {
                 height: "200px",
             };
             const styleObj2 = {
-                top: "65px",
-                width: "170px",
+                top: "70px",
+                width: "150px",
                 height: "225px",
             };
             if (this.isMobile || !this.isIpadProUp) {
@@ -602,7 +605,6 @@ export default {
             });
             this.videoCallParams.peer1.on("connect", () => {
                 this.setProcess("connected");
-                this.connected = true;
                 clearTimeout(this.timeOutCall);
                 this.switchingCam = false;
             });
@@ -662,7 +664,6 @@ export default {
 
             this.videoCallParams.peer2.on("connect", () => {
                 this.setProcess("connected");
-                this.connected = true;
                 clearTimeout(this.timeOutCall);
                 this.switchingCam = false;
             });
@@ -833,7 +834,6 @@ export default {
 </script>
 <style lang="scss" scoped>
 #friendCam {
-    object-fit: cover;
     position: fixed;
     right: 0;
     bottom: 0;

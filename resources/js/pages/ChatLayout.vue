@@ -527,7 +527,6 @@ import ChatBarMobile from "../components/layout/ChatBarMobile";
 import TextSmall from "../components/ui/TextSmall";
 import chatCall from "../mixin/servers/chatCall";
 import SettingCall from "../components/chat/SettingCall.vue";
-import responsive from "../mixin/responsive";
 export default {
     components: {
         ItemMsg,

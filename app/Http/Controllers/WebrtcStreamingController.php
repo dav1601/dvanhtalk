@@ -20,6 +20,7 @@ class WebrtcStreamingController extends Controller
         $data['type'] = 'incomingCall';
         $data['streamId'] = $request->streamId;
         broadcast(new CallChat($data))->toOthers();
+        return $data;
     }
 
     public function makeStreamAnswer(Request $request)
@@ -29,6 +30,7 @@ class WebrtcStreamingController extends Controller
         $data['to'] = $request->to;
         $data['type'] = 'callAccepted';
         broadcast(new CallChat($data))->toOthers();
+        return $data;
     }
     public function offer__call(Request $request)
     {
@@ -39,6 +41,7 @@ class WebrtcStreamingController extends Controller
         $data->action = $request->action;
         $data->urlJoin = $request->urlJoin;
         broadcast(new NotifyCall($data))->toOthers();
+        return $data;
     }
     public function ans__call(Request $request)
     {
@@ -47,6 +50,7 @@ class WebrtcStreamingController extends Controller
         $data->type = $request->type;
         $data->answer = $request->answer;
         broadcast(new NotifyCall($data));
+        return $data;
     }
     public function toggle__voice(Request $request)
     {
@@ -54,5 +58,6 @@ class WebrtcStreamingController extends Controller
         $data['streamId'] = $request->streamId;
         $data['enable'] = $request->enable;
         broadcast(new CallChat($data))->toOthers();
+        return $data;
     }
 }

@@ -95,6 +95,7 @@
                     class="mt-2"
                     @click="startCall(true)"
                     color="primary"
+                    style="z-index: 200"
                 >
                     Gọi lại
                 </v-btn>
@@ -214,7 +215,6 @@ export default {
             ended: false,
             denyOrMiss: false,
             timeOutCall: null,
-            switchingCam: false,
             snackbar: {
                 timeOut: 4000,
                 audioConnected: {
@@ -229,6 +229,8 @@ export default {
 
             process: "",
             videoCallParams: {
+                switchingCam: false,
+                front: true,
                 duration: "00:00",
                 timeCall: null,
                 users: [],
@@ -416,7 +418,6 @@ export default {
             }
             this.setInCall(false);
             clearTimeout(this.timeOutCall);
-            this.facingMode = "user";
             this.mutedAudio = false;
             this.mutedVideo = false;
             this.timeOutCall = null;
@@ -438,27 +439,37 @@ export default {
             this.videoCallParams.peer2 = null;
             this.videoCallParams.duration = "00:00";
             this.videoCallParams.timeCall = null;
+            this.videoCallParams.front = true;
+            this.videoCallParams.switchCam = false;
         },
         getMediaPermission() {
-            return this.getPermissions(this.facingMode)
+            return this.getPermissions(true)
                 .then((stream) => {
                     this.videoCallParams.stream = stream;
                     this.$refs.localVoice.srcObject = stream;
                     this.$refs.localVoice.muted = true;
                 })
-                .catch((error) => {});
+                .catch((err) => {
+                    console.log(err.message);
+                });
         },
         setDeviceConnected() {
             const stream = this.videoCallParams.stream;
             if (!stream || this.isMobile) {
                 return;
             }
+            const label = stream.getAudioTracks()[0].label
+                ? stream.getAudioTracks()[0].label
+                : "";
+            const label2 = stream.getVideoTracks()[0].label
+                ? stream.getVideoTracks()[0].label
+                : "";
             this.snackbar.audioConnected.text =
-                "Microphone được kết nối: " + stream.getAudioTracks()[0].label;
+                "Microphone được kết nối: " + label;
             this.snackbar.audioConnected.open = true;
             if (this.hasVideo) {
                 this.snackbar.videoConnected.text =
-                    "Camera được kết nối: " + stream.getVideoTracks()[0].label;
+                    "Camera được kết nối: " + label2;
                 this.snackbar.videoConnected.open = true;
             }
         },
@@ -472,6 +483,7 @@ export default {
                             this.setProcess("ended");
                         }
                     }
+                    console.log(users);
                 })
 
                 .joining((user) => {
@@ -479,6 +491,9 @@ export default {
                     if (this.isBroadcaster) {
                         this.setProcess("connecting");
                         this.videoCallParams.callAccepted = true;
+                        this.caller();
+                    } else {
+                        this.setIcmc(false);
                     }
 
                     const joiningUserIndex =
@@ -505,6 +520,7 @@ export default {
                 // listen to incomming call
                 .listen("CallChat", (e) => {
                     const data = e.data;
+                    console.log(e);
                     if (data.type == "incomingCall") {
                         const updatedSignal = {
                             ...data.signalData,
@@ -549,8 +565,10 @@ export default {
             this.setProcess(answer);
         },
         async caller() {
-            await this.getMediaPermission();
-            await this.setDeviceConnected();
+            await this.getMediaPermission(this.videoCallParams.front);
+            if (!this.videoCallParams.switchCam) {
+                this.setDeviceConnected();
+            }
             this.videoCallParams.peer1 = new Peer({
                 initiator: true,
                 trickle: false,
@@ -574,8 +592,7 @@ export default {
                         streamId: this.streamId,
                     })
                     .then((req) => {
-                        if (this.process == "reCalling") {
-                        }
+                        console.log(req);
                     })
                     .catch((error) => {});
             });
@@ -591,6 +608,7 @@ export default {
             });
 
             this.videoCallParams.peer1.on("error", (err) => {
+                console.log(err);
                 this.setProcess("connFail");
             });
 
@@ -617,9 +635,10 @@ export default {
             });
         },
         async acceptedCall(peer1) {
-            await this.getMediaPermission();
-            await this.setDeviceConnected();
-
+            await this.getMediaPermission(this.videoCallParams.front);
+            if (!this.videoCallParams.switchCam) {
+                this.setDeviceConnected();
+            }
             this.videoCallParams.peer2 = new Peer({
                 initiator: false,
                 trickle: false,
@@ -648,7 +667,9 @@ export default {
                 this.switchingCam = false;
             });
 
-            this.videoCallParams.peer2.on("error", (err) => {});
+            this.videoCallParams.peer2.on("error", (err) => {
+                console.log(err);
+            });
 
             this.videoCallParams.peer2.on("close", () => {
                 this.endCall();
@@ -719,14 +740,16 @@ export default {
             this.setProcess("ended");
             clearTimeout(this.timeOutCall);
             this.stopAll();
-            this.ended = true;
-            this.connected = false;
             if (this.isBroadcaster) {
                 await this.offerCall("ended");
-                this.videoCallParams.peer1.destroy();
+                if (this.videoCallParams.peer1) {
+                    this.videoCallParams.peer1.destroy();
+                }
             } else {
                 await this.offerCall("ended", this.broadcasterId);
-                this.videoCallParams.peer2.destroy();
+                if (this.videoCallParams.peer2) {
+                    this.videoCallParams.peer2.destroy();
+                }
             }
             this.resetCall();
             Echo.leave(this.channelName);

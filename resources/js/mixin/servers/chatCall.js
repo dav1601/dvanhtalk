@@ -1,7 +1,54 @@
-import Log from "laravel-mix/src/Log";
-
 export default {
+    data() {
+        return {
+            kind: {
+                a_i: "audioinput",
+                a_o: "audiooutput",
+                v_i: "videoinput",
+            },
+        };
+    },
     methods: {
+        getDefDevice(_devices) {
+            let devices = {};
+            devices[this.kind.v_i] = null;
+            devices[this.kind.a_o] = null;
+            devices[this.kind.a_i] = null;
+            _devices.forEach((element) => {
+                switch (element.deviceId) {
+                    case "default":
+                        switch (element.kind) {
+                            case this.kind.v_i:
+                                devices[this.kind.v_i] = element;
+                                break;
+                            case this.kind.a_o:
+                                devices[this.kind.a_o] = element;
+                                break;
+                            case this.kind.a_i:
+                                devices[this.kind.a_i] = element;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            });
+            return devices;
+        },
+        checkDeviceExist(devices, deviceId) {
+            const index = devices.findIndex((dev) => {
+                return dev.deviceId == deviceId;
+            });
+            return index === -1 ? false : true;
+        },
+        getSaveDevice(_kind = "", _def) {
+            return this.$helpers.isEmpty(localStorage.getItem(_kind))
+                ? _def[_kind]
+                : JSON.parse(localStorage.getItem(_kind));
+        },
         popupCenter(
             url,
             title,
@@ -46,7 +93,7 @@ export default {
 
             if (window.focus) newWindow.focus();
         },
-        async getPermissions(facingMode = "user") {
+        async getPermissions(front = true) {
             // Older browsers might not implement mediaDevices at all, so we set an empty object first
             if (navigator.mediaDevices === undefined) {
                 navigator.mediaDevices = {};
@@ -87,29 +134,35 @@ export default {
                 navigator.mediaDevices.getUserMedia ||
                 navigator.webkitGetUserMedia ||
                 navigator.mozGetUserMedia;
-            const audioInput = JSON.parse(localStorage.getItem("audioInput"));
-            const videoInput = JSON.parse(localStorage.getItem("videoInput"));
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const def = this.getDefDevice(devices);
+            const audioOutput = this.getSaveDevice(this.kind.a_o, def);
+            const audioInput = this.getSaveDevice(this.kind.a_i, def);
+            const videoInput = this.getSaveDevice(this.kind.v_i, def);
+            let constraintVideo = true;
+            let constraintAudio = true;
+            if (!this.isMobile && this.isIpadProUp) {
+                constraintAudio = audioInput
+                    ? {
+                          deviceId: audioInput.deviceId,
+                      }
+                    : true;
 
-            let valueVideo = true;
-            if (this.isMobile) {
-                valueVideo = {
-                    facingMode: facingMode,
-                };
+                constraintVideo = videoInput
+                    ? {
+                          deviceId: videoInput.deviceId,
+                      }
+                    : true;
+                if (audioOutput) {
+                    const audio = document.createElement("audio");
+                    await audio.setSinkId(audioOutput.deviceId);
+                }
             }
-            const video = videoInput
-                ? {
-                      deviceId: videoInput.deviceId,
-                      width: { ideal: 4096 },
-                      height: { ideal: 2160 },
-                  }
-                : valueVideo;
-            const audio = audioInput ? { deviceId: audioInput.deviceId } : true;
-             
             return new Promise((resolve, reject) => {
                 navigator.mediaDevices
                     .getUserMedia({
-                        audio: audio,
-                        video: video,
+                        audio: constraintAudio,
+                        video: constraintVideo,
                     })
                     .then((stream) => {
                         resolve(stream);

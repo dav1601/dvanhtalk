@@ -66,8 +66,10 @@
     </v-dialog>
 </template>
 <script>
+import chatCall from "../../mixin/servers/chatCall";
 export default {
     props: ["dialogSettingCall"],
+    mixins: [chatCall],
     data() {
         return {
             openDialog: false,
@@ -95,199 +97,123 @@ export default {
         },
         async getCameraSelection() {
             this.loadedDevices = false;
-            console.log("get");
             const devices = await navigator.mediaDevices.enumerateDevices();
-            // localStorage.removeItem("audioOutput");
-            // localStorage.removeItem("audioInput");
-            // localStorage.removeItem("videoInput");
-            const audioOutput = this.$helpers.isEmpty(
-                localStorage.getItem("audioOutput")
-            )
-                ? null
-                : JSON.parse(localStorage.getItem("audioOutput"));
-
-            const audioInput = this.$helpers.isEmpty(
-                localStorage.getItem("audioInput")
-            )
-                ? null
-                : JSON.parse(localStorage.getItem("audioInput"));
-
-            const videoInput = this.$helpers.isEmpty(
-                localStorage.getItem("videoInput")
-            )
-                ? null
-                : JSON.parse(localStorage.getItem("videoInput"));
-
+            const def = this.getDefDevice(devices);
+            const audioOutput = this.getSaveDevice(this.kind.a_o, def);
+            const audioInput = this.getSaveDevice(this.kind.a_i, def);
+            const videoInput = this.getSaveDevice(this.kind.v_i, def);
             let existAOP = false;
             let existAIP = false;
             let existVIP = false;
-            console.log({
-                dev1: audioOutput,
-                dev2: audioInput,
-                dev3: videoInput,
-                devices: devices,
-            });
-            if (audioOutput && !this.$helpers.isEmpty(audioOutput)) {
-                if (this.checkExist(devices, audioOutput.deviceId)) {
+            if (audioOutput) {
+                if (this.checkDeviceExist(devices, audioOutput.deviceId)) {
                     existAOP = true;
                     this.arrayAudioOutput.push(audioOutput);
                     this.selectAuOutp = audioOutput;
                 }
             }
-            if (audioInput && !this.$helpers.isEmpty(audioInput)) {
-                if (this.checkExist(devices, audioInput.deviceId)) {
+            if (audioInput) {
+                if (this.checkDeviceExist(devices, audioInput.deviceId)) {
                     existAIP = true;
                     this.arrayAudioInput.push(audioInput);
                     this.selectAuInp = audioInput;
                 }
             }
-            if (videoInput && !this.$helpers.isEmpty(videoInput)) {
-                if (this.checkExist(devices, videoInput.deviceId)) {
+            if (videoInput) {
+                if (this.checkDeviceExist(devices, videoInput.deviceId)) {
                     existVIP = true;
                     this.arrayVideoInput.push(videoInput);
                     this.selectVidInp = videoInput;
                 }
             }
-
-            let hdef1 = false;
-            let hdef2 = false;
-            let hdef3 = false;
+            console.log(devices);
             devices.forEach((device, index) => {
                 if (device.kind == "audioinput") {
-                    if (audioInput && existAIP) {
+                    let d_a_i = null;
+                    if (existAIP) {
                         if (device.deviceId != audioInput.deviceId) {
-                            this.arrayAudioInput.push(this.createObj(device));
+                            this.arrayAudioInput.push(device);
                         }
                     } else {
-                        if (device.deviceId == "default") {
-                            localStorage.setItem(
-                                "audioInput",
-                                this.createObj(device, true)
+                        d_a_i = def[this.kind.a_i];
+                        if (d_a_i) {
+                            this.storageDevice(d_a_i, this.kind.a_i);
+                            this.arrayAudioInput.push(d_a_i);
+                            if (device.deviceId != d_a_i.deviceId) {
+                                this.arrayAudioInput.push(device);
+                            }
+                            this.selectAuOutp = d_a_i;
+                        } else {
+                            this.arrayAudioInput.push(device);
+                            this.selectAuOutp = this.arrayAudioInput[0];
+                            this.storageDevice(
+                                this.arrayAudioInput[0],
+                                this.kind.a_i
                             );
-                            this.selectAuInp = device.deviceId;
                         }
-                        this.arrayAudioInput.push(this.createObj(device));
-                    }
-                    if (device.deviceId == "default") {
-                        hdef1 = true;
                     }
                 }
                 if (device.kind == "videoinput") {
-                    if (videoInput && existVIP) {
+                    if (existVIP) {
                         if (device.deviceId != videoInput.deviceId) {
-                            this.arrayVideoInput.push(this.createObj(device));
+                            this.arrayVideoInput.push(device);
                         }
                     } else {
-                        if (device.deviceId == "default") {
-                            localStorage.setItem(
-                                "videoInput",
-                                this.createObj(device, true)
+                        const d_v_i = def[this.kind.v_i];
+                        if (d_v_i) {
+                            this.storageDevice(d_v_i, this.kind.v_i);
+                            this.arrayVideoInput.push(d_v_i);
+                            if (device.deviceId != d_v_i.deviceId) {
+                                this.arrayVideoInput.push(device);
+                            }
+                            this.selectVidInp = d_v_i;
+                        } else {
+                            this.arrayVideoInput.push(device);
+                            this.selectVidInp = this.arrayVideoInput[0];
+                            this.storageDevice(
+                                this.arrayVideoInput[0],
+                                this.kind.v_i
                             );
-                            this.selectVidInp = device.deviceId;
                         }
-                        this.arrayVideoInput.push(this.createObj(device));
-                    }
-                    if (device.deviceId == "default") {
-                        hdef2 = true;
                     }
                 }
                 if (device.kind == "audiooutput") {
-                    if (audioOutput && existAOP) {
+                    if (existAOP) {
                         if (device.deviceId != audioOutput.deviceId) {
-                            this.arrayAudioOutput.push(this.createObj(device));
+                            this.arrayAudioOutput.push(device);
                         }
                     } else {
-                        if (device.deviceId == "default") {
-                            localStorage.setItem(
-                                "audioOutput",
-                                this.createObj(device, true)
+                        const d_a_o = def[this.kind.a_o];
+                        if (d_a_o) {
+                            this.storageDevice(d_a_o, this.kind.a_o);
+                            this.arrayAudioOutput.push(d_a_o);
+                            if (device.deviceId != d_a_o.deviceId) {
+                                this.arrayAudioOutput.push(device);
+                            }
+                            this.selectAuOutp = d_a_o;
+                        } else {
+                            this.arrayAudioOutput.push(device);
+                            this.selectAuOutp = this.arrayAudioOutput[0];
+                            this.storageDevice(
+                                this.arrayAudioOutput[0],
+                                this.kind.a_o
                             );
-                            this.selectAuOutp = device.deviceId;
                         }
-                        this.arrayAudioOutput.push(this.createObj(device));
-                    }
-                    if (device.deviceId == "default") {
-                        hdef3 = true;
                     }
                 }
-                if (
-                    (!hdef1 && !audioOutput) ||
-                    this.$helpers.isEmpty(audioInput)
-                ) {
-                    if (this.arrayAudioInput.length > 0) {
-                        localStorage.setItem(
-                            "audioInput",
-                            this.createObj(this.arrayAudioInput[0], true)
-                        );
-                        this.selectAuInp = this.arrayAudioInput[0];
-                    } else {
-                        localStorage.setItem("audioInput", null);
-                        this.selectAuInp = null;
-                    }
-                }
-                if (
-                    (!hdef2 && !videoInput) ||
-                    this.$helpers.isEmpty(videoInput)
-                ) {
-                    if (this.arrayVideoInput.length > 0) {
-                        localStorage.setItem(
-                            "videoInput",
-                            this.createObj(this.arrayVideoInput[0], true)
-                        );
-                        this.selectVidInp = this.arrayVideoInput[0];
-                    } else {
-                        localStorage.setItem("videoInput", null);
-                        this.selectVidInp = null;
-                    }
-                }
-                if (
-                    (!hdef3 && !audioOutput) ||
-                    this.$helpers.isEmpty(audioOutput)
-                ) {
-                    if (this.arrayAudioOutput.length > 0) {
-                        localStorage.setItem(
-                            "videoInput",
-                            this.createObj(this.arrayAudioOutput[0], true)
-                        );
-                        this.selectAuOutp = this.arrayAudioOutput[0];
-                    } else {
-                        localStorage.setItem("audioOutput", null);
-                        this.selectAuOutp = null;
-                    }
-                }
+
                 this.loadedDevices = true;
             });
         },
-        createObj(device, stringify = false) {
-            const data = {
-                deviceId: device.deviceId,
-                kind: device.kind,
-                label: device.label,
-                groupId: device.groupId,
-            };
-            if (stringify) {
-                return JSON.stringify(data);
-            }
-            return data;
+        storageDevice(device, kind) {
+            localStorage.setItem(kind, JSON.stringify(device));
+            return;
         },
-        checkExist(devices, deviceId) {
-            return devices.filter((dev) => {
-                return dev.deviceId == deviceId;
-            });
-        },
+
         saveDevice() {
-            localStorage.setItem(
-                "videoInput",
-                this.createObj(this.selectVidInp, true)
-            );
-            localStorage.setItem(
-                "audioInput",
-                this.createObj(this.selectAuInp, true)
-            );
-            localStorage.setItem(
-                "audioOutput",
-                this.createObj(this.selectAuOutp, true)
-            );
+            this.storageDevice(this.selectAuInp, this.kind.a_i);
+            this.storageDevice(this.selectVidInp, this.kind.v_i);
+            this.storageDevice(this.selectAuOutp, this.kind.a_o);
         },
     },
     watch: {

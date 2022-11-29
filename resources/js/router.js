@@ -5,6 +5,7 @@ import ChatLayout from "./pages/ChatLayout";
 import NotFound from "./pages/NotFound";
 import SettingUser from "./pages/SettingUser";
 import ChatCall from "./pages/ChatCall";
+import TheTest from "./pages/TheTest";
 Vue.use(VueRouter);
 const routes = [
     {
@@ -32,6 +33,12 @@ const routes = [
         path: "/setting/user",
         name: "setting__user",
         component: SettingUser,
+        props: true,
+    },
+    {
+        path: "/admin/test",
+        name: "admin__test",
+        component: TheTest,
         props: true,
     },
     {

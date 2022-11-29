@@ -170,6 +170,7 @@ export default {
             return this.$moment($time).fromNow();
         },
         formatTime2($time) {
+            console.log(this.$moment($time).format("llll"));
             return this.$moment($time).format("llll");
         },
         compareRoleMember(a, b) {

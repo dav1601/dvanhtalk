@@ -180,85 +180,88 @@
 import chatCall from "../mixin/servers/chatCall";
 import ItemAvatar from "../components/users/ItemAvatar.vue";
 import Peer from "simple-peer";
+function initialState() {
+    return {
+        setting: {
+            timeForCall: 300000,
+            arrayStatus: {
+                missed: "Đã nhỡ cuộc gọi",
+                calling: "Đang gọi",
+                connecting: "Đang kết nối.....",
+                connected: "Đã kết nối",
+                inCall: "Đang trong cuộc gọi",
+                connFail: "Kết nối thất bại",
+                unanswered: "Không trả lời",
+                accepted: "Đã chấp nhận",
+                deny: "Từ chối cuộc gọi",
+                reCalling: "Đang Gọi lại",
+                ended: "Kết thúc cuộc gọi",
+                haveCall: "Đang trong 1 cuộc gọi khác vui lòng gọi lại sau",
+            },
+        },
+        facingMode: "user",
+        showRecall: false,
+        isFocusMyself: true,
+        callPlaced: true,
+        mutedAudio: false,
+        mutedVideo: false,
+        enabledAudio: true,
+        enabledVideo: true,
+        connected: false,
+        ended: false,
+        denyOrMiss: false,
+        timeOutCall: null,
+        snackbar: {
+            timeOut: 4000,
+            audioConnected: {
+                open: false,
+                text: null,
+            },
+            videoConnected: {
+                open: false,
+                text: null,
+            },
+        },
+
+        process: "",
+        videoCallParams: {
+            switchingCam: false,
+            front: true,
+            duration: "00:00",
+            timeCall: null,
+            users: [],
+            stream: null,
+            receivingCall: false,
+            caller: null,
+            callerSignal: null,
+            callAccepted: false,
+            channel: null,
+            peer1: null,
+            peer2: null,
+        },
+        loading: true,
+        contactPerson: null,
+        localStream: null,
+        friendStream: null,
+        status: null,
+        servers: {
+            iceServer: [
+                {
+                    urls: [
+                        "stun1.l.google.com:19302",
+                        "stun2.l.google.com:19302",
+                    ],
+                },
+            ],
+        },
+    };
+}
 export default {
     components: { ItemAvatar },
     props: ["streamId", "auth", "myChannel"],
     mixins: [chatCall],
     data() {
-        return {
-            setting: {
-                timeForCall: 300000,
-                arrayStatus: {
-                    missed: "Đã nhỡ cuộc gọi",
-                    calling: "Đang gọi",
-                    connecting: "Đang kết nối.....",
-                    connected: "Đã kết nối",
-                    inCall: "Đang trong cuộc gọi",
-                    connFail: "Kết nối thất bại",
-                    unanswered: "Không trả lời",
-                    accepted: "Đã chấp nhận",
-                    deny: "Từ chối cuộc gọi",
-                    reCalling: "Đang Gọi lại",
-                    ended: "Kết thúc cuộc gọi",
-                    haveCall: "Đang trong 1 cuộc gọi khác vui lòng gọi lại sau",
-                },
-            },
-            facingMode: "user",
-            showRecall: false,
-            isFocusMyself: true,
-            callPlaced: true,
-            mutedAudio: false,
-            mutedVideo: false,
-            enabledAudio: true,
-            enabledVideo: true,
-            connected: false,
-            ended: false,
-            denyOrMiss: false,
-            timeOutCall: null,
-            snackbar: {
-                timeOut: 4000,
-                audioConnected: {
-                    open: false,
-                    text: null,
-                },
-                videoConnected: {
-                    open: false,
-                    text: null,
-                },
-            },
-
-            process: "",
-            videoCallParams: {
-                switchingCam: false,
-                front: true,
-                duration: "00:00",
-                timeCall: null,
-                users: [],
-                stream: null,
-                receivingCall: false,
-                caller: null,
-                callerSignal: null,
-                callAccepted: false,
-                channel: null,
-                peer1: null,
-                peer2: null,
-            },
-            loading: true,
-            contactPerson: null,
-            localStream: null,
-            friendStream: null,
-            status: null,
-            servers: {
-                iceServer: [
-                    {
-                        urls: [
-                            "stun1.l.google.com:19302",
-                            "stun2.l.google.com:19302",
-                        ],
-                    },
-                ],
-            },
-        };
+        return initialState();
     },
     created() {
         if (this.isBroadcaster) {
@@ -421,29 +424,7 @@ export default {
             }
             this.setInCall(false);
             clearTimeout(this.timeOutCall);
-            this.mutedAudio = false;
-            this.mutedVideo = false;
-            this.timeOutCall = null;
-            this.enabledAudio = true;
-            this.enabledVideo = true;
-            this.ended = false;
-            this.denyOrMiss = false;
-            this.connected = false;
-            this.friendStream = null;
-            this.localStream = null;
-            this.videoCallParams.users = [];
-            this.videoCallParams.stream = null;
-            this.videoCallParams.receivingCall = false;
-            this.videoCallParams.caller = null;
-            this.videoCallParams.callerSignal = null;
-            this.videoCallParams.callAccepted = false;
-            this.videoCallParams.channel = null;
-            this.videoCallParams.peer1 = null;
-            this.videoCallParams.peer2 = null;
-            this.videoCallParams.duration = "00:00";
-            this.videoCallParams.timeCall = null;
-            this.videoCallParams.front = true;
-            this.videoCallParams.switchCam = false;
+            Object.assign(this.$data, initialState());
         },
         getMediaPermission() {
             return this.getPermissions(true)

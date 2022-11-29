@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Repositories\Groups\GroupsInterface;
 use App\Repositories\Messages\MessagesInterface;
 
+
 class MessagesController extends Controller
 {
     public function __construct(GroupsInterface $dav2_gr, MessagesInterface $dav2_msg)
@@ -94,89 +95,59 @@ class MessagesController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    public function store(Request $request)
+    public function store(Request $request, MessagesInterface $vamsg)
     {
-        $created_time = $this->dav2_messages->created_at();
-        $message = new Message();
-        $forderUpload = 'user/image/' . Auth::id();
-        $forderUploadAuido = 'user/audio/' . Auth::id();
-        $forderUploadRecord = 'user/record/' . Auth::id();
-        $storage = Storage::disk('google');
-        $message_images = new Message();
+        $created_time = $vamsg->created_at();
+        $message = $request->message ? $request->message : "";
         $user_message = new UserMessage();
-        $rcv_id =  $request->to;
-        $for = $request->for;
+        $rcv_id = (int) $request->to;
+        $for = (int) $request->for;
         $seen = $request->has('seen') ? $request->seen : 0;
-        $haveImages = $request->has('images') ? true : false;
-        $haveMessageText = !empty($request->message) ? true : false;
-        $parent_id = $request->parent_id == 'null' || $request->parent_id == null ? NULL : (int) $request->parent_id;
-        if ($request->type == 1) {
-            if ($haveMessageText && !$haveImages) {
-                $message->message = $request->message;
-                $message->type = 1;
-            } elseif ($haveImages && !$haveMessageText) {
-                $images = $request->images;
-                $arrayImages = [];
-                foreach ($images as $image) {
-                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-                    // $urlImgUploaded = $storage->put($forderUpload, $image);
-                    // $urlImgUploaded = $storage->url($urlImgUploaded);
-                    $arrayImages[] = $urlImgUploaded;
-                }
-                $message->message = implode(",", $arrayImages);
-                $message->type = 2;
-            } elseif ($haveImages && $haveMessageText) {
-                $message->message = $request->message;
-                $message->type = 1;
-                $images = $request->images;
-                $arrayImages = [];
-                foreach ($images as $image) {
-                    $urlImgUploaded =  $image->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-                    // $urlImgUploaded = $storage->put($forderUpload, $image);
-                    // $urlImgUploaded = $storage->url($urlImgUploaded);
-                    $arrayImages[] = $urlImgUploaded;
-                }
-                $message_images->message = implode(",", $arrayImages);
-                $message_images->parent_id =  $parent_id;
-                $message_images->type = 2;
-            }
-        }
-        if ($request->type == 3) {
-            $audio = $request->file('audio');
-            $urlImgUploaded = $audio->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-            // $urlAudioUploaded = $storage->put($forderUploadAuido, $audio);
-            // $message->message = $storage->url($urlAudioUploaded);
-            $message->type = 3;
-        }
-        if ($request->type == 6) {
-            $record = $request->file('record');
-            $urlImgUploaded =  $record->storeOnCloudinary("user-" . Auth::id())->getSecurePath();
-            // $urlRecordUploaded = $storage->put($forderUploadRecord, $record);
-            // $message->message = $storage->url($urlRecordUploaded);
-            $message->type = 6;
-        }
-        $message->created_at =  $created_time;
-        $user_message =  $this->dav2_messages->store_message($rcv_id, $message->message, $message->type, $parent_id, $seen, $for);
+        $parent_id = $request->parent_id;
+        $type_msg = $request->type_msg ? $request->type_msg : 0;
+        // switch ($type_msg) {
+        //     case 1:
+        //         $message = $request->message;
+        //         break;
+        //     case 2:
+        //         $images = $request->images;
+        //         $arrayImages = [];
+        //         foreach ($images as $image) {
+        //             $urlImgUploaded =  $image->storeOnCloudinary("user-images-" . Auth::id())->getSecurePath();
+        //             $arrayImages[] = $urlImgUploaded;
+        //         }
+        //         $message = implode(",", $arrayImages);
+        //         break;
+        //     case 3:
+        //         $audio = $request->file('audio');
+        //         $message = $audio->storeOnCloudinary("user-audios-" . Auth::id())->getSecurePath();
+        //         break;
+        //     case 6:
+        //         $record = $request->file('record');
+        //         $message =  $record->storeOnCloudinary("user-records-" . Auth::id())->getSecurePath();
+        //         break;
+        //     case 7:
+        //         $video = $request->file('video');
+        //         $message =  $video->storeOnCloudinary("user-video-" . Auth::id())->getSecurePath();
+        //         break;
+        //     default:
+        //         break;
+        // }
+
+        $user_message = $vamsg->store_message($rcv_id, $message, $type_msg, $parent_id, $seen, $for, $created_time);
         if ($user_message) {
             try {
-                if ($haveMessageText && $haveImages) {
-                    $user_message_images =   $this->dav2_messages->store_message($rcv_id, $message_images->message, $message_images->type, $parent_id, $seen, $for);
-                    $user_message->message_images = $user_message_images;
-                }
-                if ($request->for == 0) {
+                if ($for == 0) {
                     broadcast(new SendMessage($user_message))->toOthers();
                 } else {
                     broadcast(new SendMessageGroup($user_message))->toOthers();
                 }
-                return response()->json(['data' => $user_message], 200);
+                return response()->json(['payload' => $user_message], 200);
             } catch (\Exception $e) {
-                $message->delete();
-                $message_images->delete();
-                return response()->json(['error' => $e->getMessage()]);
+                return response()->json(['error' => $e->getMessage()], 500);
             }
         } else {
-            $message->delete();
-            return response()->json(['error' => "Lỗi lưu dữ liệu"], 500);
+            return response()->json(['error' => "Gửi tin nhắn thất bại bạn vui lòng gửi lại"], 500);
         }
     }
     public function storeReaction(Request $request)
@@ -249,7 +220,7 @@ class MessagesController extends Controller
         $for = $request->for;
         $message = $request->hasVideo ? "Cuộc gọi video" : "Cuộc gọi thoại";
         $call_info = new CallInfor();
-        $user_message = $this->dav2_messages->store_message($rcv, $message, 5, null, 1, $for);
+        $user_message = $this->dav2_messages->store_message($rcv, $message, 5, null, 1, $for, null);
         if (!$user_message) {
             return response()->json(['error' => "Lưu tin nhắn cuộc gọi thất bại"], 500);
         }

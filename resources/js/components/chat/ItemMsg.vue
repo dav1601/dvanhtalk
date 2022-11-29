@@ -188,6 +188,18 @@
                 </audio>
             </div>
             <div
+                class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-video"
+                v-if="typeMessage == 7"
+            >
+                <video
+                    controls
+                    onloadstart="this.volume=0.0"
+                    class="message__video"
+                >
+                    <source :src="data.message.message" />
+                </video>
+            </div>
+            <div
                 class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-audio d-flex align-items-center"
                 v-if="typeMessage == 6"
             >
@@ -687,6 +699,17 @@ export default {
 };
 </script>
 <style lang="scss">
+.wp-chat-item-video {
+    width: 250px;
+    height: 300px;
+    border-radius: 8px;
+    video {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
+    }
+}
 .wp-chat-item:not(.wp-chat-item-audio) {
     position: relative;
     max-width: 60%;

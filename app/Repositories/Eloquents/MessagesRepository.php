@@ -37,35 +37,44 @@ class MessagesRepository implements MessagesInterface
     public function getAllMessageMedia($partnerId = 0, $type = 0)
     {
         try {
+            $arrayType = [2, 7];
             $rcv_id = $partnerId;
             $type = $type;
             $media = array();
             if ($type == 0) {
-                $media =  UserMessage::with('message')->where(function ($q) use ($rcv_id, $type) {
+                $media =  UserMessage::with('message')->where(function ($q) use ($rcv_id, $type, $arrayType) {
                     $q->where('sd_id', '=', Auth::id())
                         ->where('rcv_id', '=', $rcv_id)
-                        ->where('type_msg', '=', 2)
+                        ->whereIn('type_msg', $arrayType)
                         ->where('type', $type);
-                })->orWhere(function ($q) use ($rcv_id, $type) {
+                })->orWhere(function ($q) use ($rcv_id, $type, $arrayType) {
                     $q->where('sd_id', '=', $rcv_id)
                         ->where('rcv_id', '=', Auth::id())
-                        ->where('type_msg', '=', 2)
+                        ->whereIn('type_msg', $arrayType)
                         ->where('type', $type);
                 })->get();
             } else {
-                $media =  UserMessage::with('message')->where('rcv_group_id', $partnerId)->where('type_msg', '=', 2)->where('type', $type)->get();
+                $media =  UserMessage::with('message')->where('rcv_group_id', $partnerId)->whereIn('type_msg', $arrayType)->where('type', $type)->get();
             }
-            $arrayImage = array();
+            $arrayMedia = array();
             foreach ($media as $msg) {
                 $array = explode(",", $msg->message->message);
                 foreach ($array as $key => $value) {
-                    $arrayImage[] = ["url" => $value, "alt" => "image message", "msg_id" => $msg->message->id, "index" => $key];
+                    if ($msg->message->type == 2) {
+                        $arrayMedia[] = ["url" => $value, "alt"  => "image message", "msg_id" => $msg->message->id, "index" => $key, "type" => $msg->message->type];
+                    } else {
+                        $arrayMedia[] = ["url" => $value, "alt" => "video message", "msg_id" => $msg->message->id, "index" => 0, "type" => $msg->message->type];
+                    }
                 }
             }
-            return $arrayImage;
+            return $arrayMedia;
         } catch (\Exception $e) {
             return false;
         }
+    }
+    public function js_created_at($js_created_at)
+    {
+        return (string) Carbon::parse($js_created_at)->format('Y-m-d H:i');
     }
     public function created_at()
     {
@@ -87,11 +96,11 @@ class MessagesRepository implements MessagesInterface
                 ->where('type', 0);
         })->latest()->take(1)->first();
     }
-    public function store_message($rcv_id, $message = null, $type_msg = 1, $parent_id = null, $seen = 0, $for = 0)
+    public function store_message($rcv_id, $message = null, $type_msg = 1, $parent_id = NULL, $seen = 0, $for = 0, $created_time = null)
     {
         $store_message = new Message();
         $user_message = new UserMessage();
-        $created_at = $this->created_at();
+        $created_at = $created_time ? $created_time : $this->created_at();
         $store_message->message = $message;
         $store_message->type = $type_msg;
         $store_message->created_at =  $created_at;
@@ -121,7 +130,7 @@ class MessagesRepository implements MessagesInterface
             } catch (\Exception $e) {
                 $store_message->delete();
                 $user_message->delete();
-                return false;
+                return $e->getMessage();
             }
         }
         $store_message->delete();

@@ -86,6 +86,7 @@ export default {
             await this.$store
                 .dispatch("users/getUsers")
                 .then((req) => {
+                    console.log(req);
                     this.loadedUsers = true;
                 })
                 .catch((err) => {});

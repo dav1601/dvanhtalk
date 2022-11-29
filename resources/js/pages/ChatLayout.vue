@@ -11,19 +11,26 @@
     >
         <input
             type="file"
-            accept="image/*"
             multiple
             class="d-none"
             ref="messageImage"
             @change="changeToSendMessage"
         />
-        <input
+        <!-- <input
             type="file"
             accept="audio/*"
             class="d-none"
             ref="messageAudio"
             @change="changeAudioToSendMessage"
         />
+        <input
+            type="file"
+            accept="video/*"
+            class="d-none"
+            ref="messageVideo"
+            multiple
+            @change="changeVideoToSendMessage"
+        /> -->
         <!-- start dialog setting for group -->
         <v-dialog
             :fullscreen="true"
@@ -87,10 +94,13 @@
         </v-dialog>
         <!-- end dialog setting for group -->
         <!-- start gllImage  -->
+
         <dav-gallery-slide-show
             :images="media"
             :index="startImage"
+            @close="closeGllFile"
         ></dav-gallery-slide-show>
+
         <!-- end gllImage -->
         <div
             class="col-20 border-right davList scroll-custom"
@@ -284,7 +294,18 @@
                             :friendId="friendId"
                         >
                         </wrapper-msg>
+                        <div v-if="turnProcess.length > 0">
+                            <div
+                                v-for="(arrPrc, key) in turnProcess"
+                                :key="'turndd-' + key"
+                            >
+                                <loading-image
+                                    :process="arrPrc"
+                                ></loading-image>
+                            </div>
+                        </div>
                     </div>
+
                     <v-slide-y-reverse-transition mode="out-in">
                         <tying-chat
                             v-if="typing && !isGroup && !isLoading"
@@ -327,7 +348,22 @@
                                         dark
                                         >mdi-image</v-icon
                                     >
-                                    <span class="gmf__name">Gửi file ảnh</span>
+                                    <span class="gmf__name">Đính kèm file</span>
+                                </div>
+                                <!-- <div
+                                    class="group__message--format --image center-start"
+                                    @click.stop="uploadFileAudio"
+                                >
+                                    <v-icon
+                                        color="primary"
+                                        style="font-size: 30px"
+                                        class="cursor-pointer"
+                                        dark
+                                        >mdi-music</v-icon
+                                    >
+                                    <span class="gmf__name"
+                                        >Gửi file audio</span
+                                    >
                                 </div>
                                 <div
                                     class="group__message--format --image center-start"
@@ -343,8 +379,7 @@
                                     <span class="gmf__name"
                                         >Gửi file audio</span
                                     >
-                                </div>
-
+                                </div> -->
                                 <div class="arrow-down position-absolute"></div>
                             </div>
                         </div>
@@ -360,25 +395,25 @@
                 <!-- end btn record audio -->
                 <div style="flex: 1" class="dav__wp-chat--input">
                     <div
-                        class="preview__images--wp w-100 p-2"
-                        v-show="showPreviewImg"
+                        class="preview__images--wp p-2"
+                        :style="styleFilesPreview"
+                        v-if="showPreviewFile"
                     >
                         <div
                             class="wp__item d-flex justify-content-start align-items-center flex-wrap w-100"
                         >
-                            <item-pre-img
-                                v-for="(image, index) in images"
-                                :key="'imagePreview-' + index"
+                            <preview-files
+                                v-for="(file, index) in files"
+                                :key="'file-preview-' + index"
                                 :index="index"
-                                :image="image"
+                                :file="file"
                                 :icon="false"
-                                @delete-img-preview="deleteImgPreview"
-                            ></item-pre-img>
-                            <item-pre-img
+                                @delete-file="deleteImgPreview"
+                            ></preview-files>
+                            <preview-files
                                 :icon="true"
-                                :addImg="true"
-                                @add-img="uploadFileImage"
-                            ></item-pre-img>
+                                @add-file="uploadFileImage"
+                            ></preview-files>
                         </div>
                     </div>
 
@@ -527,8 +562,67 @@ import ChatBarMobile from "../components/layout/ChatBarMobile";
 import TextSmall from "../components/ui/TextSmall";
 import chatCall from "../mixin/servers/chatCall";
 import SettingCall from "../components/chat/SettingCall.vue";
+import PreviewFiles from "../components/files/PreviewFiles.vue";
+import LoadingImage from "../components/files/LoadingImage.vue";
+function initialState() {
+    return {
+        openFile: false,
+        turnProcess: [],
+        message: "",
+        images: [],
+        video: [],
+        audio: [],
+        files: [],
+        showPreviewFile: false,
+        search: "",
+        parent_id: null,
+        loadedRcv: false,
+        loadedMsg: false,
+        isLoading: false,
+        seen: false,
+        sending: false,
+        disableChat: false,
+        timeout: 4000,
+        notification: false,
+        text: "",
+        checking: false,
+        page: 1,
+        endPage: null,
+        btnGoEndChat: false,
+        forcusScroll: false,
+        dialog: false,
+        setting: false,
+        showFormatMessage: false,
+        arrayImages: ["1", "2"],
+        arrayFileAudio: [],
+        mediaRecord: null,
+        srcRecord: null,
+        showPreviewImg: false,
+        startImage: null,
+        showEmoji: false,
+        tabReationActive: "all",
+        showChatInfo: false,
+        friendInRoom: false,
+        dialogSettingCall: false,
+        reFetchRcv: 0,
+        reFetchMessages: 0,
+        gllMediaFile: {},
+        cloudName: process.env.MIX_CLOUND_NAME,
+        preset: process.env.MIX_CLOUND_PRESET,
+        tags: "browser-upload",
+        messageImage: [],
+        queueTurn: null,
+        sendTurn: 0,
+        validatorFile: {
+            size: 50 * 1024 * 1024, // 50MB
+        },
+    };
+}
+
 export default {
     components: {
+        LoadingImage,
+        PreviewFiles,
         ItemMsg,
         ItemUser,
         ItemMember,
@@ -547,43 +641,7 @@ export default {
     mixins: [chat, chatCall],
     props: ["friendId"],
     data() {
-        return {
-            message: "",
-            images: [],
-            search: "",
-            parent_id: null,
-            loadedRcv: false,
-            loadedMsg: false,
-            isLoading: false,
-            seen: false,
-            sending: false,
-            disableChat: false,
-            audio: "",
-            timeout: 4000,
-            notification: false,
-            text: "",
-            checking: false,
-            page: 1,
-            endPage: null,
-            btnGoEndChat: false,
-            forcusScroll: false,
-            dialog: false,
-            setting: false,
-            showFormatMessage: false,
-            arrayImages: ["1", "2"],
-            arrayFileAudio: [],
-            mediaRecord: null,
-            srcRecord: null,
-            showPreviewImg: false,
-            startImage: null,
-            showEmoji: false,
-            tabReationActive: "all",
-            showChatInfo: false,
-            friendInRoom: false,
-            dialogSettingCall: false,
-            reFetchRcv: 0,
-            reFetchMessages: 0,
-        };
+        return initialState();
     },
     beforeCreate() {
         localStorage.setItem("saveScrollHeight", 0);
@@ -633,6 +691,18 @@ export default {
         },
     },
     computed: {
+        progressImg() {
+            return this.$store.getters["message/progressImg"];
+        },
+        styleFilesPreview() {
+            const parent = document.querySelector(
+                ".dav__wp-chat--input .v-input__control"
+            );
+            const style = {
+                width: parent.offsetWidth + "px",
+            };
+            return style;
+        },
         activeReply() {
             return this.$store.getters["message/activeReply"];
         },
@@ -741,12 +811,83 @@ export default {
     },
 
     methods: {
+        closeGllFile: function () {
+            this.startImage = null;
+        },
+        upload: function (payload = {}, isLast = false, turn = 0) {
+            let reader = new FileReader();
+            let formData = new FormData();
+            reader.addEventListener(
+                "load",
+                function () {
+                    payload["url"] = reader.result;
+                    formData.append("upload_preset", this.preset);
+                    formData.append("tags", this.tags);
+                    formData.append("folder", "test/file");
+                    formData.append("file", payload["url"]);
+                    let cloudinaryUploadURL = `https://api.cloudinary.com/v1_1/${this.cloudName}/upload`;
+                    const indexPrc = this.setProcess(payload, turn);
+                    let requestObj = {
+                        url: cloudinaryUploadURL,
+                        method: "POST",
+                        data: formData,
+                        onUploadProgress: function (progressEvent) {
+                            var process = Math.round(
+                                (progressEvent.loaded * 100.0) /
+                                    progressEvent.total
+                            );
+                            this.updateProcess(indexPrc, turn, process);
+                        }.bind(this),
+                    };
+                    var instance = axios.create();
+                    delete instance.defaults.headers.common["X-Socket-Id"];
+                    instance(requestObj)
+                        .then(async (req) => {
+                            const data = req.data;
+                            this.removeProcess(indexPrc, turn);
+                            console.log(payload.type);
+                            if (this.typem("image") == payload.type) {
+                                if (!Array.isArray(this.messageImage[turn])) {
+                                    this.messageImage[turn] = [];
+                                }
+                                this.messageImage[turn].push(data.secure_url);
+                                if (isLast) {
+                                    data.secure_url =
+                                        this.messageImage[turn].toString();
+                                    await this.apiSendMsg(
+                                        payload.type,
+                                        data.secure_url
+                                    );
+                                    this.messageImage.splice(turn, 1);
+                                }
+                            } else {
+                                await this.apiSendMsg(
+                                    payload.type,
+                                    data.secure_url
+                                );
+                            }
+                        })
+                        .catch((err) => {
+                            this.removeProcess(indexPrc, turn);
+                        });
+                }.bind(this),
+                false
+            );
+            // call for file read if there is a file
+            if (payload.file && payload.file.name) {
+                if (this.fileValid(payload.file)) {
+                    reader.readAsDataURL(payload.file);
+                }
+            }
+        },
+        isLastImage(id) {
+            return id == this.images[this.images.length - 1].id;
+        },
         goToReply(msgId) {
             const prefix = "pack__msg--";
             const id = prefix + msgId;
             const el = document.getElementById(id);
             const listMsg = document.getElementsByClassName("activeReply");
-            const parent = document.getElementById("chatLayout");
             if (listMsg.length > 0) {
                 Array.from(listMsg).forEach((ele) => {
                     ele.classList.remove("activeReply");
@@ -818,43 +959,48 @@ export default {
             this.allReaction = data.allReaction;
             this.groupReaction = data.groupReaction;
         },
-        closeEmoji() {
+        closeEmoji: function () {
             this.showEmoji = false;
         },
-        onSelectEmoji(emoji) {
+        onSelectEmoji: function (emoji) {
             this.message += " " + emoji.data;
         },
-        openGll(e) {
+        openGll: function (e) {
+            console.log(e);
             const index = this.media.findIndex((image) => {
                 return image.msg_id == e.msgId && image.index == e.index;
             });
             if (index != -1) {
-                return (this.startImage = Number(index));
+                this.startImage = Number(index);
             }
-            return 0;
+            return;
         },
-
-        updateSrcImg() {
-            for (let i = 0; i < this.images.length; i++) {
-                let reader = new FileReader();
-                reader.onload = (e) => {
-                    const el = document.getElementsByClassName(
-                        "image__preview--" + i
-                    );
-                    if (el.length == 1) {
-                        el[0].src = reader.result;
-                    }
-                };
-
-                reader.readAsDataURL(this.images[i]);
+        log(val) {
+            console.log(val);
+        },
+        fileValid: function (file) {
+            if (file && file.size) {
+                return file.size <= this.validatorFile.size;
             }
+            return false;
         },
+        // updateSrcImg() {
+        //     for (let i = 0; i < this.images.length; i++) {
+        //         let reader = new FileReader();
+        //         reader.onload = (e) => {
+        //             const el = document.getElementsByClassName(
+        //                 "image__preview--" + i
+        //             );
+        //             if (el.length == 1) {
+        //                 el[0].src = reader.result;
+        //             }
+        //         };
+
+        //         reader.readAsDataURL(this.images[i]);
+        //     }
+        // },
         deleteImgPreview(index) {
-            this.images.splice(index, 1);
-            if (this.images.length <= 0) {
-                this.showPreviewImg = false;
-            }
-            this.updateSrcImg();
+            return this.files.splice(index, 1);
         },
         handleClickToBot() {
             this.deleteSavedScroll();
@@ -950,7 +1096,6 @@ export default {
                         this.checking = false;
                     }
                     this.loadedRcv = true;
-                    console.log(this.getRcv());
                 })
                 .catch((err) => {
                     if (this.reFetchRcv > 4) {
@@ -1085,101 +1230,348 @@ export default {
         uploadFileAudio() {
             this.$refs.messageAudio.click();
         },
+        uploadFileVideo() {
+            this.$refs.messageVideo.click();
+        },
         changeAudioToSendMessage(e) {
             this.audio = e.target.files[0];
             this.sendMessage(3);
         },
-        changeToSendMessage(e) {
-            let selectedFiles = e.target.files;
-            for (let i = 0; i < selectedFiles.length; i++) {
-                this.images.push(selectedFiles[i]);
+        changeVideoToSendMessage(e) {
+            let selectedVideo = e.target.files;
+            let length = selectedVideo.length;
+            for (let i = 0; i < length; i++) {
+                this.video.push(selectedVideo[i]);
             }
-            if (this.images.length > 0) {
+            if (this.video.length > 0) {
                 this.showPreviewImg = true;
             }
-            this.updateSrcImg();
-            this.setHeightChatLayoutBody();
         },
-        async sendMessage(type) {
-            await this.$store.commit("message/setActiveReply", null);
-            let seen = 0;
-            if (this.inRoom) {
-                seen = 1;
-            }
 
-            if (
-                !this.message &&
-                this.images.length <= 0 &&
-                !this.audio &&
-                !this.mediaRecord
-            ) {
-                this.resetAll();
-            } else {
-                this.sending = true;
-                this.disableChat = true;
-                this.showPreviewImg = false;
-                await this.$store
-                    .dispatch("message/sendMessage", {
-                        to: this.friendId,
-                        from: this.authId,
-                        msg: this.message,
-                        messageReply: this.messageReply,
-                        seen: seen,
-                        // this type for text,file,audio message
-                        type: type,
-                        record: this.mediaRecord,
-                        images: this.images,
-                        audio: this.audio,
-                        // that type for 1: pers 2: group
-                        for: this.typeChat,
-                    })
-                    .then((req) => {
-                        this.$store.commit("message/deleteMsgReply");
-                        this.resetAll();
-                        this.scrollEnd(true, true);
-                    })
-                    .catch((err) => {
-                        this.$store.commit("message/deleteMsgReply");
-                        this.resetAll();
-                        this.scrollEnd(true, true);
-                    });
+        changeToSendMessage(e) {
+            let selectedFiles = e.target.files;
+            if (selectedFiles.length <= 0) {
+                return (this.files = []);
             }
+            this.showPreviewFile = true;
+            for (let i = 0; i < selectedFiles.length; i++) {
+                let type = selectedFiles[i].type.split("/")[0];
+                this.files.push({
+                    type: type,
+                    file: selectedFiles[i],
+                });
+                // this.pushFile(type, index, selectedFiles[i]);
+            }
+            this.$refs.messageImage.value = null;
+            // const images = [];
+            // const audio = [];
+            // const video = [];
+            // for (let index = 0; index < this.files.length; index++) {
+            //     const type = this.files[index].type;
+            //     const file = this.files[index].file;
+            //     const data = {
+            //         id: index,
+            //         file: file,
+            //         type: type,
+            //     };
+            //     switch (type) {
+            //         case "image":
+            //             images.push(data);
+            //             break;
+            //         case "audio":
+            //             audio.push(data);
+            //             break;
+            //         case "video":
+            //             video.push(data);
+            //             break;
+            //         default:
+            //             break;
+            //     }
+            // }
+            // this.images = images;
+            // this.video = video;
+            // this.audio = audio;
+            // if (this.files.length > 0) {
+            //     this.showPreviewImg = true;
+            // }
+            // this.updateSrcImg();
+            // this.setHeightChatLayoutBody();
+        },
+        pushFile: function (type, id, info) {
+            const file = info.file;
+            const data = {
+                id: id,
+                file: file,
+                type: type,
+            };
+            switch (type) {
+                case "image":
+                    this.images.push(data);
+                    break;
+                case "audio":
+                    this.audio.push(data);
+                    break;
+                case "video":
+                    this.video.push(data);
+                    break;
+                default:
+                    break;
+            }
+        },
+        sendMessage: async function (type) {
+            if (!this.message && this.files.length <= 0 && !this.mediaRecord) {
+                this.resetAll();
+                alert("U là trời có nhắn cái gì đâu mà gửi troài =))");
+            } else {
+                this.sendTurn = this.sendTurn + 1;
+                this.$store.commit("message/deleteMsgReply");
+                this.showPreviewFile = false;
+                const images = this.images;
+                const video = this.video;
+                const audio = this.audio;
+                const turn = this.turnProcess.push([]) - 1;
+                this.files = [];
+                if (this.message) {
+                    this.apiSendMsg(this.typem("text"), this.message);
+                }
+                if (images.length > 0) {
+                    for (let im = 0; im < images.length; im++) {
+                        var dim = null,
+                            imgId = null;
+                        dim = images[im];
+                        let isLast = false;
+                        if (im == images.length - 1) {
+                            isLast = true;
+                        }
+
+                        imgId =
+                            String(turn) +
+                            String(dim.id) +
+                            this.makeStreamId(7);
+                        const payload = {
+                            id: imgId,
+                            file: dim.file,
+                            type: this.typem(dim.type),
+                        };
+                        await this.upload(payload, isLast, turn);
+                    }
+                }
+                if (audio.length > 0) {
+                    for (let ia = 0; ia < audio.length; ia++) {
+                        var dia = null,
+                            auId = null;
+                        dia = audio[ia];
+                        auId =
+                            String(turn) +
+                            String(dia.id) +
+                            this.makeStreamId(7);
+                        const payload = {
+                            id: auId,
+                            file: dia.file,
+                            type: this.typem(dia.type),
+                        };
+                        await this.upload(payload, false, turn);
+                    }
+                }
+                if (video.length > 0) {
+                    for (let iv = 0; iv < video.length; iv++) {
+                        var div = null,
+                            vidId = null;
+                        div = video[iv];
+                        vidId =
+                            String(turn) +
+                            String(div.id) +
+                            this.makeStreamId(7);
+                        const payload = {
+                            id: vidId,
+                            file: div.file,
+                            type: this.typem(div.type),
+                        };
+                        await this.upload(payload, false, turn);
+                    }
+                }
+                // if (this.mediaRecord) {
+                //     this.apiSendMsg(6, created_time);
+                // }
+            }
+        },
+        initUpload(array = []) {},
+        removeKeyFile(key = 0, id = null) {
+            switch (key) {
+                case this.typem("image"):
+                    this.images = this.images.filter((element) => {
+                        return element.id != id;
+                    });
+                    break;
+                case this.typem("video"):
+                    this.video = this.video.filter((element) => {
+                        return element.id != id;
+                    });
+                    break;
+                case this.typem("audio"):
+                    this.audio = this.audio.filter((element) => {
+                        return element.id != id;
+                    });
+                    break;
+                default:
+                    break;
+            }
+        },
+        apiSendMsg: function (type = 0, message = "") {
+            const seen = this.inRoom ? true : false;
+            let payload = {
+                to: this.friendId,
+                from: this.authId,
+                messageReply: this.messageReply,
+                seen: seen,
+                typeMsg: type,
+                message: message,
+            };
+            this.$store
+                .dispatch("message/sendMessage", payload)
+                .then((req) => {
+                    if (type == 1) {
+                        this.message = "";
+                    }
+                    this.scrollEnd(true, true);
+                })
+                .catch((err) => {
+                    if (type == 1) {
+                        this.message = "";
+                    }
+                    this.scrollEnd(true, true);
+                });
         },
         closeEvent() {
             this.showFormatMessage = false;
         },
+        removeProcess(indexPrc, turn) {
+            return this.turnProcess[turn].splice(indexPrc);
+        },
+        updateProcess(indexPrc, turn, process) {
+            return this.$set(
+                this.turnProcess[turn][indexPrc],
+                "process",
+                process
+            );
+        },
+
+        setProcess(payload, turn) {
+            const data = {
+                url: payload.url,
+                id: payload.id,
+                process: 0,
+                turn: turn,
+                type: this.typem(payload.type),
+            };
+            var indexPrc = this.turnProcess[turn].push(data) - 1;
+            return indexPrc;
+        },
+        groupByTypeProcess: function (collection, property) {
+            var val,
+                index,
+                values = [],
+                result = [];
+            for (var i = 0; i < collection.length; i++) {
+                val = collection[i][property];
+                index = values.indexOf(val);
+                if (index > -1) result[index].push(collection[i]);
+                else {
+                    values.push(val);
+                    result.push([collection[i]]);
+                }
+            }
+            return result;
+        },
+        resetProcess(type, id = null) {
+            switch (type) {
+                case "image":
+                    this.processImage = [];
+                    break;
+                case "video":
+                    const myArray = this.processVideo.filter(function (obj) {
+                        return obj.id != id;
+                    });
+                    this.processVideo = myArray;
+                default:
+                    break;
+            }
+            return;
+        },
+        resetFile(type, id = null) {
+            switch (type) {
+                case 1:
+                    this.message = "";
+                    break;
+                case 2:
+                    this.files = this.removeKeyFile("image");
+
+                    break;
+                case 3:
+                    this.files = this.removeKeyFile("audio", id);
+
+                    break;
+                case 6:
+                    this.record = null;
+                    break;
+                case 7:
+                    this.files = this.removeKeyFile("video", id);
+
+                    break;
+                default:
+                    break;
+            }
+        },
         resetLoad() {
             this.setType(null);
-            this.message = "";
-            this.images = [];
-            this.parent_id = null;
-            this.isLoading = false;
-            this.seen = false;
-            this.sending = false;
-            this.disableChat = false;
-            this.audio = "";
-            this.timeout = 4000;
-            this.notification = false;
-            this.text = "";
-            this.checking = false;
-            this.page = 1;
-            this.endPage = null;
-            this.blockSroll = false;
-            this.btnGoEndChat = false;
-            this.isLoadingGroup = false;
-            this.isLoadingUsers = false;
-            this.startImage = null;
-            this.showEmoji = false;
-            this.tabReationActive = "all";
-            this.showChatInfo = false;
-            this.dialogSettingCall = false;
-            this.reFetchRcv = 0;
-            this.reFetchMessages = 0;
-            this.mediaRecord = null;
-            this.srcRecord = null;
+            Object.assign(this.$data, initialState());
         },
     },
     watch: {
+        startImage(nv) {
+            this.openFile = nv != null ? true : false;
+        },
+        turnProcess(nv) {
+            this.scrollEnd(true);
+        },
+        files(newval) {
+            if (this.files.length <= 0) {
+                this.audio = [];
+                this.video = [];
+                this.images = [];
+                this.showPreviewFile = false;
+                return;
+            }
+            this.showPreviewFile = true;
+            const images = [];
+            const audio = [];
+            const video = [];
+            for (let index = 0; index < this.files.length; index++) {
+                const type = this.files[index].type;
+                const file = this.files[index].file;
+                const data = {
+                    id: index,
+                    file: file,
+                    type: type,
+                };
+                switch (type) {
+                    case "image":
+                        images.push(data);
+                        break;
+                    case "audio":
+                        audio.push(data);
+                        break;
+                    case "video":
+                        video.push(data);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            this.images = images;
+            this.video = video;
+            this.audio = audio;
+        },
         async friendId(newVal, oldVal) {
             localStorage.setItem("saveScrollHeight", 0);
             this.$store.dispatch("message/reset");
@@ -1309,7 +1701,7 @@ export default {
         }
     }
     .emoji-picker {
-        top: -260px !important;
+        top: 28px !important;
         right: -10px !important;
         z-index: 200;
     }
@@ -1394,15 +1786,15 @@ export default {
 #chatLayout {
     height: 100%;
 }
-.wp__item {
-    span {
-        width: 100%;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        align-items: center;
-        display: flex;
-    }
-}
+// .wp__item {
+//     span {
+//         width: 100%;
+//         flex-wrap: wrap;
+//         justify-content: flex-start;
+//         align-items: center;
+//         display: flex;
+//     }
+// }
 .group__message {
     z-index: 20;
     &--format {

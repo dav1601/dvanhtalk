@@ -126,7 +126,6 @@ export default {
                     this.selectVidInp = videoInput;
                 }
             }
-            console.log(devices);
             devices.forEach((device, index) => {
                 if (device.kind == "audioinput") {
                     let d_a_i = null;

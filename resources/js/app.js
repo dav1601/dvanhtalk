@@ -18,30 +18,34 @@ import Notifications from "vue-notification";
 import moment from "moment";
 import VEmojiPicker from "v-emoji-picker";
 import VueRecord from "@codekraft-studio/vue-record";
-import AudioVisual from "vue-audio-visual";
+// import AudioVisual from "vue-audio-visual";
 import "vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy/dist/vue";
 import BaseLoading from "./components/ui/BaseLoading";
 import "@mdi/font/css/materialdesignicons.css";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import ItemAvatar from "./components/users/ItemAvatar";
+import DialogErr from "./components/app/dialogErr";
 import helpers from "./helpers";
 import responsive from "./mixin/responsive";
 import user from "./mixin/user";
+import appMixin from "./mixin/app";
 Vue.use(Vuetify);
 Vue.use(Notifications);
 Vue.use(VEmojiPicker);
 Vue.use(ZiggyVue);
 Vue.use(VueRecord);
-Vue.use(AudioVisual);
+// Vue.use(AudioVisual);
 Vue.mixin(user);
 Vue.mixin(responsive);
+Vue.mixin(appMixin);
 moment.locale("vi");
 Vue.prototype.$moment = moment;
 Vue.prototype.$sanitize = sanitizeHTML;
 Vue.component("multiselect", Multiselect);
 Vue.component("base-loading", BaseLoading);
 Vue.component("item-avatar", ItemAvatar);
+Vue.component("dialog-err", DialogErr);
 Vue.directive("dav-click-outside", {
     bind: function (el, binding, vnode) {
         window.event = function (event) {

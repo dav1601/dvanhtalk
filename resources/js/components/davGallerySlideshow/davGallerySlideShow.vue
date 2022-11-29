@@ -1,10 +1,10 @@
 <template>
     <transition name="modal">
-        <div v-if="imgIndex !== null" class="vgs">
-            <div
-                class="vgs-bg"
-                :style="'background-image: url(' + imageUrl + ')'"
-            ></div>
+        <div class="vgs" v-if="currentFile !== null">
+            <!-- <video id="bg__video" v-if="!isImage">
+                <source :src="currentFile.url" />
+            </video> -->
+            <div :class="{ 'vgs-bg': isImage }" :style="styleBackground"></div>
             <v-btn
                 class="mx-2 vgs__close"
                 fab
@@ -23,14 +23,34 @@
             >
                 <v-icon dark size="35">mdi-chevron-left</v-icon>
             </button>
-            <div v-if="images" class="vgs__container" @click.stop="onNext">
-                <img
-                    class="vgs__container__img"
-                    :src="imageUrl"
-                    :alt="alt"
-                    @click.stop="onNext"
-                />
-                <slot></slot>
+            <div
+                v-if="images"
+                class="vgs__container"
+                :class="{ '--vid': isVid }"
+            >
+                <!-- <v-img
+                    :lazy-src="currentFile.url"
+                    width="100%"
+                    :src="currentFile.url"
+                ></v-img> -->
+                <div class="vgs__container__img">
+                    <!-- <v-img :src="currentFile.url"> </v-img> -->
+                    <img
+                        v-if="isImage"
+                        :src="currentFile.url"
+                        :alt="currentFile.alt"
+                    />
+                    <div id="thumb__video" v-if="isVid">
+                        <video
+                            @play="updateCanvas()"
+                            id="gllVideo"
+                            controls
+                            :src="currentFile.url"
+                        ></video>
+                        <canvas id="myCanvas"></canvas>
+                    </div>
+                    <slot></slot>
+                </div>
             </div>
             <button
                 v-if="isMultiple"
@@ -49,19 +69,47 @@
                     class="vgs__gallery__container"
                     :style="transformGallery"
                 >
-                    <img
+                    <div
                         v-for="(img, i) in images"
                         :key="i"
                         class="vgs__gallery__container__img"
-                        :src="typeof img === 'string' ? img : img.url"
+                        :style="styleWH"
                         :class="{
                             'vgs__gallery__container__img--active':
                                 i === imgIndex,
                         }"
-                        :data-index="i"
-                        :alt="typeof img === 'string' ? '' : img.alt"
-                        @click.stop="onClickThumb(img, i)"
-                    />
+                    >
+                        <img
+                            :src="typeof img === 'string' ? img : img.url"
+                            :data-index="i"
+                            :alt="typeof img === 'string' ? '' : img.alt"
+                            v-if="img.type == 2"
+                            @click.stop="onClickThumb(img, i)"
+                        />
+
+                        <div
+                            v-else
+                            class="file__video w-100 h-100 position-relative"
+                            @click.stop="onClickThumb(img, i)"
+                        >
+                            <div class="poab-c-xy">
+                                <v-icon
+                                    dark
+                                    large
+                                    color="#222222"
+                                    class="icon__play"
+                                    >mdi-play-circle-outline</v-icon
+                                >
+                            </div>
+
+                            <video>
+                                <source
+                                    :src="img.url"
+                                    :id="'item__id-' + index"
+                                />
+                            </video>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,15 +131,41 @@ export default {
     },
     data() {
         return {
-            imgIndex: this.index,
+            imgIndex: 0,
             image: null,
             galleryXPos: 0,
-            thumbnailWidth: 120,
+            thumbnailWidth: 100,
+            thumbnailHeight: 100,
             transform: 0,
             galleryWidth: 939,
+            currentFile: null,
+            margin: 10,
+            req: null,
         };
     },
+
     computed: {
+        styleWH() {
+            const css = {
+                width: this.thumbnailWidth + "px",
+                height: this.thumbnailHeight + "px",
+                "margin-right": this.margin + "px",
+            };
+            return css;
+        },
+        isImage() {
+            return this.currentFile ? this.currentFile.type == 2 : true;
+        },
+        isVid() {
+            return this.currentFile ? this.currentFile.type == 7 : true;
+        },
+        styleBackground() {
+            const bg = this.currentFile ? this.currentFile.url : "";
+            if (this.isImage) {
+                return "background-image:url(" + bg + ")";
+            }
+            return "background: #000000";
+        },
         transformGallery() {
             const pos =
                 this.galleryXPos > 0 ? -this.galleryXPos : this.galleryXPos;
@@ -118,8 +192,27 @@ export default {
         },
     },
     watch: {
+        imgIndex(v) {
+            if (this.req) {
+                window.cancelAnimationFrame(this.req);
+            }
+            if (v != null) {
+                this.currentFile = this.images[v];
+                if (this.currentFile) {
+                    if (this.currentFile.type == 7) {
+                        const el = document.getElementById("gllVideo");
+                        if (el) {
+                            el.load();
+                        }
+                        this.updateCanvas();
+                        this.updateThumbails();
+                    }
+                }
+            }
+        },
         index(val, prev) {
             this.imgIndex = val;
+            console.log(val);
             // updateThumbails when popup
             if (prev == null && val != null) {
                 this.$nextTick(() => {
@@ -143,12 +236,41 @@ export default {
         });
     },
     methods: {
-        close() {
-            const eventData = {
-                imgIndex: this.imgIndex,
+        updateCanvas: function () {
+            const canvas = document.getElementById("myCanvas");
+            const video = document.getElementById("gllVideo");
+            const ctx = canvas.getContext("2d");
+            const videoDims = {
+                width: canvas.offsetWidth,
+                height: canvas.offsetHeight,
             };
+            console.log({
+                draw: "draw",
+                video: videoDims,
+            });
+            ctx.drawImage(video, 0, 0, videoDims.width, videoDims.height);
+            if (
+                (video) =>
+                    !!(
+                        video.currentTime > 0 &&
+                        !video.paused &&
+                        !video.ended &&
+                        video.readyState > 2
+                    )
+            ) {
+                this.req = window.requestAnimationFrame(this.updateCanvas);
+            }
+        },
+        getMeta(url, callback) {
+            const img = new Image();
+            img.src = url;
+            img.onload = function () {
+                callback(this.width, this.height);
+            };
+        },
+        close() {
             this.imgIndex = null;
-            this.$emit("close", eventData);
+            this.$emit("close");
         },
         onPrev() {
             if (this.imgIndex === null) return;
@@ -166,56 +288,42 @@ export default {
             } else {
                 this.imgIndex = 0;
             }
+            console.log(this.imgIndex, this.images.length);
             this.updateThumbails();
         },
-        onClickThumb(image, index) {
+        // LÀM CANVAS CHO GLL
+        onClickThumb(file, index) {
             this.imgIndex = index;
-            console.log(index);
-            console.log(this.imgIndex);
-            this.updateThumbails();
         },
         updateThumbails() {
-            if (!this.$refs.gallery) {
+            if (!this.$refs.gallery || this.imgIndex === null) {
                 return;
             }
             const bonus = this.isIpadProUp
-                ? this.thumbnailWidth * 4 - 40
+                ? this.thumbnailWidth * 4 - 4 * this.margin
                 : this.thumbnailWidth - 20;
             const galleryWidth = document.documentElement.clientWidth;
             const currThumbsWidth = this.imgIndex * this.thumbnailWidth;
             const maxThumbsWidth = this.images.length * this.thumbnailWidth;
-            const lastBonus = this.imgIndex == this.images.length ? 480 : 0;
-            const point = this.isIpadProUp ? 0 : 1000;
-            const margin = this.isIpadProUp ? 0 : this.imgIndex * 10;
-            const posImage =
-                this.imgIndex * this.thumbnailWidth + this.imgIndex * 10;
+            // const lastBonus = this.imgIndex == this.images.length ? 480 : 0;
+            // const point = this.isIpadProUp ? 0 : 1000;
+            const margin = this.isIpadProUp ? this.imgIndex * this.margin : 0;
             const centerPos =
                 Math.floor(galleryWidth / (this.thumbnailWidth * 2)) *
                 this.thumbnailWidth;
             // Prevent scrolling of images if not neede
-            if (
-                maxThumbsWidth < galleryWidth ||
-                (posImage < galleryWidth && this.imgIndex != 0)
-            ) {
-                return;
-            }
+
             if (currThumbsWidth < centerPos) {
                 this.galleryXPos = 0;
-            } else if (
-                currThumbsWidth >
-                this.images.length * this.thumbnailWidth -
-                    this.images.length * 10 -
-                    galleryWidth +
-                    centerPos
-            ) {
-                this.galleryXPos =
-                    -(currThumbsWidth - margin - bonus - centerPos) +
-                    this.thumbnailWidth / 2;
             } else {
-                this.galleryXPos =
-                    -(currThumbsWidth - margin - bonus) +
-                    this.thumbnailWidth / 2;
+                this.galleryXPos = -(currThumbsWidth - bonus + margin);
             }
+            console.log({
+                c: currThumbsWidth,
+                m: margin,
+                b: bonus,
+                index: this.imgIndex,
+            });
         },
     },
 };
@@ -268,7 +376,36 @@ $screen-md-max: ($screen-lg - 1);
     height: 100vh;
     display: table;
 }
+#bg__video {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    filter: blur(20px);
+    object-fit: cover;
+    opacity: 0.5;
+}
+
 .vgs {
+    #thumb__video {
+        position: relative;
+        width: 80vw;
+        display: inline-block !important;
+        height: calc(100vh - 140px);
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            transform: scale(1.25);
+            transform-origin: center center;
+            filter: blur(70rem);
+            opacity: 0.3;
+            z-index: -1;
+        }
+    }
+
     &-bg {
         position: fixed;
         width: 100vw;
@@ -315,6 +452,9 @@ $screen-md-max: ($screen-lg - 1);
     &__next {
         right: 15px;
     }
+    &__container.--vid {
+        overflow: unset !important;
+    }
     &__container {
         position: absolute;
         overflow: hidden;
@@ -338,10 +478,18 @@ $screen-md-max: ($screen-lg - 1);
         //     height: 280px;
         // }
         &__img {
-            max-width: 100vw;
-            max-height: calc(100vh - 150px);
-            object-fit: contain;
             padding-right: 1rem;
+            position: relative;
+            img {
+                height: auto;
+                max-height: calc(100vh - 140px);
+                max-width: 90vw;
+            }
+            video {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
         }
     }
 }
@@ -372,15 +520,34 @@ $screen-md-max: ($screen-lg - 1);
         transition: all 200ms ease-in-out;
         width: 100%;
         &__img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            object-position: 50% 50%;
+            position: relative;
+            opacity: 0.65;
+            overflow: hidden;
+            display: inline-block;
+            img {
+                width: 100%;
+                height: 100%;
+                display: block;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                // max-height: 100%;
+                transform: translate(-50%, -50%);
+                object-fit: cover;
+                object-position: center;
+                border-radius: inherit;
+            }
+            video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: center;
+                border-radius: inherit;
+            }
             display: inline-block;
             float: none;
             margin-right: 8px;
             cursor: pointer;
-            opacity: 0.65;
             border-radius: $radius-medium;
         }
         &__img--active {

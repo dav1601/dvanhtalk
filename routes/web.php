@@ -49,7 +49,7 @@ Route::get('/', 'AppController@index')->middleware('auth')->name('home');
 Route::get('heart', function () {
     return view('home');
 });
-Route::post("test", 'AppController@test')->name('handle.test');
+// Route::post("test", 'AppController@test')->name('handle.test');
 Route::get("test", 'AppController@testview');
 Route::get('me', function () {
     return response()->json(['me' => Auth::user()]);

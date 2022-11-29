@@ -13,8 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('message', function (Blueprint $table) {
-            $table->tinyInteger('type')->default(1)->comment('1:message , 2:image , 3: auido upload , 4:noti group , 5: msg call , 6: audio record')->change();
+        Schema::table('user_message', function (Blueprint $table) {
+            $table->smallInteger('type_msg')->tinyInteger('type_msg')->default(1)->comment('1:message , 2:images , 3: auido, 4:noti group , 5: msg call , 6: audio record , 7: video')->change();
         });
     }
 
@@ -25,8 +25,5 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('message', function (Blueprint $table) {
-            //
-        });
     }
 };

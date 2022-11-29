@@ -18,9 +18,15 @@ const state = () => ({
     blockLoadImg: false,
     activeReply: null,
     inCall: false,
+    progressAu: 0,
+    progressVi: 0,
+    progressImg: 0,
 });
 
 const getters = {
+    progressImg(s) {
+        return s.progressImg;
+    },
     inCall(s) {
         return s.inCall;
     },
@@ -84,6 +90,9 @@ const getters = {
 };
 
 const mutations = {
+    setProgressImg(s, p) {
+        return (s.progressImg = p);
+    },
     leavingChat(s, p) {
         if (s.receiver && s.receiver.id == p) {
             return (s.rcvInRoom = false);
@@ -415,47 +424,53 @@ const actions = {
     },
 
     sendMessage(c, p) {
+        let data = new FormData();
         const config = {
             headers: {
-                "content-type": "multipart/form-data",
+                "Content-Type": "multipart/form-data",
             },
         };
-        let data = new FormData();
+        const parent_id = p.messageReply ? p.messageReply.msg_id : null;
         data.append("to", p.to);
-        data.append("message", p.msg);
-        if (p.messageReply == null) {
-            data.append("parent_id", null);
-        } else {
-            data.append("parent_id", p.messageReply.msg_id);
-        }
-
         data.append("seen", p.seen);
-        data.append("type", p.type);
-        for (let index = 0; index < p.images.length; index++) {
-            data.append("images[" + index + "]", p.images[index]);
-        }
-        data.append("audio", p.audio);
-        data.append("record", p.record);
+        data.append("parent_id", parent_id);
         data.append("for", c.getters["typeChat"]);
+        data.append("type_msg", p.typeMsg);
+        data.append("message", p.message);
+        // if (p.hasOwnProperty("msg")) {
+        //     data.append("message", p.msg);
+        // }
+        // if (p.hasOwnProperty("audio")) {
+        //     data.append("audio", p.audio);
+        // }
+        // if (p.hasOwnProperty("images")) {
+        //     for (let index = 0; index < p.images.length; index++) {
+        //         data.append("images[" + index + "]", p.images[index].file);
+        //     }
+        // }
+        // if (p.hasOwnProperty("video")) {
+        //     data.append("video", p.video);
+        // }
+        if (p.hasOwnProperty("record")) {
+            data.append("record", p.record);
+        }
         return new Promise((rs, rj) => {
             axios
                 .post(route("messages.store"), data, config)
                 .then(async (req) => {
-                    let data = req.data.data;
+                    const data = req.data.payload;
+                    console.log(data);
                     await c.commit("pushMessage", data);
-                    if (data.type_msg == 2) {
+                    if (data.type_msg == 2 || data.type == 7) {
                         await c.commit("pushMedia", data.message);
-                    }
-                    if (data.message_images) {
-                        await c.commit(
-                            "pushMedia",
-                            data.message_images.message
-                        );
-                        await c.commit("pushMessage", data.message_images);
                     }
                     await c.commit("users/updateLastMessage", data, {
                         root: true,
                     });
+
+                    // VIẾT LẠI TOÀN BỘ
+                    // let data = req.data.data;
+
                     rs(req);
                 })
                 .catch((err) => {

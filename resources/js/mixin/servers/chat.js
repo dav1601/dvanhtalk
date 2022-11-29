@@ -230,5 +230,6 @@ export default {
                 receiver: friendId,
             });
         },
+       
     },
 };

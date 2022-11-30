@@ -21,11 +21,15 @@ const state = () => ({
     progressAu: 0,
     progressVi: 0,
     progressImg: 0,
+    emojiPickerMsg: null,
 });
 
 const getters = {
     progressImg(s) {
         return s.progressImg;
+    },
+    emojiPickerMsg(s) {
+        return s.emojiPickerMsg;
     },
     inCall(s) {
         return s.inCall;
@@ -90,6 +94,9 @@ const getters = {
 };
 
 const mutations = {
+    setEmojiPicker(s, p) {
+        s.emojiPickerMsg = p;
+    },
     setProgressImg(s, p) {
         return (s.progressImg = p);
     },
@@ -133,7 +140,7 @@ const mutations = {
         return (s.blockLoadImg = p);
     },
     setInRoom(s, p) {
-        if (s.receiver != null) {
+        if (s.receiver.hasOwnProperty("id")) {
             const isRcv = p.findIndex((user) => {
                 return user.id == s.receiver.id;
             });

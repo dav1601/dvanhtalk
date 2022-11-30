@@ -7,6 +7,7 @@
         <div class="w-100 h-100 position-relative" v-if="!icon">
             <img
                 width="100%"
+                :src="url"
                 height="100%"
                 class="img__obj--cover"
                 :class="'image__preview--' + index"
@@ -26,7 +27,7 @@
                 >
 
                 <video>
-                    <source src="" :id="'item__id-' + index" />
+                    <source :src="url" :id="'item__id-' + index" />
                 </video>
             </div>
 
@@ -51,6 +52,11 @@
 <script>
 export default {
     props: ["file", "icon", "index"],
+    data() {
+        return {
+            url: "",
+        };
+    },
     computed: {
         renderClass() {
             return this.icon ? "iconAdd" : "item__file-" + this.file.type;
@@ -67,7 +73,6 @@ export default {
                 default:
                     break;
             }
-            console.log(this.file);
         }
     },
     methods: {
@@ -82,16 +87,31 @@ export default {
         },
         updateSrcVideo() {
             const source = document.getElementById("item__id-" + this.index);
-            source.src = URL.createObjectURL(this.file.file);
+            this.url = URL.createObjectURL(this.file.file);
         },
         updateSrcImg() {
             let reader = new FileReader();
             const el = document.getElementById("item__id-" + this.index);
             reader.onload = (e) => {
-                el.src = reader.result;
+                this.url = reader.result;
             };
-
             reader.readAsDataURL(this.file.file);
+        },
+    },
+    watch: {
+        file(newval) {
+            console.log(this.index);
+            if (!this.icon) {
+                switch (this.file.type) {
+                    case "image":
+                        this.updateSrcImg();
+                        break;
+                    case "video":
+                        this.updateSrcVideo();
+                    default:
+                        break;
+                }
+            }
         },
     },
 };

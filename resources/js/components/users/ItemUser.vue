@@ -55,36 +55,30 @@ export default {
             if (this.user.lastest_msg == null) {
                 return "";
             }
-            if (this.user.lastest_msg.type_msg == 2) {
-                let prefix = "Đã gửi";
-                if (this.user.lastest_msg.sd_id == this.authId) {
-                    prefix = "Bạn đã gửi";
-                }
-                return (
-                    prefix +
-                    " " +
-                    this.user.lastest_msg.message.message.split(",").length +
-                    " " +
-                    "ảnh"
-                );
-            } else if (this.user.lastest_msg.type_msg == 3) {
-                let prefix = "Đã gửi";
-                if (this.user.lastest_msg.sd_id == this.authId) {
-                    prefix = "Bạn đã gửi";
-                }
-                return (
-                    prefix +
-                    " " +
-                    this.user.lastest_msg.message.message.split(",").length +
-                    " " +
-                    "tệp âm thanh"
-                );
-            } else {
-                let prefix = "";
-                if (this.user.lastest_msg.sd_id == this.authId) {
-                    prefix = "Bạn: ";
-                }
-                return prefix + this.user.lastest_msg.message.message;
+            let prefix = "Đã gửi";
+            if (this.user.lastest_msg.sd_id == this.authId) {
+                prefix = "Bạn đã gửi";
+            }
+            switch (this.user.lastest_msg.type_msg) {
+                case 2:
+                    return (
+                        prefix +
+                        " " +
+                        this.user.lastest_msg.message.message.split(",")
+                            .length +
+                        " " +
+                        "ảnh"
+                    );
+                case 3:
+                    return prefix + " tệp âm thanh";
+                case 7:
+                    return prefix + " tệp video";
+                default:
+                    prefix = "";
+                    if (this.user.lastest_msg.sd_id == this.authId) {
+                        prefix = "Bạn: ";
+                    }
+                    return prefix + this.user.lastest_msg.message.message;
             }
         },
         encryptedId() {

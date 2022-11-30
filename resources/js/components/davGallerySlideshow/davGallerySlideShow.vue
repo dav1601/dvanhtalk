@@ -270,6 +270,7 @@ export default {
         },
         close() {
             this.imgIndex = null;
+            this.currentFile = null;
             this.$emit("close");
         },
         onPrev() {
@@ -329,6 +330,7 @@ export default {
 };
 </script>
 <style lang="scss">
+@import "../../../sass/responsive";
 $black-alpha-80: rgba(0, 0, 0, 0.8);
 $black: #000;
 $white: #fff;
@@ -392,6 +394,9 @@ $screen-md-max: ($screen-lg - 1);
         width: 80vw;
         display: inline-block !important;
         height: calc(100vh - 140px);
+        @include responsive_v(ipad-pro, down) {
+            width: 100vw;
+        }
         canvas {
             position: absolute;
             left: 0;
@@ -400,8 +405,8 @@ $screen-md-max: ($screen-lg - 1);
             height: 100%;
             transform: scale(1.25);
             transform-origin: center center;
-            filter: blur(70rem);
-            opacity: 0.3;
+            filter: blur(10rem);
+            opacity: 0.25;
             z-index: -1;
         }
     }
@@ -442,6 +447,15 @@ $screen-md-max: ($screen-lg - 1);
         background-color: var(--bs-gray-800);
         border: none;
         border-radius: 50%;
+        @include responsive_v(ipad-pro, down) {
+            width: 24px;
+            height: 24px;
+        }
+        i {
+            @include responsive_v(ipad-pro, down) {
+                font-size: 27px;
+            }
+        }
         &:hover {
             background-color: var(--bs-gray-900);
         }
@@ -478,7 +492,6 @@ $screen-md-max: ($screen-lg - 1);
         //     height: 280px;
         // }
         &__img {
-            padding-right: 1rem;
             position: relative;
             img {
                 height: auto;

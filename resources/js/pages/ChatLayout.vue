@@ -294,7 +294,10 @@
                             :friendId="friendId"
                         >
                         </wrapper-msg>
-                        <div v-if="turnProcess.length > 0">
+                        <div v-for="prc in turnProcess" :key="prc.id">
+                            <loading-image :process="prc"></loading-image>
+                        </div>
+                        <!-- <div v-if="turnProcess.length > 0">
                             <div
                                 v-for="(arrPrc, key) in turnProcess"
                                 :key="'turndd-' + key"
@@ -303,7 +306,7 @@
                                     :process="arrPrc"
                                 ></loading-image>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
 
                     <v-slide-y-reverse-transition mode="out-in">
@@ -464,7 +467,7 @@
                             <div class="position-relative">
                                 <VEmojiPicker
                                     v-dav-click-outside="closeEmoji"
-                                    v-if="showEmoji"
+                                    v-if="emojiPicker == 'chat-input'"
                                     :style="{ width: '270px' }"
                                     @select="onSelectEmoji"
                                     :i18n="langEmoji"
@@ -474,13 +477,13 @@
                                 v-if="!mediaRecord"
                                 dark
                                 size="22"
-                                @click.stop="showEmoji = true"
+                                @click.stop="setEmoji('chat-input')"
                                 >mdi-emoticon</v-icon
                             >
                         </div>
                         <v-textarea
                             v-if="!mediaRecord"
-                            @click:append-outer="sendMessage(1)"
+                            @click:append-outer="sendMessage()"
                             append-outer-icon="mdi-send"
                             counter
                             clearable
@@ -492,7 +495,7 @@
                             :placeholder="placeHolder"
                             rows="2"
                             row-height="20"
-                            @keydown.enter.prevent="sendMessage(1)"
+                            @keydown.enter.prevent="sendMessage()"
                             v-model.trim="message"
                             :disabled="disableChat"
                             @keyup="isTyping"
@@ -567,7 +570,7 @@ import LoadingImage from "../components/files/LoadingImage.vue";
 function initialState() {
     return {
         openFile: false,
-        turnProcess: [],
+        turnProcess: {},
         message: "",
         images: [],
         video: [],
@@ -616,6 +619,7 @@ function initialState() {
         validatorFile: {
             size: 50 * 1024 * 1024, // 50MB
         },
+        waitRemoveProcess: [],
     };
 }
 
@@ -811,6 +815,11 @@ export default {
     },
 
     methods: {
+        log(item) {
+            console.log({
+                log: item,
+            });
+        },
         closeGllFile: function () {
             this.startImage = null;
         },
@@ -826,7 +835,11 @@ export default {
                     formData.append("folder", "test/file");
                     formData.append("file", payload["url"]);
                     let cloudinaryUploadURL = `https://api.cloudinary.com/v1_1/${this.cloudName}/upload`;
-                    const indexPrc = this.setProcess(payload, turn);
+                    this.setProcess(payload, turn);
+                    const dataProcess = {
+                        id: payload.id,
+                        turn: turn,
+                    };
                     let requestObj = {
                         url: cloudinaryUploadURL,
                         method: "POST",
@@ -836,7 +849,7 @@ export default {
                                 (progressEvent.loaded * 100.0) /
                                     progressEvent.total
                             );
-                            this.updateProcess(indexPrc, turn, process);
+                            this.updateProcess(payload.id, turn, process);
                         }.bind(this),
                     };
                     var instance = axios.create();
@@ -844,31 +857,40 @@ export default {
                     instance(requestObj)
                         .then(async (req) => {
                             const data = req.data;
-                            this.removeProcess(indexPrc, turn);
-                            console.log(payload.type);
                             if (this.typem("image") == payload.type) {
                                 if (!Array.isArray(this.messageImage[turn])) {
                                     this.messageImage[turn] = [];
                                 }
+                                if (
+                                    !Array.isArray(this.waitRemoveProcess[turn])
+                                ) {
+                                    this.waitRemoveProcess[turn] = [];
+                                }
                                 this.messageImage[turn].push(data.secure_url);
+                                this.waitRemoveProcess[turn].push(dataProcess);
                                 if (isLast) {
                                     data.secure_url =
                                         this.messageImage[turn].toString();
+                                    const dataProcessImage =
+                                        this.waitRemoveProcess[turn];
+                                    this.waitRemoveProcess.splice(turn, 0);
                                     await this.apiSendMsg(
                                         payload.type,
-                                        data.secure_url
+                                        data.secure_url,
+                                        dataProcessImage
                                     );
                                     this.messageImage.splice(turn, 1);
                                 }
                             } else {
                                 await this.apiSendMsg(
                                     payload.type,
-                                    data.secure_url
+                                    data.secure_url,
+                                    dataProcess
                                 );
                             }
                         })
                         .catch((err) => {
-                            this.removeProcess(indexPrc, turn);
+                            this.removeProcess(dataProcess);
                         });
                 }.bind(this),
                 false
@@ -960,7 +982,9 @@ export default {
             this.groupReaction = data.groupReaction;
         },
         closeEmoji: function () {
-            this.showEmoji = false;
+            if (this.emojiPicker == "chat-input") {
+                this.setEmoji(null);
+            }
         },
         onSelectEmoji: function (emoji) {
             this.message += " " + emoji.data;
@@ -974,9 +998,6 @@ export default {
                 this.startImage = Number(index);
             }
             return;
-        },
-        log(val) {
-            console.log(val);
         },
         fileValid: function (file) {
             if (file && file.size) {
@@ -1000,7 +1021,8 @@ export default {
         //     }
         // },
         deleteImgPreview(index) {
-            return this.files.splice(index, 1);
+            this.files.splice(index, 1);
+            console.log(this.files);
         },
         handleClickToBot() {
             this.deleteSavedScroll();
@@ -1315,6 +1337,7 @@ export default {
                     this.video.push(data);
                     break;
                 default:
+                    s;
                     break;
             }
         },
@@ -1323,13 +1346,14 @@ export default {
                 this.resetAll();
                 alert("U là trời có nhắn cái gì đâu mà gửi troài =))");
             } else {
-                this.sendTurn = this.sendTurn + 1;
                 this.$store.commit("message/deleteMsgReply");
                 this.showPreviewFile = false;
                 const images = this.images;
                 const video = this.video;
                 const audio = this.audio;
-                const turn = this.turnProcess.push([]) - 1;
+                // const turn = this.turnProcess.push([]) - 1;
+                const turn = this.sendTurn++;
+                this.$set(this.turnProcess, turn, {});
                 this.files = [];
                 if (this.message) {
                     this.apiSendMsg(this.typem("text"), this.message);
@@ -1417,8 +1441,8 @@ export default {
                     break;
             }
         },
-        apiSendMsg: function (type = 0, message = "") {
-            const seen = this.inRoom ? true : false;
+        apiSendMsg: function (type = 0, message = "", process) {
+            const seen = this.inRoom;
             let payload = {
                 to: this.friendId,
                 from: this.authId,
@@ -1430,6 +1454,14 @@ export default {
             this.$store
                 .dispatch("message/sendMessage", payload)
                 .then((req) => {
+                    if (type == this.typem("image")) {
+                        for (let index = 0; index < process.length; index++) {
+                            const element = process[index];
+                            this.removeProcess(element);
+                        }
+                    } else {
+                        this.removeProcess(process);
+                    }
                     if (type == 1) {
                         this.message = "";
                     }
@@ -1445,15 +1477,40 @@ export default {
         closeEvent() {
             this.showFormatMessage = false;
         },
-        removeProcess(indexPrc, turn) {
-            return this.turnProcess[turn].splice(indexPrc);
-        },
-        updateProcess(indexPrc, turn, process) {
-            return this.$set(
-                this.turnProcess[turn][indexPrc],
-                "process",
-                process
+        removeProcess(dataProcess) {
+            return this.$delete(
+                this.turnProcess[dataProcess.turn],
+                dataProcess.id
             );
+            if (
+                process &&
+                process.hasOwnProperty("turn") &&
+                process.hasOwnProperty("id")
+            ) {
+                const array = this.turnProcess[process.turn].filter((proc) => {
+                    return proc.id != process.id;
+                });
+                this.turnProcess[process.turn] = array;
+                // if (index !== -1) {
+                //     this.turnProcess[process.turn].splice(index);
+                // }
+                console.log({
+                    p: process,
+                    i: index,
+                    turn: this.turnProcess[process.turn],
+                });
+            }
+            return;
+        },
+        updateProcess(idProcess, turn, process) {
+            if (this.turnProcess[turn].hasOwnProperty([idProcess])) {
+                this.$set(
+                    this.turnProcess[turn][idProcess],
+                    "process",
+                    process
+                );
+            }
+            return;
         },
 
         setProcess(payload, turn) {
@@ -1464,8 +1521,8 @@ export default {
                 turn: turn,
                 type: this.typem(payload.type),
             };
-            var indexPrc = this.turnProcess[turn].push(data) - 1;
-            return indexPrc;
+            this.$set(this.turnProcess[turn], payload.id, data);
+            return;
         },
         groupByTypeProcess: function (collection, property) {
             var val,
@@ -1531,8 +1588,9 @@ export default {
         startImage(nv) {
             this.openFile = nv != null ? true : false;
         },
-        turnProcess(nv) {
-            this.scrollEnd(true);
+        turnProcess: {
+            handler(val) {},
+            deep: true,
         },
         files(newval) {
             if (this.files.length <= 0) {
@@ -1701,8 +1759,7 @@ export default {
         }
     }
     .emoji-picker {
-        top: 28px !important;
-        right: -10px !important;
+        right: 10px !important;
         z-index: 200;
     }
 }
@@ -1779,7 +1836,7 @@ export default {
     flex-direction: row-reverse;
     margin-left: auto;
     .emoji-picker {
-        right: 8px !important;
+        right: 25px !important;
     }
 }
 

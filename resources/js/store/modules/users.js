@@ -292,7 +292,7 @@ const actions = {
     getUsersOnline(c, p) {
         c.commit("setUsersOnline", p);
     },
-    getUsersMyRoom(c, p) {
+    checkReceiver(c, p) {
         c.commit("message/setInRoom", p, { root: true });
     },
     deleteUser(c, p) {

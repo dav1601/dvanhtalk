@@ -5,7 +5,7 @@
         >
             <div
                 class="upload_file--item --single"
-                v-for="(prc, index) in process"
+                v-for="prc in process"
                 :class="renderClass(prc.type)"
             >
                 <v-progress-circular
@@ -37,15 +37,19 @@
 <script>
 import chat from "../../mixin/servers/chat";
 export default {
-    props: ["process"],
-    mixins: [chat],
-    created() {},
-    computed: {
-        haveProgcess() {
-            return this.process.length > 0;
+    props: {
+        process: {
+            type: Object,
         },
     },
-    watch: {},
+    mixins: [chat],
+
+    computed: {
+        haveProgcess() {
+            return Object.keys(this.process).length > 0;
+        },
+    },
+
     methods: {
         renderClass(type) {
             return " --" + type;

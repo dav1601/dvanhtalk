@@ -142,7 +142,6 @@
                     @click.stop="openGll(0)"
                 >
                     <img
-                        @load="loaded"
                         :src="data.message.message"
                         class="img__obj--cover"
                         style="
@@ -150,6 +149,7 @@
                             max-width: 250px;
                             max-height: 250px;
                         "
+                        @load="loaded"
                     />
                 </a>
                 <div
@@ -183,7 +183,13 @@
                 class="flex-shrink-1 mr-3 wp-chat-item wp-chat-item-audio"
                 v-if="typeMessage == 3"
             >
-                <audio controls crossorigin playsinline class="message__audio">
+                <audio
+                    @load="loaded"
+                    controls
+                    crossorigin
+                    playsinline
+                    class="message__audio"
+                >
                     <source :src="data.message.message" />
                 </audio>
             </div>
@@ -194,7 +200,11 @@
                 <video
                     controls
                     onloadstart="this.volume=0.0"
-                    class="message__video"
+                    @load="loaded"
+                    @click.stop="handleVideo"
+                    class="message__video cursor-pointer"
+                    crossorigin="anonymous"
+                    preload="metadata"
                 >
                     <source :src="data.message.message" />
                 </video>
@@ -289,16 +299,15 @@
                                     size="20"
                                     v-bind="attrs"
                                     v-on="on"
-                                    @click.stop="showDialog = !showDialog"
+                                    @click.stop="setEmoji(data.message.id)"
                                     >mdi-emoticon-outline</v-icon
                                 >
                             </template>
                             <span>Cảm xúc</span>
                         </v-tooltip>
-
                         <VEmojiPicker
                             v-dav-click-outside="handle"
-                            v-if="showDialog"
+                            v-if="emojiPicker == data.message.id"
                             :style="{ width: '270px' }"
                             @select="onSelectEmoji"
                             :i18n="langEmoji"
@@ -589,7 +598,7 @@ export default {
             return self.indexOf(value) === index;
         },
         handle() {
-            this.showDialog = false;
+            this.setEmoji(null);
         },
         toogleDialogEmoji() {
             console.log("Toogle!");
@@ -613,6 +622,11 @@ export default {
 
         replyMessage() {
             return this.$store.dispatch("message/getMessageReply", this.data);
+        },
+        handleVideo(event) {
+            const videoElement = event.target;
+            videoElement.pause();
+            this.openGll(0);
         },
         openGll(index) {
             const data = {
@@ -787,6 +801,9 @@ export default {
     margin-left: 10px;
     &--reaction {
         position: relative;
+        .emoji-picker {
+            top: 10px !important;
+        }
     }
 }
 .message__image.images {

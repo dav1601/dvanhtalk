@@ -100,7 +100,7 @@ class MessagesController extends Controller
         $created_time = $vamsg->created_at();
         $message = $request->message ? $request->message : "";
         $user_message = new UserMessage();
-        $rcv_id = (int) $request->to;
+        $rcv_id =  $request->to;
         $for = (int) $request->for;
         $seen = $request->has('seen') ? $request->seen : 0;
         $parent_id = $request->parent_id;

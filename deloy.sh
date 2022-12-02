@@ -3,7 +3,7 @@ php artisan down
 git stash
 git stash drop
 # Pull the latest changes from the git repository
-git pull origin master
+git pull origin master --no-edit
 # update pr
 sudo chown -R www-data:www-data .
 # Install/update composer dependecies

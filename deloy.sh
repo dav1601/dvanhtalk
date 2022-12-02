@@ -1,6 +1,7 @@
 # Turn on maintenance mode
 php artisan down
-
+git stash
+git stash drop
 # Pull the latest changes from the git repository
 git pull origin master
 # update pr

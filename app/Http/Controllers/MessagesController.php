@@ -97,43 +97,14 @@ class MessagesController extends Controller
     }
     public function store(Request $request, MessagesInterface $vamsg)
     {
+        $user_message = new UserMessage();
         $created_time = $vamsg->created_at();
         $message = $request->message ? $request->message : "";
-        $user_message = new UserMessage();
-        $rcv_id =  $request->to;
+        $rcv_id = (int) $request->to;
         $for = (int) $request->for;
         $seen = $request->has('seen') ? $request->seen : 0;
-        $parent_id = $request->parent_id;
+        $parent_id = (int) $request->parent_id == 0 ? NULL : (int) $request->parent_id;
         $type_msg = $request->type_msg ? $request->type_msg : 0;
-        // switch ($type_msg) {
-        //     case 1:
-        //         $message = $request->message;
-        //         break;
-        //     case 2:
-        //         $images = $request->images;
-        //         $arrayImages = [];
-        //         foreach ($images as $image) {
-        //             $urlImgUploaded =  $image->storeOnCloudinary("user-images-" . Auth::id())->getSecurePath();
-        //             $arrayImages[] = $urlImgUploaded;
-        //         }
-        //         $message = implode(",", $arrayImages);
-        //         break;
-        //     case 3:
-        //         $audio = $request->file('audio');
-        //         $message = $audio->storeOnCloudinary("user-audios-" . Auth::id())->getSecurePath();
-        //         break;
-        //     case 6:
-        //         $record = $request->file('record');
-        //         $message =  $record->storeOnCloudinary("user-records-" . Auth::id())->getSecurePath();
-        //         break;
-        //     case 7:
-        //         $video = $request->file('video');
-        //         $message =  $video->storeOnCloudinary("user-video-" . Auth::id())->getSecurePath();
-        //         break;
-        //     default:
-        //         break;
-        // }
-
         $user_message = $vamsg->store_message($rcv_id, $message, $type_msg, $parent_id, $seen, $for, $created_time);
         if ($user_message) {
             try {

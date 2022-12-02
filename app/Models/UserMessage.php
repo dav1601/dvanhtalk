@@ -15,6 +15,7 @@ class UserMessage extends Model
         'rcv_id',
         'rcv_group_id',
         'msg_id',
+        'reply_msg_id',
         'type',
         'type_msg',
         'seen',
@@ -23,13 +24,13 @@ class UserMessage extends Model
     {
         return $this->belongsTo('App\Models\Message',  'msg_id');
     }
+    public function message_parent()
+    {
+        return $this->belongsTo('App\Models\Message',  'reply_msg_id');
+    }
     public function call_info()
     {
         return $this->hasOne('App\Models\CallInfor', 'user_message_id');
-    }
-    public function message_parent()
-    {
-        return $this->belongsTo('App\Models\Message',  'msg_reply_id');
     }
     public function sender()
     {

@@ -105,6 +105,7 @@ class MessagesRepository implements MessagesInterface
         $store_message->type = $type_msg;
         $store_message->created_at =  $created_at;
         $store_message->updated_at =  $created_at;
+        $reply = $parent_id ? $parent_id : NULL;
         if ($store_message->save()) {
             try {
                 $user_message->msg_id = (int) $store_message->id;
@@ -114,11 +115,11 @@ class MessagesRepository implements MessagesInterface
                 } else {
                     $user_message->rcv_group_id = (int) $rcv_id;
                 }
+                $user_message->reply_msg_id = $parent_id;
                 $user_message->seen = (int) $seen;
                 $user_message->type = $for;
                 $user_message->type_msg =  $store_message->type;
                 $user_message->created_at =  $created_at;
-                $user_message->msg_reply_id = $parent_id;
                 $user_message->save();
                 $setupRelation = ["message", "message_parent"];
                 if ($for == 1) {
@@ -126,7 +127,7 @@ class MessagesRepository implements MessagesInterface
                 }
                 $user_message->load($setupRelation);
                 $user_message->group_created_at = $this->format_created_at($created_at);
-                return $user_message;
+                return  $user_message;
             } catch (\Exception $e) {
                 $store_message->delete();
                 $user_message->delete();
@@ -138,11 +139,12 @@ class MessagesRepository implements MessagesInterface
     }
     public function getUserMessage($msg_id, $for)
     {
-        $setupRelation = ['message', 'message_parent', "call_info", 'message.reaction', 'message.reaction.user'];
+        $setupRelation = ['message', "message_parent",  "call_info", 'message.reaction', 'message.reaction.user'];
         if ($for == 1) {
             $setupRelation[] = "sender";
         }
         $user_message =  UserMessage::with($setupRelation)->where('msg_id', $msg_id)->first();
+
         if ($user_message) {
             return $user_message;
         }

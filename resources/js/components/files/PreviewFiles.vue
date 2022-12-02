@@ -6,6 +6,7 @@
     >
         <div class="w-100 h-100 position-relative" v-if="!icon">
             <img
+                @load="load"
                 width="100%"
                 :src="url"
                 height="100%"
@@ -26,7 +27,7 @@
                     >mdi-play-circle-outline</v-icon
                 >
 
-                <video>
+                <video @load="load">
                     <source :src="url" :id="'item__id-' + index" />
                 </video>
             </div>
@@ -76,6 +77,9 @@ export default {
         }
     },
     methods: {
+        load() {
+            return this.$emit("loaded", this.authId);
+        },
         deleteFile() {
             return this.$emit("delete-file", this.index);
         },

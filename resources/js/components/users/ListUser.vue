@@ -89,7 +89,9 @@ export default {
                     console.log(req);
                     this.loadedUsers = true;
                 })
-                .catch((err) => {});
+                .catch((err) => {
+                   
+                });
         },
         toggleScroll(type) {
             if (!this.isHome) {

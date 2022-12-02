@@ -12,6 +12,13 @@ try {
 
 window.axios = require("axios");
 window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
+window.axios.interceptors.response.use((response) => {
+    if (response.status === 401) {
+        return (window.location.href = `${window.location.protocol}//${window.location.hostname}/login`);
+    }
+
+    return response;
+});
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting
@@ -20,6 +27,6 @@ window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 
 import Echo from "laravel-echo";
 window.Echo = new Echo({
-  broadcaster: 'socket.io',
-  host: `${window.location.protocol}//${window.location.hostname}:${process.env.MIX_FRONTEND_PORT}`
+    broadcaster: "socket.io",
+    host: `${window.location.protocol}//${window.location.hostname}:${process.env.MIX_FRONTEND_PORT}`,
 });

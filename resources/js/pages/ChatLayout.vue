@@ -353,36 +353,6 @@
                                     >
                                     <span class="gmf__name">Đính kèm file</span>
                                 </div>
-                                <!-- <div
-                                    class="group__message--format --image center-start"
-                                    @click.stop="uploadFileAudio"
-                                >
-                                    <v-icon
-                                        color="primary"
-                                        style="font-size: 30px"
-                                        class="cursor-pointer"
-                                        dark
-                                        >mdi-music</v-icon
-                                    >
-                                    <span class="gmf__name"
-                                        >Gửi file audio</span
-                                    >
-                                </div>
-                                <div
-                                    class="group__message--format --image center-start"
-                                    @click.stop="uploadFileAudio"
-                                >
-                                    <v-icon
-                                        color="primary"
-                                        style="font-size: 30px"
-                                        class="cursor-pointer"
-                                        dark
-                                        >mdi-music</v-icon
-                                    >
-                                    <span class="gmf__name"
-                                        >Gửi file audio</span
-                                    >
-                                </div> -->
                                 <div class="arrow-down position-absolute"></div>
                             </div>
                         </div>
@@ -412,6 +382,7 @@
                                 :file="file"
                                 :icon="false"
                                 @delete-file="deleteImgPreview"
+                                @loaded="loaded"
                             ></preview-files>
                             <preview-files
                                 :icon="true"
@@ -576,6 +547,7 @@ function initialState() {
         video: [],
         audio: [],
         files: [],
+        record: null,
         showPreviewFile: false,
         search: "",
         parent_id: null,
@@ -707,6 +679,12 @@ export default {
             };
             return style;
         },
+        loadedGroup() {
+            if (this.isGroup && this.loadedRcv) {
+                return true;
+            }
+            return false;
+        },
         activeReply() {
             return this.$store.getters["message/activeReply"];
         },
@@ -765,7 +743,7 @@ export default {
             return this.$store.getters["message/messengerMedia"];
         },
         members() {
-            if (this.isGroup && this.loadedRcv) {
+            if (this.loadedGroup) {
                 return this.receiver.members.sort(this.compareRoleMember);
             }
         },
@@ -776,19 +754,17 @@ export default {
             return this.$route.name == "group";
         },
         isAdmin() {
-            if (this.isGroup && this.loadedRcv) {
+            if (this.loadedGroup) {
                 return this.authId == this.receiver.users_id;
             }
         },
         isMod() {
-            if (this.loadedRcv && this.isGroup) {
+            if (this.loadedGroup) {
                 const user = this.receiver.members.find(
                     (user) => user.users_id == this.authId
                 );
                 if (user) {
-                    if (user.role == 1) {
-                        return true;
-                    }
+                    return user.role == 1;
                 }
             }
             return false;
@@ -825,73 +801,12 @@ export default {
         },
         upload: function (payload = {}, isLast = false, turn = 0) {
             let reader = new FileReader();
-            let formData = new FormData();
+            console.log(payload);
             reader.addEventListener(
                 "load",
                 function () {
-                    payload["url"] = reader.result;
-                    formData.append("upload_preset", this.preset);
-                    formData.append("tags", this.tags);
-                    formData.append("folder", "test/file");
-                    formData.append("file", payload["url"]);
-                    let cloudinaryUploadURL = `https://api.cloudinary.com/v1_1/${this.cloudName}/upload`;
-                    this.setProcess(payload, turn);
-                    const dataProcess = {
-                        id: payload.id,
-                        turn: turn,
-                    };
-                    let requestObj = {
-                        url: cloudinaryUploadURL,
-                        method: "POST",
-                        data: formData,
-                        onUploadProgress: function (progressEvent) {
-                            var process = Math.round(
-                                (progressEvent.loaded * 100.0) /
-                                    progressEvent.total
-                            );
-                            this.updateProcess(payload.id, turn, process);
-                        }.bind(this),
-                    };
-                    var instance = axios.create();
-                    delete instance.defaults.headers.common["X-Socket-Id"];
-                    instance(requestObj)
-                        .then(async (req) => {
-                            const data = req.data;
-                            if (this.typem("image") == payload.type) {
-                                if (!Array.isArray(this.messageImage[turn])) {
-                                    this.messageImage[turn] = [];
-                                }
-                                if (
-                                    !Array.isArray(this.waitRemoveProcess[turn])
-                                ) {
-                                    this.waitRemoveProcess[turn] = [];
-                                }
-                                this.messageImage[turn].push(data.secure_url);
-                                this.waitRemoveProcess[turn].push(dataProcess);
-                                if (isLast) {
-                                    data.secure_url =
-                                        this.messageImage[turn].toString();
-                                    const dataProcessImage =
-                                        this.waitRemoveProcess[turn];
-                                    this.waitRemoveProcess.splice(turn, 0);
-                                    await this.apiSendMsg(
-                                        payload.type,
-                                        data.secure_url,
-                                        dataProcessImage
-                                    );
-                                    this.messageImage.splice(turn, 1);
-                                }
-                            } else {
-                                await this.apiSendMsg(
-                                    payload.type,
-                                    data.secure_url,
-                                    dataProcess
-                                );
-                            }
-                        })
-                        .catch((err) => {
-                            this.removeProcess(dataProcess);
-                        });
+                    const url = reader.result;
+                    this.uploadApi(payload, isLast, turn, url);
                 }.bind(this),
                 false
             );
@@ -901,6 +816,74 @@ export default {
                     reader.readAsDataURL(payload.file);
                 }
             }
+        },
+        uploadApi(payload = {}, isLast = false, turn = 0, url = "") {
+            console.log(url);
+            let formData = new FormData();
+            let folder = `user-${this.authId}-message-${this.typem(
+                payload.type
+            )}`;
+            payload["url"] = url;
+            formData.append("upload_preset", this.preset);
+            formData.append("tags", this.tags);
+            formData.append("folder", folder);
+            formData.append("file", url);
+            let cloudinaryUploadURL = `https://api.cloudinary.com/v1_1/${this.cloudName}/upload`;
+            this.setProcess(payload, turn);
+            const dataProcess = {
+                id: payload.id,
+                turn: turn,
+            };
+            let requestObj = {
+                url: cloudinaryUploadURL,
+                method: "POST",
+                data: formData,
+                onUploadProgress: function (progressEvent) {
+                    var process = Math.round(
+                        (progressEvent.loaded * 100.0) / progressEvent.total
+                    );
+
+                    this.updateProcess(payload.id, turn, process);
+                }.bind(this),
+            };
+            var instance = axios.create();
+            delete instance.defaults.headers.common["X-Socket-Id"];
+            instance(requestObj)
+                .then(async (req) => {
+                    const data = req.data;
+                    if (this.typem("image") == payload.type) {
+                        if (!Array.isArray(this.messageImage[turn])) {
+                            this.messageImage[turn] = [];
+                        }
+                        if (!Array.isArray(this.waitRemoveProcess[turn])) {
+                            this.waitRemoveProcess[turn] = [];
+                        }
+                        this.messageImage[turn].push(data.secure_url);
+                        this.waitRemoveProcess[turn].push(dataProcess);
+                        if (isLast) {
+                            data.secure_url =
+                                this.messageImage[turn].toString();
+                            const dataProcessImage =
+                                this.waitRemoveProcess[turn];
+                            this.waitRemoveProcess.splice(turn, 0);
+                            await this.apiSendMsg(
+                                payload.type,
+                                data.secure_url,
+                                dataProcessImage
+                            );
+                            this.messageImage.splice(turn, 1);
+                        }
+                    } else {
+                        await this.apiSendMsg(
+                            payload.type,
+                            data.secure_url,
+                            dataProcess
+                        );
+                    }
+                })
+                .catch((err) => {
+                    this.removeProcess(dataProcess);
+                });
         },
         isLastImage(id) {
             return id == this.images[this.images.length - 1].id;
@@ -1132,8 +1115,13 @@ export default {
         },
         onStream(data) {},
         onResult(data) {
-            this.mediaRecord = data;
-            this.srcRecord = window.URL.createObjectURL(data);
+            const url = window.URL.createObjectURL(data);
+            const turn = this.sendTurn++;
+            const payload = {
+                id: Date.now() + this.makeStreamId(7),
+                type: this.typem("record"),
+            };
+            this.uploadApi(payload, false, turn, url);
         },
         async getMessages(up = false, msgId = null) {
             if (this.endPage == null || this.endPage == 0) {
@@ -1341,7 +1329,7 @@ export default {
                     break;
             }
         },
-        sendMessage: async function (type) {
+        sendMessage: async function () {
             if (!this.message && this.files.length <= 0 && !this.mediaRecord) {
                 this.resetAll();
                 alert("U là trời có nhắn cái gì đâu mà gửi troài =))");
@@ -1351,9 +1339,11 @@ export default {
                 const images = this.images;
                 const video = this.video;
                 const audio = this.audio;
+                const record = this.record;
                 // const turn = this.turnProcess.push([]) - 1;
                 const turn = this.sendTurn++;
                 this.$set(this.turnProcess, turn, {});
+                this.record = null;
                 this.files = [];
                 if (this.message) {
                     this.apiSendMsg(this.typem("text"), this.message);

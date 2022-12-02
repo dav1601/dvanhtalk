@@ -1,5 +1,4 @@
 import api from "../../api";
-import axios from "axios";
 import Vue from "vue";
 const state = () => ({
     users: [],
@@ -94,6 +93,7 @@ const mutations = {
         s.usersOnline = updateUsers;
     },
     updateLastMessage(s, p) {
+        console.log(p);
         const indexRcv = s.users.findIndex((el) => {
             return el.id == p.rcv_id;
         });
@@ -101,10 +101,10 @@ const mutations = {
             return el.id == p.sd_id;
         });
         if (indexRcv != -1) {
-            s.users[indexRcv].lastest_msg = p;
+            Vue.set(s.users[indexRcv], "lastest_msg", p);
         }
         if (indexSd != -1) {
-            s.users[indexSd].lastest_msg = p;
+            Vue.set(s.users[indexSd], "lastest_msg", p);
         }
     },
     // AREA GROUP

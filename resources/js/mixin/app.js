@@ -10,6 +10,15 @@ export default {
         },
     },
     methods: {
+        removeSnackbar(index, timeout) {
+            var self = this;
+            setTimeout(function () {
+                self.$store.commit("app/removeSnackbar", index);
+            }, timeout);
+        },
+        setSnackbar(snackbar) {
+            return this.$store.commit("app/setSnackbar", snackbar);
+        },
         getBase64Image(img) {
             var canvas = document.createElement("canvas");
             canvas.width = img.width;
@@ -24,7 +33,6 @@ export default {
             const canvas = document.createElement("canvas");
             video.style.display = "none";
             canvas.style.display = "none";
-
             // Trigger video load
             await new Promise((resolve, reject) => {
                 video.addEventListener("loadedmetadata", () => {

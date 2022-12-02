@@ -1,14 +1,5 @@
 <template>
     <v-card>
-        <v-snackbar
-            v-model="snackbar"
-            :color="snackbarColor"
-            :timeout="3000"
-            style="z-index: 100000"
-            top
-        >
-            {{ textSnack }}
-        </v-snackbar>
         <div class="mb-4 b-b-4-d">
             <v-card-title class="dav-text-14-g"
                 >Đổi mật khẩu theo mật khẩu cũ</v-card-title
@@ -65,10 +56,10 @@
                 "
             >
                 <v-text-field
-                    v-model="dataEmail.email"
+                    :value="email"
                     type="email"
-                    label="Nhập Email"
                     :loading="sendingOtp"
+                    disabled
                     clearable
                 ></v-text-field>
                 <v-card-actions>
@@ -76,7 +67,7 @@
                         :loading="sendingOtp"
                         color="primary"
                         @click="sendCode"
-                        :disabled="!dataEmail.email || sendingOtp"
+                        :disabled="sendingOtp"
                     >
                         Gửi code
                     </v-btn>
@@ -138,38 +129,41 @@
 <script>
 const dataShow = { icon: "mdi-eye-off", type: "text" };
 const dataHide = { icon: "mdi-eye", type: "password" };
+function initialState() {
+    return {
+        showPass: {
+            oldPass: false,
+            newPass: false,
+            newPassConf: false,
+            EmailNewPass: false,
+            EmailNewPassConf: false,
+        },
+        processEmail: "noSend",
+        dataDef: {
+            oldPass: "",
+            newPass: "",
+            newPassConf: "",
+            valid: false,
+        },
+        dataEmail: {
+            email: "",
+            otp: "",
+            expectedOtp: "",
+            newPass: "",
+            newPassConf: "",
+            valid: false,
+        },
+        saving: false,
+        snackbar: false,
+        snackbarColor: "error",
+        textSnack: "OTP không chính xác",
+        required: [(v) => !!v || "Bạn chưa nhập ký tự"],
+    };
+}
 export default {
     props: ["dialog"],
     data() {
-        return {
-            showPass: {
-                oldPass: false,
-                newPass: false,
-                newPassConf: false,
-                EmailNewPass: false,
-                EmailNewPassConf: false,
-            },
-            processEmail: "noSend",
-            dataDef: {
-                oldPass: "",
-                newPass: "",
-                newPassConf: "",
-                valid: false,
-            },
-            dataEmail: {
-                email: "",
-                otp: "",
-                expectedOtp: "",
-                newPass: "",
-                newPassConf: "",
-                valid: false,
-            },
-            saving: false,
-            snackbar: false,
-            snackbarColor: "error",
-            textSnack: "OTP không chính xác",
-            required: [(v) => !!v || "Bạn chưa nhập ký tự"],
-        };
+        return initialState();
     },
     computed: {
         toggle1() {
@@ -211,37 +205,30 @@ export default {
         async sendCode() {
             this.setProcess("sendingCode");
             await this.$store
-                .dispatch("auth/sendingCode", this.dataEmail.email)
+                .dispatch("auth/sendingCode", this.email)
                 .then((req) => {
                     const data = req.data;
                     this.setProcess("sended");
-                    this.textSnack =
-                        "Mã OTP đã gửi thành công bạn vui lòng kiểm tra email";
-                    this.snackbarColor = "success";
-                    this.snackbar = true;
+                    this.setSnackbar({
+                        text: "Mã OTP đã gửi thành công bạn vui lòng kiểm tra email",
+                        timeout: 20000,
+                    });
                     this.dataEmail.expectedOtp = data.code;
                 })
                 .catch((err) => {
                     const dataErr = err.response.data;
                     this.setProcess("noSend");
-                    this.textSnack = dataErr.error;
-                    this.snackbar = true;
+                    this.setSnackbar({
+                        text: dataErr.error,
+                        timeout: 20000,
+                    });
                 });
         },
         setProcess(process = "noSend") {
             this.processEmail = process;
         },
         resetAll() {
-            this.dataEmail.email = "";
-            this.dataEmail.otp = "";
-            this.dataEmail.expectedOtp = "";
-            this.dataEmail.newPass = "";
-            this.dataEmail.newPassConf = "";
-            this.dataEmail.valid = false;
-            this.dataDef.oldPass = "";
-            this.dataDef.newPass = "";
-            this.dataDef.newPassConf = "";
-            this.dataDef.valid = false;
+            Object.assign(this.$data, initialState());
             this.setProcess("noSend");
         },
 
@@ -257,20 +244,23 @@ export default {
             await this.$store
                 .dispatch("auth/savePass", data)
                 .then((req) => {
-                    console.log(req);
                     this.saving = false;
                     this.setProcess("changeSuccess");
-                    this.textSnack =
-                        "Đổi mật khẩu thành công hệ thống sẽ tự động đăng xuất trong 3 giây";
-                    this.snackbarColor = "success";
-                    this.snackbar = true;
+                    this.setSnackbar({
+                        text: "Đổi mật khẩu thành công hệ thống sẽ tự động đăng xuất trong 3 giây",
+                        timeout: 3000,
+                    });
+                    setTimeout(
+                        function () {
+                            this.logout();
+                        }.bind(this),
+                        3000
+                    );
                 })
                 .catch((err) => {
                     const dataErr = err.response.data;
                     this.saving = false;
-                    this.textSnack = dataErr.error;
-                    this.snackbarColor = "error";
-                    this.snackbar = true;
+                    this.setSnackbar({ text: dataErr.error, color: "error" });
                     this.resetAll();
                 });
         },
@@ -314,13 +304,6 @@ export default {
         },
         dialog(newVal) {
             this.resetAll();
-        },
-        snackbar(open) {
-            if (!open) {
-                if (this.processEmail == "changeSuccess") {
-                    this.logout();
-                }
-            }
         },
     },
 };

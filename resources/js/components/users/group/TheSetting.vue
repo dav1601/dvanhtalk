@@ -128,10 +128,17 @@ export default {
                         .then((req) => {
                             this.saving = false;
                             this.selected = [];
+                            this.setSnackbar({
+                                text: "Lưu thông tin nhóm thành công",
+                            });
                         })
                         .catch((err) => {
                             this.saving = false;
                             this.selected = [];
+                            this.setSnackbar({
+                                text: "Lưu thông tin nhóm thất bại",
+                                color: "error",
+                            });
                         });
                 }
             } else {

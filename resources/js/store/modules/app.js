@@ -1,52 +1,27 @@
-import axios from "axios";
 const state = () => ({
-    dialogErr: false,
-    process: 0,
+    snackbar: [],
 });
 
 const getters = {
-    dialogErr(s) {
-        return s.dialogErr;
-    },
-    process(s) {
-        return s.process;
+    snackbar(s) {
+        return s.snackbar;
     },
 };
 
 const mutations = {
-    setDialogErr(s, p) {
-        return (s.dialogErr = p);
+    setSnackbar(s, snackbar) {
+        console.log(snackbar);
+        snackbar.showing = true;
+        snackbar.color = snackbar.color || "success";
+        snackbar.timeout = snackbar.timeout || 10000;
+        return (s.snackbar = s.snackbar.concat(snackbar));
     },
-    setProcess(s, p) {
-        return (s.process = p);
+    removeSnackbar(s, index) {
+        return s.snackbar.splice(index, 1);
     },
 };
 
-const actions = {
-    callApi(c, p) {
-        var instance = axios.create();
-        delete instance.defaults.headers.common["X-Socket-Id"];
-        const config = {
-            onUploadProgress: (progressEvent) => {
-                console.log("progress", progressEvent);
-                var progress = Math.round(
-                    (progressEvent.loaded * 100.0) / progressEvent.total
-                );
-                //bind "this" to access vue state during callback
-            },
-        };
-        return new Promise((rs, rj) => {
-            instance
-                .post(p.url, p.data, config)
-                .then((req) => {
-                    rs(req);
-                })
-                .catch((err) => {
-                    rj(err);
-                });
-        });
-    },
-};
+const actions = {};
 
 export default {
     namespaced: true,

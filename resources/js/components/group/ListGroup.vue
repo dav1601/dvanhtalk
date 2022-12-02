@@ -156,6 +156,7 @@ export default {
                 })
                 .catch((err) => {
                     this.loadedGroups = false;
+
                 });
         },
         async saveGroup() {

@@ -166,13 +166,12 @@
                             <div style="flex: 1">
                                 <div v-if="activeEdit == 'email'">
                                     <v-text-field
-                                        :loading="saving"
                                         :disabled="saving"
+                                        :loading="saving"
                                         ref="authEmail"
                                         label="Email"
                                         required
                                         v-model="email"
-                                        :rules="emailRules"
                                     ></v-text-field>
                                     <div
                                         class="w-100 d-flex justify-content-end align-items-center"
@@ -370,9 +369,7 @@ export default {
             this.scale = 1;
             this.rotation = 0;
         },
-        block() {
-         
-        },
+        block() {},
         openInput() {
             return this.$refs.inputAvatar.click();
         },
@@ -418,6 +415,7 @@ export default {
                         this.showCancel = false;
                         this.saving = false;
                         this.dialgUpdateAvatar = false;
+                        this.setSnackbar({ text: "Lưu thông tin thành công" });
                     }
                 })
                 .catch((err) => {
@@ -425,6 +423,10 @@ export default {
                     this.activeEdit = null;
                     this.showCancel = false;
                     this.saving = false;
+                    this.setSnackbar({
+                        text: "Lưu thông tin thất bại",
+                        color: "error",
+                    });
                 });
         },
         resetData() {

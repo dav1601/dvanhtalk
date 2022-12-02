@@ -398,10 +398,10 @@ const actions = {
                     if (p.type_msg == 2) {
                         await c.commit("pushMedia", p.message);
                     }
-                    if (p.message_images) {
-                        await c.commit("pushMedia", p.message_images.message);
-                        await c.commit("pushMessage", p.message_images);
-                    }
+                    // if (p.message_images) {
+                    //     await c.commit("pushMedia", p.message_images.message);
+                    //     await c.commit("pushMessage", p.message_images);
+                    // }
                 } else {
                     await c.commit("users/updatePosUsers", p.sd_id, {
                         root: true,

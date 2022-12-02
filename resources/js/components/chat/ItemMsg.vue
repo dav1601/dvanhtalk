@@ -1,10 +1,5 @@
 <template>
-    <div
-        class="package__msg"
-        :id="'pack__msg--' + data.message.id"
-        @mouseover="showActions = true"
-        @mouseleave="showActions = false"
-    >
+    <div class="package__msg" :id="'pack__msg--' + data.message.id">
         <item-msg-reply
             :message_parent="data.message_parent"
             @load="loaded"
@@ -347,7 +342,7 @@ export default {
         return {
             interval: null,
             metaData: false,
-            showActions: false,
+            showActions: true,
             search: "",
             showDialog: false,
             playRecord: false,

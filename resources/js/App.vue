@@ -7,6 +7,20 @@
                 : ['overflow-y-scroll', 'scroll-custom'],
         ]"
     >
+        <v-snackbar
+            v-for="(snb, index) in snackbar"
+            v-model="snb.showing"
+            :key="snb.text + Math.random()"
+            :color="snb.color"
+            :timeout="snb.timeout"
+            :input="test(index, snb.timeout)"
+            top
+            dark
+            style="z-index: 91000"
+            :style="`top: ${index * 60}px`"
+        >
+            {{ snb.text }}
+        </v-snackbar>
         <form
             id="logout-form"
             :action="route('logout.perform')"
@@ -297,12 +311,17 @@ export default {
         inCall() {
             return this.$store.getters["message/inCall"];
         },
+        snackbar() {
+            return this.$store.getters["app/snackbar"];
+        },
     },
     methods: {
         async setMe() {
             await this.$store.dispatch("auth/getMe", this.authUser);
         },
-
+        test(index, timeout) {
+            this.removeSnackbar(index, timeout);
+        },
         resetCall(calling = false) {
             clearTimeout(this.timeOutCall);
             this.answerCallDialog = false;

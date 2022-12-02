@@ -104,9 +104,14 @@ export default {
                         action: action,
                     })
                     .then((req) => {
+                        this.setSnackbar({ text: action + " thành công" });
                         this.handling = false;
                     })
                     .catch((err) => {
+                        this.setSnackbar({
+                            text: action + " thất bại",
+                            color: "error",
+                        });
                         this.handling = false;
                     });
             } else {

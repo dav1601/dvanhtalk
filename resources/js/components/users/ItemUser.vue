@@ -51,12 +51,15 @@ export default {
         };
     },
     computed: {
+        me() {
+            return this.user.lastest_msg.sd_id == this.authId;
+        },
         lastestMessage() {
             if (this.user.lastest_msg == null) {
                 return "";
             }
             let prefix = "Đã gửi";
-            if (this.user.lastest_msg.sd_id == this.authId) {
+            if (this.me) {
                 prefix = "Bạn đã gửi";
             }
             switch (this.user.lastest_msg.type_msg) {
@@ -75,7 +78,7 @@ export default {
                     return prefix + " tệp video";
                 default:
                     prefix = "";
-                    if (this.user.lastest_msg.sd_id == this.authId) {
+                    if (this.me) {
                         prefix = "Bạn: ";
                     }
                     return prefix + this.user.lastest_msg.message.message;

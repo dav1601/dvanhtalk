@@ -9,7 +9,7 @@
     <meta name="auth_user" content="{{ Auth::user() }}">
     <link rel="icon" href="https://res.cloudinary.com/vanh-tech/image/upload/v1650763070/email-logo_rw3wea.png"
         type="image/gif">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') . $version }}">
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
@@ -35,7 +35,7 @@
 
 <body>
     <div id="app" :auth_user="@json(Auth::user())"></div>
-    <script src=" {{ asset('js/app.js') }} "></script>
+    <script src=" {{ asset('js/app.js') . $version }} "></script>
 </body>
 
 </html>

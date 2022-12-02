@@ -11,6 +11,7 @@ use App\Models\UserMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use App\Repositories\Messages\MessagesInterface;
 
 
@@ -18,14 +19,14 @@ class AppController extends Controller
 {
     public function index(Request $request)
     {
-        // if (Session::has('successReg')) {
-        //     broadcast(new NewUser(Auth::user()));
-        // }
-        // if (Auth::check()) {
-        //     User::where('id', Auth::id())->update(['logged_in' => $request->ip()]);
-        // }
-
-        return view('app');
+        if (Session::has('successReg')) {
+            broadcast(new NewUser(Auth::user()));
+        }
+        if (Auth::check()) {
+            User::where('id', Auth::id())->update(['logged_in' => $request->ip()]);
+        }
+        $version = "?v=" . Carbon::create(Carbon::now())->timestamp;
+        return view('app', compact("version"));
     }
     ////////////////////////////////////////
 

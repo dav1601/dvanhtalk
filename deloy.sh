@@ -2,11 +2,11 @@
 php artisan down
 
 # Pull the latest changes from the git repository
-git pull -f origin master
+git pull origin master
 # update pr
 sudo chown -R www-data:www-data .
 # Install/update composer dependecies
-composer install --no-interaction --prefer-dist --optimize-autoloader
+composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 # Install node modules
 npm install --no-audit
 # Run database migrations

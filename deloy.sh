@@ -7,7 +7,7 @@ git pull origin master --no-edit
 # update pr
 sudo chown -R www-data:www-data .
 # Install/update composer dependecies
-composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+composer install --no-interaction --prefer-dist --optimize-autoloader
 # Install node modules
 npm install --no-audit
 # Run database migrations

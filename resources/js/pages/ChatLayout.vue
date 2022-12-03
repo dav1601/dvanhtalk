@@ -633,8 +633,8 @@ export default {
         }
     },
     async created() {
+        // this.$store.dispatch("message/reset");
         this.setType();
-        this.$store.dispatch("message/reset");
         this.setup();
         this.$nextTick(async () => {
             await this.setReceiver();

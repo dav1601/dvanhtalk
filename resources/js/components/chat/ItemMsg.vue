@@ -1,5 +1,10 @@
 <template>
-    <div class="package__msg" :id="'pack__msg--' + data.message.id">
+    <div
+        class="package__msg"
+        :id="'pack__msg--' + data.message.id"
+        @mouseover="toggleActions(true)"
+        @mouseleave="toggleActions(false)"
+    >
         <item-msg-reply
             :message_parent="data.message_parent"
             @load="loaded"
@@ -184,6 +189,8 @@
                     crossorigin
                     playsinline
                     class="message__audio"
+                    :id="'message__audio-' + data.id"
+                    @play="setAu()"
                 >
                     <source :src="data.message.message" />
                 </audio>
@@ -197,9 +204,11 @@
                     onloadstart="this.volume=0.0"
                     @load="loaded"
                     @click.stop="handleVideo"
+                    @play="setVid()"
                     class="message__video cursor-pointer"
                     crossorigin="anonymous"
                     preload="metadata"
+                    :id="'message__video-' + data.id"
                 >
                     <source :src="data.message.message" />
                 </video>
@@ -259,10 +268,8 @@
                     </div>
                 </div>
             </div>
-            <div
-                class="message__actions my-auto"
-                v-if="showActions || showDialog"
-            >
+            <!--  -->
+            <div class="message__actions my-auto" v-if="showAction">
                 <div
                     class="d-flex align-items-center"
                     :class="{ 'flex-row-reverse': itMe }"
@@ -294,7 +301,10 @@
                                     size="20"
                                     v-bind="attrs"
                                     v-on="on"
-                                    @click.stop="setEmoji(data.message.id)"
+                                    @click.stop="
+                                        setEmoji(data.message.id),
+                                            setActiveAction(data.id)
+                                    "
                                     >mdi-emoticon-outline</v-icon
                                 >
                             </template>
@@ -310,6 +320,7 @@
                     </div>
                 </div>
             </div>
+            <!--  -->
         </div>
         <div class="pb-4 chat-message-system small" v-else>
             {{ data.message.message }}
@@ -342,13 +353,25 @@ export default {
         return {
             interval: null,
             metaData: false,
-            showActions: true,
+            showAction: false,
             search: "",
             showDialog: false,
             playRecord: false,
         };
     },
     computed: {
+        activeAction() {
+            return this.$store.getters["message/activeAction"];
+        },
+        vidPlaying() {
+            return this.$store.getters["message/vidPlaying"];
+        },
+        auPlaying() {
+            return this.$store.getters["message/auPlaying"];
+        },
+        showAct() {
+            return this.activeAction == this.data.id;
+        },
         bindClassRecord() {
             return "record-" + this.data.id;
         },
@@ -573,6 +596,16 @@ export default {
         },
     },
     methods: {
+        setActiveAction(id) {
+            this.$store.commit("message/setActiveAction", id);
+        },
+        setVid() {
+            console.log(this.data);
+            this.$store.commit("message/setVid", this.data.id);
+        },
+        setAu() {
+            this.$store.commit("message/setAu", this.data.id);
+        },
         async setReactionDialog() {
             if (!this.isNullReaction) {
                 await this.$store.commit(
@@ -585,7 +618,13 @@ export default {
                 );
             }
         },
-
+        toggleActions(open = false) {
+            if (this.showAct) {
+                this.showAction = true;
+            } else {
+                this.showAction = open;
+            }
+        },
         scrollToMsg(msgId) {
             const el = document.getElementById("pack__msg--" + msgId);
         },
@@ -593,10 +632,10 @@ export default {
             return self.indexOf(value) === index;
         },
         handle() {
+            this.setActiveAction(null);
             this.setEmoji(null);
         },
         toogleDialogEmoji() {
-            console.log("Toogle!");
             this.showDialog = !this.showDialog;
         },
         async onSelectEmoji(emoji) {
@@ -694,6 +733,26 @@ export default {
         },
     },
     watch: {
+        vidPlaying(idMsg) {
+            const video = document.getElementById(
+                "message__video-" + this.data.id
+            );
+            if (idMsg !== this.data.id) {
+                if (video) {
+                    video.pause();
+                }
+            }
+        },
+        auPlaying(idMsg) {
+            const audio = document.getElementById(
+                "message__audio-" + this.data.id
+            );
+            if (idMsg !== this.data.id) {
+                if (audio) {
+                    audio.pause();
+                }
+            }
+        },
         playRecord(play) {
             const record = document.getElementsByClassName(
                 "record-" + this.data.id
@@ -712,11 +771,12 @@ export default {
     width: 250px;
     height: 300px;
     border-radius: 8px;
+    background: #000000;
     video {
         width: 100%;
         height: 100%;
         border-radius: inherit;
-        object-fit: cover;
+        object-fit: contain;
     }
 }
 .wp-chat-item:not(.wp-chat-item-audio) {

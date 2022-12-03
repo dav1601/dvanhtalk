@@ -18,13 +18,22 @@ const state = () => ({
     blockLoadImg: false,
     activeReply: null,
     inCall: false,
-    progressAu: 0,
-    progressVi: 0,
-    progressImg: 0,
     emojiPickerMsg: null,
+    vidPlaying: null,
+    auPlaying: null,
+    activeAction: null,
 });
 
 const getters = {
+    activeAction(s) {
+        return s.activeAction;
+    },
+    vidPlaying(s) {
+        return s.vidPlaying;
+    },
+    auPlaying(s) {
+        return s.auPlaying;
+    },
     progressImg(s) {
         return s.progressImg;
     },
@@ -94,6 +103,15 @@ const getters = {
 };
 
 const mutations = {
+    setActiveAction(s, p) {
+        return (s.activeAction = p);
+    },
+    setVid(s, p) {
+        return (s.vidPlaying = p);
+    },
+    setAu(s, p) {
+        return (s.auPlaying = p);
+    },
     setEmojiPicker(s, p) {
         s.emojiPickerMsg = p;
     },
@@ -124,15 +142,13 @@ const mutations = {
 
     pushMedia(s, p) {
         const arrayMedia = p.message.split(",");
-
         arrayMedia.forEach((el, index) => {
             let data = {
-                alt: "image message",
+                alt: "gll",
                 index: index,
                 msg_id: p.id,
                 url: el,
             };
-
             s.messengerMedia.push(data);
         });
     },
@@ -167,19 +183,24 @@ const mutations = {
     },
     reset(s) {
         s.messages = [];
+        s.messageReply = null;
         s.messengerMedia = [];
         s.receiver = {};
         s.haveReceiver = false;
         s.typing = false;
         s.isChatting = false;
-        s.messageReply = null;
         s.rootReaction = null;
         s.allReaction = null;
         s.groupReaction = null;
         s.dialogReaction = false;
+        s.typeChat = null;
+        s.rcvInRoom = false;
         s.blockLoadImg = false;
         s.activeReply = null;
-        s.inCall = false;
+        s.emojiPickerMsg = null;
+        s.vidPlaying = null;
+        s.auPlaying = null;
+        s.activeAction = null;
     },
     actionDialogReaction(s, p) {
         if (p == "open") {
@@ -395,13 +416,9 @@ const actions = {
             if (c.rootGetters["auth/id"] == p.rcv_id) {
                 if (c.getters.receiver.id == p.sd_id) {
                     await c.commit("pushMessage", p);
-                    if (p.type_msg == 2) {
+                    if (p.type_msg == 2 || p.type_msg == 7) {
                         await c.commit("pushMedia", p.message);
                     }
-                    // if (p.message_images) {
-                    //     await c.commit("pushMedia", p.message_images.message);
-                    //     await c.commit("pushMessage", p.message_images);
-                    // }
                 } else {
                     await c.commit("users/updatePosUsers", p.sd_id, {
                         root: true,
@@ -432,11 +449,7 @@ const actions = {
 
     sendMessage(c, p) {
         let data = new FormData();
-        const config = {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        };
+
         const parent_id = p.messageReply ? p.messageReply.msg_id : null;
         data.append("to", p.to);
         data.append("seen", p.seen);
@@ -444,39 +457,19 @@ const actions = {
         data.append("for", c.getters["typeChat"]);
         data.append("type_msg", p.typeMsg);
         data.append("message", p.message);
-        // if (p.hasOwnProperty("msg")) {
-        //     data.append("message", p.msg);
-        // }
-        // if (p.hasOwnProperty("audio")) {
-        //     data.append("audio", p.audio);
-        // }
-        // if (p.hasOwnProperty("images")) {
-        //     for (let index = 0; index < p.images.length; index++) {
-        //         data.append("images[" + index + "]", p.images[index].file);
-        //     }
-        // }
-        // if (p.hasOwnProperty("video")) {
-        //     data.append("video", p.video);
-        // }
-        if (p.hasOwnProperty("record")) {
-            data.append("record", p.record);
-        }
         return new Promise((rs, rj) => {
             axios
-                .post(route("messages.store"), data, config)
+                .post(route("messages.store"), data)
                 .then(async (req) => {
                     const data = req.data.payload;
                     console.log(data);
                     await c.commit("pushMessage", data);
-                    if (data.type_msg == 2 || data.type == 7) {
+                    if (data.type_msg == 2 || data.type_msg == 7) {
                         await c.commit("pushMedia", data.message);
                     }
                     await c.commit("users/updateLastMessage", data, {
                         root: true,
                     });
-
-                    // VIẾT LẠI TOÀN BỘ
-                    // let data = req.data.data;
 
                     rs(req);
                 })

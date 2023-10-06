@@ -11,13 +11,7 @@
         :class="{ classUser, active: active }"
         :id="active ? 'currentUserChat' : ''"
     >
-        <div
-            class="badge bg-success float-right"
-            v-show="count != 0"
-            :id="classQueue"
-            :data-count="count"
-            :ref="'user-' + user.id"
-        >
+        <div class="badge bg-success float-right" v-show="count > 0">
             {{ count }}
         </div>
         <div class="d-flex align-items-center listUser__item--left">
@@ -46,9 +40,7 @@
 export default {
     props: ["user", "active", "isLoading", "link"],
     data() {
-        return {
-            count: this.user.count.length,
-        };
+        return {};
     },
     computed: {
         me() {
@@ -101,36 +93,19 @@ export default {
             return "queue-" + this.user.id;
         },
 
-        getMessagesUnseen() {
-            return (this.count = this.user.count.length);
+        count() {
+            return this.user.count_count;
         },
     },
     mounted() {
         // this.resetSeen();
     },
     methods: {
-        // findPos(obj) {
-        //     var curtop = 0;
-        //     if (obj.offsetParent) {
-        //         do {
-        //             curtop += obj.offsetTop;
-        //         } while ((obj = obj.offsetParent));
-        //         return [curtop];
-        //     }
-        // },
-        // scrollElement() {
-        //     const el = document.getElementsByClassName("router-link-active")[0];
-        //       console.log(this.findPos(el));
-        //     return document
-        //         .getElementsByClassName("listUser")[0]
-        //         .scroll(0, this.findPos(el) - 120);
-        // },
         resetSeen() {
-            this.count = 0;
-            let el = document.getElementById("queue-" + this.user.id);
-            el.setAttribute("data-count", 0);
-            el.innerHTML = 0;
-            el.style.display = "none";
+            this.$store.commit("users/updateUnseen", {
+                type: "reset",
+                userId: this.user.id,
+            });
         },
     },
 };

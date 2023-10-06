@@ -4,20 +4,22 @@
             {{ handleTime(false) }}
         </div>
         <div v-if="type == 0">
-            <item-msg
-                v-for="(message, key) in groupMsg.messages"
-                :key="key"
-                :length="groupMsg.messages.length"
-                :last="getLast"
-                :lastMe="getLastMe"
-                :index="key"
-                :data="message"
-                :typeUserMsg="type"
-                :LT="handleTime(true)"
-                @open-gll="openGll"
-                @loaded="loaded"
-                :allSystemMsg="checkAllSystemMsg"
-            ></item-msg>
+            <slide-y-down-transition group>
+                <item-msg
+                    v-for="(message, key) in groupMsg.messages"
+                    :key="'user-message-' + key"
+                    :length="groupMsg.messages.length"
+                    :last="getLast"
+                    :lastMe="getLastMe"
+                    :index="key"
+                    :data="message"
+                    :typeUserMsg="type"
+                    :LT="handleTime(true)"
+                    @open-gll="openGll"
+                    @loaded="loaded"
+                    :allSystemMsg="checkAllSystemMsg"
+                ></item-msg>
+            </slide-y-down-transition>
         </div>
         <div v-if="type == 1">
             <div
@@ -25,19 +27,21 @@
                 :key="'user-messages-group-' + index"
             >
                 <div class="mt-2">
-                    <item-msg
-                        v-for="(message, key) in messages"
-                        :key="'user-message-group-key-' + key"
-                        :length="messages.length"
-                        :last="getLastMsgGroup(messages)"
-                        :lastMe="null"
-                        :index="key"
-                        :data="message"
-                        :typeUserMsg="type"
-                        @open-gll="openGll"
-                        @loaded="loaded"
-                        :allSystemMsg="checkAllSystemMsg"
-                    ></item-msg>
+                    <slide-y-down-transition group>
+                        <item-msg
+                            v-for="(message, key) in messages"
+                            :key="'user-message-group-key-' + key"
+                            :length="messages.length"
+                            :last="getLastMsgGroup(messages)"
+                            :lastMe="null"
+                            :index="key"
+                            :data="message"
+                            :typeUserMsg="type"
+                            @open-gll="openGll"
+                            @loaded="loaded"
+                            :allSystemMsg="checkAllSystemMsg"
+                        ></item-msg>
+                    </slide-y-down-transition>
                 </div>
             </div>
         </div>
@@ -45,11 +49,14 @@
 </template>
 <script>
 import ItemMsg from "../../components/chat/ItemMsg.vue";
+import { SlideYDownTransition } from "vue2-transitions";
+
 export default {
     props: ["groupMsg", "type", "friendId"],
     emits: ["open-gll"],
     components: {
         ItemMsg,
+        SlideYDownTransition,
     },
     computed: {
         setBlockLoadImg() {

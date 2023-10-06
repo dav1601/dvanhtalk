@@ -61,21 +61,7 @@ export default {
         serverGroup(idReceiver) {
             Echo.join(`group-chat-${idReceiver}`)
                 .here((users) => {})
-                .joining((user) => {
-                    // const members =
-                    //     this.$store.getters["message/receiver"].members;
-                    // const member = members.find((member) => {
-                    //     return member.users_id == user.id;
-                    // });
-                    // if (member && member.role < 2) {
-                    //     this.$notify({
-                    //         group: "effect__group",
-                    //         data: {
-                    //             member: member,
-                    //         },
-                    //     });
-                    // }
-                })
+                .joining((user) => {})
                 .leaving((user) => {})
                 .listen("SendMessageGroup", (e) => {
                     this.$store.dispatch("message/getMessage", e.user_message);
@@ -126,8 +112,8 @@ export default {
             });
             ////////////////////////////////////////////////////////////////////////////////////////
         },
-        async myChannelChat() {
-            await Echo.private(`chat-${this.authId}`).listenForWhisper(
+        myChannelChat() {
+            Echo.private(`chat-${this.authId}`).listenForWhisper(
                 "typing",
                 async (e) => {
                     if (
@@ -144,7 +130,7 @@ export default {
                 }
             );
 
-            await Echo.join(`chat-${this.authId}`)
+            Echo.join(`chat-${this.authId}`)
                 .here((users) => {
                     this.$store.dispatch("users/getUsersMyRoom", users);
                 })
@@ -156,29 +142,24 @@ export default {
                     this.$store.commit("users/deleteUserMyRoom", user);
                     this.$store.commit("message/leavingChat", user.id);
                 })
+                // ANCHOR xử lý tin nhắn đã gửi đến người nhậN //////////////////////////////////////////////////////
                 .listen("SendMessage", async (e) => {
+                    console.log(e);
                     await this.$store.dispatch("message/getTyping", false);
                     await this.$store.commit("message/setActiveReply", null);
                     const authId = Number(this.$store.getters["auth/id"]);
                     const rcvId = this.isChat
                         ? Number(this.$store.getters["message/receiver"].id)
                         : 0;
+
                     const userMessage = e.user_message;
-                    if (userMessage.seen == 0) {
-                        let el = document.getElementById(
-                            "queue-" + userMessage.sd_id
-                        );
-                        let plus = 1;
-                        if (userMessage.message_images) {
-                            plus = 2;
-                        }
-                        let countQueue =
-                            Number(el.getAttribute("data-count")) + plus;
-                        el.setAttribute("data-count", countQueue);
-                        el.innerHTML = countQueue;
-                        if (countQueue > 0) {
-                            el.style.display = "";
-                        }
+
+                    if (userMessage.seen === 0) {
+                        console.log("ok");
+                        this.$store.commit("users/updateUnseen", {
+                            type: "increase",
+                            userId: parseInt(userMessage.sd_id),
+                        });
                     }
                     if (
                         Number(userMessage.rcv_id) == authId ||
@@ -187,26 +168,17 @@ export default {
                         this.chatting = true;
                         const blocking = this.isPointBlockScroll();
                         if (blocking) {
-                            await this.$store.commit(
-                                "message/setBlockLoadImg",
-                                true
-                            );
+                            this.$store.commit("message/setBlockLoadImg", true);
                         } else {
-                            await this.$store.commit(
+                            this.$store.commit(
                                 "message/setBlockLoadImg",
                                 false
                             );
                         }
-                        await this.$store.dispatch(
-                            "message/getMessage",
-                            userMessage
-                        );
+                        this.$store.dispatch("message/getMessage", userMessage);
 
                         if (rcvId == Number(userMessage.sd_id)) {
-                            await this.$store.dispatch(
-                                "message/getIsChatting",
-                                true
-                            );
+                            this.$store.dispatch("message/getIsChatting", true);
                             if (!blocking) {
                                 this.scrollEnd(true);
                             }
@@ -230,6 +202,5 @@ export default {
                 receiver: friendId,
             });
         },
-       
     },
 };

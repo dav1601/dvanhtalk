@@ -53,6 +53,25 @@ const mutations = {
     setUsers(s, p) {
         s.users = p;
     },
+    updateUnseen(s, p) {
+        let type = p.type;
+        const index = getIndexUserById(s.users, p.userId);
+        if (index !== -1) {
+            switch (type) {
+                case "reset":
+                    s.users[index].count_count = 0;
+                    break;
+                case "increase":
+                    console.log({ old: s.users[index] });
+                    s.users[index].count_count =
+                        parseInt(s.users[index].count_count) + 1;
+                    console.log({ new: s.users[index] });
+                    break;
+                default:
+                    break;
+            }
+        }
+    },
     setGroups(s, p) {
         return (s.groups = p);
     },
@@ -207,7 +226,7 @@ const mutations = {
         }
     },
 };
-
+// ////////////////////////////
 const actions = {
     getUsers(c) {
         return new Promise((rs, rj) => {

@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
+    public $dav2_gr;
+    public $dav2_user;
+    public $dav2_msg;
     public function __construct(GroupsInterface $dav2_gr, MessagesInterface $dav2_msg, DavUserInterface $dav2_user)
     {
         $this->dav2_gr = $dav2_gr;
@@ -27,9 +30,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         Carbon::setLocale('vi');
-        $seen = 0;
-        $endUsers = [];
-        $query = User::with('count')->when($request->has('keyword'), function ($q) {
+        $query = User::withCount('count')->when($request->has('keyword'), function ($q) {
             return $q->where('name', 'LIKE', '%' . request('keyword', '') . '%');
         })->get()->except(Auth::id());
         $users = collect($query);

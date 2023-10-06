@@ -90,7 +90,7 @@ export default {
                     this.loadedUsers = true;
                 })
                 .catch((err) => {
-                   
+
                 });
         },
         toggleScroll(type) {
@@ -145,10 +145,10 @@ export default {
         padding: 10px;
         display: block;
         width: 100%;
-        border-radius: 8px;
+        border-radius: 2px;
         overflow: hidden;
         text-decoration: none;
-        margin-bottom: 10px;
+
         &--left {
             .avatar {
                 max-height: 56px;

@@ -30,6 +30,8 @@ import helpers from "./helpers";
 import responsive from "./mixin/responsive";
 import user from "./mixin/user";
 import appMixin from "./mixin/app";
+import vi from "vuetify/lib/locale/vi";
+import en from "vuetify/lib/locale/en";
 Vue.use(Vuetify);
 Vue.use(Notifications);
 Vue.use(VEmojiPicker);
@@ -73,6 +75,10 @@ const app = new Vue({
     vuetify: new Vuetify({
         icons: {
             iconfont: "mdi",
+        },
+        lang: {
+            locales: { vi, en },
+            current: "zhHans",
         },
         theme: {
             dark: true,

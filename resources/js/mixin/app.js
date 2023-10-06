@@ -8,8 +8,14 @@ export default {
         emojiPicker() {
             return this.$store.getters["message/emojiPickerMsg"];
         },
+        errorsApi() {
+            return this.$store.getters['app/errorsApi'];
+        }
     },
     methods: {
+        errApi(type) {
+          return this.errorsApi[type] ?? false;
+        },
         removeSnackbar(index, timeout) {
             var self = this;
             setTimeout(function () {

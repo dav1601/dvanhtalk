@@ -30,4 +30,5 @@ export default {
         }
         return Object.keys(obj).length === 0;
     },
+
 };

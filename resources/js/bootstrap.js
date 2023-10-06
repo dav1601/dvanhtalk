@@ -1,4 +1,4 @@
-window._ = require("lodash");
+window._lodash = require("lodash");
 
 try {
     require("bootstrap");

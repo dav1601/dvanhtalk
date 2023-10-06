@@ -22,6 +22,8 @@ const state = () => ({
     vidPlaying: null,
     auPlaying: null,
     activeAction: null,
+    errorMessages: null,
+    errorReceiver: null,
 });
 
 const getters = {
@@ -99,6 +101,9 @@ const getters = {
     },
     notifyCall(s) {
         return s.notifyCall;
+    },
+    errorApi(s) {
+        return isEmpty(s.errorApi);
     },
 };
 
@@ -201,6 +206,8 @@ const mutations = {
         s.vidPlaying = null;
         s.auPlaying = null;
         s.activeAction = null;
+        s.errorMessages = null;
+        s.errorReceiver = null;
     },
     actionDialogReaction(s, p) {
         if (p == "open") {
@@ -318,6 +325,12 @@ const mutations = {
     setInCall(s, p) {
         return (s.inCall = p);
     },
+    setErrorMessages(s, p) {
+        return (s.errorMessages = p);
+    },
+    setErrorReceiver(s, p) {
+        return (s.errorReceiver = p);
+    },
 };
 
 const actions = {
@@ -345,6 +358,8 @@ const actions = {
         c.commit("reset");
     },
     getReceiver(c, p) {
+        let errKey = "Receiver";
+        c.commit("app/rsErrApi", errKey, { root: true });
         return new Promise((rs, rj) => {
             axios
                 .get(route("get.receiver", [p.contactId]), {
@@ -356,7 +371,15 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
-                    rj(err);
+                    c.commit(
+                        "app/addErrApi",
+                        {
+                            type: errKey,
+                            text: err.response.statusText,
+                        },
+                        { root: true }
+                    );
+                    rj(err.response);
                 });
         });
     },
@@ -406,6 +429,7 @@ const actions = {
                     rs(req);
                 })
                 .catch((err) => {
+                    c.commit("setErrorMessages", err.response.statusText);
                     rj(err);
                 });
         });
@@ -449,7 +473,6 @@ const actions = {
 
     sendMessage(c, p) {
         let data = new FormData();
-
         const parent_id = p.messageReply ? p.messageReply.msg_id : null;
         data.append("to", p.to);
         data.append("seen", p.seen);
@@ -465,7 +488,7 @@ const actions = {
                     console.log(data);
                     await c.commit("pushMessage", data);
                     if (data.type_msg == 2 || data.type_msg == 7) {
-                        await c.commit("pushMedia", data.message);
+                        await c.commit("pushMedia", data.message.message);
                     }
                     await c.commit("users/updateLastMessage", data, {
                         root: true,

@@ -83,9 +83,9 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('message_store_call', 'store__message__call')->name('messages.store.call');
     });
     Route::controller(UserController::class)->group(function () {
+        Route::get('users', 'index')->name('user.users');
         Route::get('user/{id}', 'user')->name('user.user');
         Route::get('user/simple/{id}', 'simple__user')->name('user.simple');
-        Route::get('users', 'index')->name('user.users');
         Route::post('send__otp', 'send__otp')->name('user.password.otp');
         Route::post('change__password', 'change__password')->name('user.password.change');
     });
@@ -154,12 +154,14 @@ Route::post('auth__update', function (Request $request) {
 })->name('auth.update');
 
 Route::get('receiver/{id}', function ($id, Request $request, GroupsInterface $hle_gr) {
+    $code = 200;
     if ($request->type == 0) {
-        $receiver = User::where('id', $id)->firstOrFail();
+        $receiver = User::where('id', $id)->first();
     } else {
         $receiver = $hle_gr->group($id);
     }
-    return response()->json(['receiver' => $receiver], 200);
+    $code = $receiver ? 200 : 404;
+    return response()->json(['receiver' => $receiver], $code);
 })->name('get.receiver');
 
 Route::post('save__group', function (Request $request, GroupsInterface $hrl_gr) {

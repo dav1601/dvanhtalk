@@ -1,34 +1,43 @@
-<template lang="">
-    <div v-if="haveProgcess" class="wrapper__upload my-4">
+<template>
+    <div class="wrapper__upload my-4" v-if="size > 0">
         <div
-            class="upload_file d-flex align-items-center flex-wrap justify-content-start"
+            v-for="(items, type) in groupProgress"
+            :key="'stack-progcess-' + type"
         >
             <div
-                class="upload_file--item --single"
-                v-for="prc in process"
-                :class="renderClass(prc.type)"
+                v-for="(item, key) in items"
+                :key="type + '-progress-' + key"
+                class="upload_file d-flex align-items-center flex-wrap justify-content-start"
             >
-                <v-progress-circular
-                    :value="prc.process"
-                    color="primary"
-                    class="upload__loader"
-                    v-if="prc.type != 'audio'"
-                ></v-progress-circular>
-                <img
-                    alt="image_loader"
-                    v-if="prc.type == 'image'"
-                    :src="prc.url"
-                />
                 <div
-                    class="process__audio d-flex justify-content-start align-items-center"
-                    v-if="prc.type == 'audio'"
+                    v-if="item.completed !== 100"
+                    class="upload_file--item"
+                    :class="{ '--single': items.length <= 1 }"
                 >
-                    <v-icon dark large>mdi-file-music</v-icon>
-                    <v-progress-linear :value="prc.process"></v-progress-linear>
+                    <v-progress-circular
+                        :value="item.completed"
+                        color="primary"
+                        class="upload__loader"
+                        v-if="item.type != 'audio'"
+                    ></v-progress-circular>
+                    <img
+                        alt="image_loader"
+                        v-if="item.type == 'image'"
+                        :src="item.url"
+                    />
+                    <div
+                        class="progress__audio d-flex justify-content-start align-items-center"
+                        v-if="item.type == 'audio'"
+                    >
+                        <v-icon dark large>mdi-file-music</v-icon>
+                        <v-progress-linear
+                            :value="item.completed"
+                        ></v-progress-linear>
+                    </div>
+                    <video v-if="item.type == 'video'">
+                        <source :src="item.url" />
+                    </video>
                 </div>
-                <video v-if="prc.type == 'video'">
-                    <source :src="prc.url" />
-                </video>
             </div>
         </div>
     </div>
@@ -37,22 +46,31 @@
 <script>
 import chat from "../../mixin/servers/chat";
 export default {
-    props: {
-        process: {
-            type: Object,
-        },
-    },
+    props: { stackProgress: { type: Object, default: {} } },
     mixins: [chat],
 
     computed: {
-        haveProgcess() {
-            return Object.keys(this.process).length > 0;
+        size() {
+            return Object.keys(this.stackProgress).length;
+        },
+        groupProgress() {
+            return _lodash.groupBy(this.stackProgress, "type");
         },
     },
-
+    created() {},
+    mounted() {
+        console.log(this.groupProgress);
+    },
     methods: {
         renderClass(type) {
             return " --" + type;
+        },
+    },
+    watch: {
+        groupProgress(newval) {
+            console.log({
+                group: newval,
+            });
         },
     },
 };

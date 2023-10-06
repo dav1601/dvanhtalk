@@ -229,11 +229,6 @@
                 ]"
                 class="p-0 h-100"
             >
-                <!-- <div class="card" :class="{ fix1: isHome }">
-          <v-slide-x-transition mode="out-in">
-            <router-view></router-view>
-          </v-slide-x-transition>
-        </div> -->
                 <v-card
                     :class="{ fix1: isHome, 'd-flex': isCallChat }"
                     class="p-0 h-100 wrapper__layout position-relative"
@@ -313,6 +308,9 @@ export default {
         },
         snackbar() {
             return this.$store.getters["app/snackbar"];
+        },
+        errorsApi() {
+            return this.$store.getters["app/errosApi"];
         },
     },
     methods: {
@@ -413,7 +411,7 @@ export default {
                             this.answerCallDialog = true;
                             this.urlJoin = e.data.urlJoin;
                         } else {
-                            await this.answerCall("haveCall");
+                            this.answerCall("haveCall");
                         }
                     }
                     if (e.data.type == "ended") {
@@ -490,6 +488,10 @@ $roles: 0, 1, 2;
             @include designNameRole($role);
         }
     }
+}
+.v-skeleton-loader__bone {
+    width: 100%;
+    height: 100%;
 }
 .poab-c-xy {
     position: absolute;

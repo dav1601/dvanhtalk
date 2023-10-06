@@ -76,6 +76,9 @@ $breakpoints-h: (
             max-width: 100%;
         }
     }
+    #chatLayout {
+        height: calc(100vh - 86px - 78px);
+    }
 }
 @include responsive_v(iphone5-se, down) {
     .message__actions {

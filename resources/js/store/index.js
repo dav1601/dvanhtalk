@@ -19,6 +19,8 @@ const store = new Vuex.Store({
                 "message/setCalling",
                 "message/setIncomingCall",
                 "message/pushMessage",
+                "app/addErrorApi",
+                "app/rsErrApi"
             ],
         }),
     ],

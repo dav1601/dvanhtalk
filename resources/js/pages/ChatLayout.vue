@@ -31,14 +31,14 @@
             multiple
             @change="changeVideoToSendMessage"
         /> -->
-        <!-- start dialog setting for group -->
+        <!-- ANCHOR dialog setting group -->
         <v-dialog
             :fullscreen="true"
             content-class="dialog__setting--group"
             v-model="dialog"
             :dark="true"
             style="z-index: 90000"
-            v-if="isGroup && !isLoading"
+            v-if="isGroup && !loadingRcv"
         >
             <the-setting
                 :isAdmin="isAdmin"
@@ -46,15 +46,16 @@
                 :isManage="isManage"
                 :members="members"
                 @close-dialog="closeDialog"
-                v-if="!isLoading"
+                v-if="!loadingRcv"
             ></the-setting>
         </v-dialog>
+        <!-- ANCHOR dialog reaction -->
         <v-dialog
             v-model="dialogReaction"
             id="dialog__reaction"
             scrollable
             max-width="500"
-            v-if="!isLoading"
+            v-if="!loadingMessage"
         >
             <v-card dark>
                 <v-card-title class="text-h5 d-block text-center b-b">
@@ -93,7 +94,7 @@
             </v-card>
         </v-dialog>
         <!-- end dialog setting for group -->
-        <!-- start gllImage  -->
+        <!-- ANCHOR html gallery  -->
 
         <dav-gallery-slide-show
             :images="media"
@@ -106,7 +107,7 @@
             class="col-20 border-right davList scroll-custom"
             v-if="isGroup && isIpadProUp"
         >
-            <div v-if="loadedRcv">
+            <div v-if="!loadingRcv">
                 <item-member
                     v-for="(user, key) in members"
                     :key="'member' + key"
@@ -122,7 +123,7 @@
             <sk-item-user
                 v-for="i in 10"
                 :key="'ske-' + i"
-                :isLoading="!loadedRcv"
+                :isLoading="loadingRcv"
             ></sk-item-user>
 
             <hr class="d-block d-lg-none mt-1 mb-0" />
@@ -137,6 +138,7 @@
                 isChat && !showChatInfo && isIpadProUp ? ['col-100'] : '',
             ]"
         >
+            <!-- ANCHOR snackbar + base loading -->
             <v-snackbar
                 v-model="notification"
                 :timeout="timeout"
@@ -145,18 +147,20 @@
             >
                 {{ text }}
             </v-snackbar>
-            <base-loading :isLoading="isLoading"></base-loading>
+            <base-loading :isLoading="loadingMessage"></base-loading>
             <div
                 class="py-4 border-bottom chat__layout--header d-flex justify-content-between align-center"
                 :class="[isIpadProUp ? ['px-4'] : ['px-1']]"
             >
+                <!-- ANCHOR chat bar mobile -->
                 <chat-bar-mobile
-                    :loaded="loadedRcv"
+                    :loaded="!loadingRcv"
                     :typeChat="typeChat"
                     class="d-ipp-block"
                 ></chat-bar-mobile>
+                <!-- ANCHOR receiver html-->
                 <div class="d-ipp-none">
-                    <div class="d-flex align-items-center" v-if="loadedRcv">
+                    <div class="d-flex align-items-center" v-if="!loadingRcv">
                         <div class="position-relative">
                             <item-avatar
                                 v-if="isChat && typeChat == 0"
@@ -174,13 +178,24 @@
                             <text-small :text="statusText"></text-small>
                         </div>
                     </div>
+                    <div class="d-flex align-items-center" v-else>
+                        <v-skeleton-loader
+                            width="45"
+                            height="45"
+                            type="avatar"
+                        ></v-skeleton-loader>
+                        <v-skeleton-loader
+                            width="150"
+                            height="30"
+                            type="heading"
+                            class="ml-2"
+                        ></v-skeleton-loader>
+                    </div>
                 </div>
                 <div
                     class="--actions d-flex justify-content-end align-items-center"
                 >
                     <v-btn
-                        :loading="setting"
-                        :disabled="setting"
                         v-if="isManage && isGroup"
                         color="primary"
                         class="white--text action__chat"
@@ -258,14 +273,12 @@
                     </v-tooltip>
                 </div>
             </div>
-
+            <!-- ANCHOR chat layout -->
             <div class="position-relative wrapperChatLayout">
                 <div
                     class="position-absolute w-100 btn__chat--end d-flex justify-center align-items-center"
                 >
                     <v-btn
-                        :loading="setting"
-                        :disabled="setting"
                         color="#343a40"
                         class="white--text action__chat mb-2"
                         fab
@@ -283,7 +296,7 @@
                     ref="layoutChat"
                     @scroll="handleScroll"
                 >
-                    <div v-if="loadedMsg">
+                    <div v-if="!loadingMessage">
                         <wrapper-msg
                             @open-gll="openGll"
                             @loaded="loaded"
@@ -294,16 +307,16 @@
                             :friendId="friendId"
                         >
                         </wrapper-msg>
-                        <div v-for="prc in turnProcess" :key="prc.id">
-                            <loading-image :process="prc"></loading-image>
-                        </div>
-                        <!-- <div v-if="turnProcess.length > 0">
+                        <loading-image
+                            :stackProgress="stackProgress"
+                        ></loading-image>
+                        <!-- <div v-if="sizeProgress > 0">
                             <div
-                                v-for="(arrPrc, key) in turnProcess"
-                                :key="'turndd-' + key"
+                                v-for="(progress, id) in stackProgress"
+                                :key="id"
                             >
                                 <loading-image
-                                    :process="arrPrc"
+                                    :progress="progress"
                                 ></loading-image>
                             </div>
                         </div> -->
@@ -311,7 +324,7 @@
 
                     <v-slide-y-reverse-transition mode="out-in">
                         <tying-chat
-                            v-if="typing && !isGroup && !isLoading"
+                            v-if="typing && !isGroup && !loadingMessage"
                         ></tying-chat>
                     </v-slide-y-reverse-transition>
                 </div>
@@ -320,9 +333,10 @@
                 class="flex-grow-0 flex-1 d-flex position-relative chat__layout--footer"
                 :class="[mediaRecord != null ? 'border-top' : '']"
             >
+                <!-- ANCHOR html btn file -->
                 <v-btn
-                    :loading="setting"
-                    :disabled="setting"
+                    :loading="loadingRcv"
+                    :disabled="loadingRcv"
                     color="primary"
                     class="ma-2 white--text positon-ralative"
                     fab
@@ -360,13 +374,20 @@
                     <v-icon dark>mdi-plus</v-icon>
                 </v-btn>
                 <!-- end btn format messsage -->
-                <vue-record-audio
+                <!-- ANCHOR html record -->
+                <!-- <VueRecordAudio
                     mode="hold"
                     @stream="onStream"
                     @result="onResult"
-                />
+                /> -->
+                <!-- <vue-record-audio
+                    mode="hold"
+                    @stream="onStream"
+                    @result="onResult"
+                /> -->
                 <!-- end btn record audio -->
                 <div style="flex: 1" class="dav__wp-chat--input">
+                    <!-- ANCHOR html preview file -->
                     <div
                         class="preview__images--wp p-2"
                         :style="styleFilesPreview"
@@ -390,7 +411,7 @@
                             ></preview-files>
                         </div>
                     </div>
-
+                    <!-- ANCHOR html reply -->
                     <div
                         class="preview__images--wp p-2 preview--reply w-100 position-relative"
                         v-if="messageReply != null"
@@ -432,6 +453,7 @@
                         </div>
                     </div>
                     <div class="position-relative">
+                        <!-- ANCHOR html emoji -->
                         <div
                             class="position-absolute input__actions d-flex align-items-center"
                         >
@@ -452,6 +474,7 @@
                                 >mdi-emoticon</v-icon
                             >
                         </div>
+                        <!-- ANCHOR html input chat -->
                         <v-textarea
                             v-if="!mediaRecord"
                             @click:append-outer="sendMessage()"
@@ -459,7 +482,6 @@
                             counter
                             clearable
                             clear-icon="mdi-close-circle"
-                            @hook:updated="setHeightChatLayoutBody()"
                             id="input__message"
                             filled
                             auto-grow
@@ -467,8 +489,8 @@
                             rows="2"
                             row-height="20"
                             @keydown.enter.prevent="sendMessage()"
-                            v-model.trim="message"
-                            :disabled="disableChat"
+                            v-model="message"
+                            :disabled="loadingRcv && loadingMessage"
                             @keyup="isTyping"
                             :loading="sending"
                         ></v-textarea>
@@ -503,6 +525,7 @@
                 </div>
             </div>
         </div>
+        <!-- end CHat layout -->
         <!--  -->
         <!-- <div
             class="position-relative"
@@ -538,10 +561,14 @@ import chatCall from "../mixin/servers/chatCall";
 import SettingCall from "../components/chat/SettingCall.vue";
 import PreviewFiles from "../components/files/PreviewFiles.vue";
 import LoadingImage from "../components/files/LoadingImage.vue";
+
 function initialState() {
     return {
+        loadingRcv: true,
+        loadingMessage: true,
         openFile: false,
-        turnProcess: {},
+        turnProcess: [],
+        stackProgress: {},
         message: "",
         images: [],
         video: [],
@@ -589,9 +616,8 @@ function initialState() {
         queueTurn: null,
         sendTurn: 0,
         validatorFile: {
-            size: 50 * 1024 * 1024, // 50MB
+            size: 100 * 1024 * 1024, // 100MB
         },
-        waitRemoveProcess: [],
     };
 }
 
@@ -615,7 +641,12 @@ export default {
         SettingCall,
     },
     mixins: [chat, chatCall],
-    props: ["friendId"],
+    props: {
+        friendId: {
+            type: [String, Number],
+            default: 0,
+        },
+    },
     data() {
         return initialState();
     },
@@ -632,33 +663,34 @@ export default {
                 .catch((err) => {});
         }
     },
+    // ANCHOR created //////////////////////////////////////////////////////
     async created() {
         // this.$store.dispatch("message/reset");
+        if (this.friendId != this.$route.query.uid) {
+            this.$router.push({ name: "home" });
+        }
+
         this.setType();
         this.setup();
-        this.$nextTick(async () => {
-            await this.setReceiver();
-            if (this.typeChat == 0) {
-                Echo.leave(`group-chat-${this.friendId}`);
-                Echo.leave(`chat-${this.friendId}`);
-                this.server(this.friendId);
-            } else {
-                Echo.leave(`chat-${this.friendId}`);
-                Echo.leave(`group-chat-${this.friendId}`);
-                this.serverGroup(this.friendId);
-            }
-        });
+        this.setReceiver();
+        if (this.typeChat == 0) {
+            Echo.leave(`group-chat-${this.friendId}`);
+            Echo.leave(`chat-${this.friendId}`);
+            this.server(this.friendId);
+        } else {
+            Echo.leave(`chat-${this.friendId}`);
+            Echo.leave(`group-chat-${this.friendId}`);
+            this.serverGroup(this.friendId);
+        }
     },
     async mounted() {
-        this.$nextTick(async () => {
-            this.setHeightChatLayoutBody();
-            this.getMessages(false);
-            this.updateSeen(this.friendId);
-        });
+        // this.setHeightChatLayoutBody();
+        this.getMessages(false);
     },
-    updated() {
-        this.setHeightChatLayoutBody();
-    },
+
+    // updated() {
+    //     this.setHeightChatLayoutBody();
+    // },
     directives: {
         focus: {
             inserted(el) {
@@ -667,9 +699,13 @@ export default {
         },
     },
     computed: {
+        sizeProgress() {
+            return Object.keys(this.stackProgress).length;
+        },
         progressImg() {
             return this.$store.getters["message/progressImg"];
         },
+
         styleFilesPreview() {
             const parent = document.querySelector(
                 ".dav__wp-chat--input .v-input__control"
@@ -680,7 +716,7 @@ export default {
             return style;
         },
         loadedGroup() {
-            if (this.isGroup && this.loadedRcv) {
+            if (this.isGroup && !this.loadingRcv) {
                 return true;
             }
             return false;
@@ -796,17 +832,14 @@ export default {
                 log: item,
             });
         },
-        closeGllFile: function () {
-            this.startImage = null;
-        },
-        upload: function (payload = {}, isLast = false, turn = 0) {
+        // ANCHOR upload //////////////////////////////////////////////////////
+        upload: function (payload = {}) {
             let reader = new FileReader();
-            console.log(payload);
             reader.addEventListener(
                 "load",
                 function () {
                     const url = reader.result;
-                    this.uploadApi(payload, isLast, turn, url);
+                    this.uploadApi(payload, url);
                 }.bind(this),
                 false
             );
@@ -817,8 +850,8 @@ export default {
                 }
             }
         },
-        uploadApi(payload = {}, isLast = false, turn = 0, url = "") {
-            console.log(url);
+        uploadApi(payload = {}, url = "") {
+            const turn = this.sendTurn;
             let formData = new FormData();
             let folder = `user-${this.authId}-message-${this.typem(
                 payload.type
@@ -829,65 +862,38 @@ export default {
             formData.append("folder", folder);
             formData.append("file", url);
             let cloudinaryUploadURL = `https://api.cloudinary.com/v1_1/${this.cloudName}/upload`;
-            this.setProcess(payload, turn);
-            const dataProcess = {
-                id: payload.id,
-                turn: turn,
-            };
+            this.setProgress(payload);
             let requestObj = {
+                headers: {
+                    "content-type": "multipart/form-data",
+                },
                 url: cloudinaryUploadURL,
                 method: "POST",
                 data: formData,
                 onUploadProgress: function (progressEvent) {
-                    var process = Math.round(
-                        (progressEvent.loaded * 100.0) / progressEvent.total
+                    let processComplete = Math.round(
+                        (progressEvent.loaded / progressEvent.total) * 100
                     );
-
-                    this.updateProcess(payload.id, turn, process);
+                    this.updateProgress(payload.id, processComplete);
                 }.bind(this),
             };
-            var instance = axios.create();
+            let instance = axios.create();
             delete instance.defaults.headers.common["X-Socket-Id"];
+
             instance(requestObj)
                 .then(async (req) => {
                     const data = req.data;
-                    if (this.typem("image") == payload.type) {
-                        if (!Array.isArray(this.messageImage[turn])) {
-                            this.messageImage[turn] = [];
-                        }
-                        if (!Array.isArray(this.waitRemoveProcess[turn])) {
-                            this.waitRemoveProcess[turn] = [];
-                        }
-                        this.messageImage[turn].push(data.secure_url);
-                        this.waitRemoveProcess[turn].push(dataProcess);
-                        if (isLast) {
-                            data.secure_url =
-                                this.messageImage[turn].toString();
-                            const dataProcessImage =
-                                this.waitRemoveProcess[turn];
-                            this.waitRemoveProcess.splice(turn, 0);
-                            await this.apiSendMsg(
-                                payload.type,
-                                data.secure_url,
-                                dataProcessImage
-                            );
-                            this.messageImage.splice(turn, 1);
-                        }
-                    } else {
-                        await this.apiSendMsg(
-                            payload.type,
-                            data.secure_url,
-                            dataProcess
-                        );
-                    }
+                    this.$delete(this.stackProgress, payload.id);
+                    this.apiSendMsg(payload.type, data.secure_url);
                 })
                 .catch((err) => {
-                    this.removeProcess(dataProcess);
+                    this.$delete(this.stackProgress, payload.id);
                 });
         },
         isLastImage(id) {
             return id == this.images[this.images.length - 1].id;
         },
+        // ANCHOR reply //////////////////////////////////////////////////////
         goToReply(msgId) {
             const prefix = "pack__msg--";
             const id = prefix + msgId;
@@ -915,6 +921,8 @@ export default {
             const pos = activeMsg.offsetTop;
             return (parent.scrollTop = pos - 200);
         },
+        // ANCHOR call chat //////////////////////////////////////////////////////
+
         settingCall(p) {
             this.dialogSettingCall = p;
         },
@@ -949,7 +957,7 @@ export default {
             }
             return result;
         },
-
+        // ANCHOR emoji + reaction //////////////////////////////////////////////////////
         loadReaction(index) {
             this.tabReationActive = index;
             let data = this.groupReaction[index];
@@ -971,6 +979,10 @@ export default {
         },
         onSelectEmoji: function (emoji) {
             this.message += " " + emoji.data;
+        },
+        // ANCHOR gallery //////////////////////////////////////////////////////
+        closeGllFile: function () {
+            this.startImage = null;
         },
         openGll: function (e) {
             console.log(e);
@@ -1011,8 +1023,9 @@ export default {
             this.deleteSavedScroll();
             return this.scrollEnd(true);
         },
-
+        // ANCHOR set height body //////////////////////////////////////////////////////
         setHeightChatLayoutBody(height = 0, width = 0) {
+            return;
             let elMain = this.windowHeight;
             const header = document.getElementById("main__app__bar");
 
@@ -1071,18 +1084,19 @@ export default {
         },
 
         setup() {
-            this.disableChat = true;
             this.setting = true;
+            this.loadingRcv = true;
+            this.loadingMessage = true;
         },
         endSetup() {
-            this.disableChat = false;
             this.setting = false;
         },
-        async setReceiver() {
+        // ANCHOR set receiver //////////////////////////////////////////////////////
+        setReceiver() {
             if (this.typeChat == 1) {
                 this.checking = true;
             }
-            await this.$store
+            this.$store
                 .dispatch("message/getReceiver", {
                     contactId: this.friendId,
                     type: this.typeChat,
@@ -1100,32 +1114,23 @@ export default {
                         }
                         this.checking = false;
                     }
-                    this.loadedRcv = true;
+                    this.loadingRcv = false;
                 })
-                .catch((err) => {
-                    if (this.reFetchRcv > 4) {
-                        this.notification = true;
-                        this.text =
-                            "Load tin người nhận thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
-                    } else {
-                        this.reFetchRcv++;
-                        this.setReceiver();
-                    }
-                });
+                .catch((err) => {});
         },
         onStream(data) {},
         onResult(data) {
             const url = window.URL.createObjectURL(data);
-            const turn = this.sendTurn++;
+            this.sendTurn++;
             const payload = {
                 id: Date.now() + this.makeStreamId(7),
                 type: this.typem("record"),
             };
-            this.uploadApi(payload, false, turn, url);
+            this.uploadApi(payload, false, this.sendTurn, url);
         },
+        // ANCHOR get message //////////////////////////////////////////////////////
         async getMessages(up = false, msgId = null) {
             if (this.endPage == null || this.endPage == 0) {
-                this.isLoading = true;
                 const elLayoutChat = document.getElementById("chatLayout");
                 let initialHeight = 0;
                 if (up) {
@@ -1140,10 +1145,11 @@ export default {
                         msgId: msgId,
                     })
                     .then((req) => {
+                        console.log("fetched message");
                         this.reFetchMessages = 0;
                         this.endPage = req.data.endPage;
-                        this.isLoading = false;
-                        this.loadedMsg = true;
+
+                        this.loadingMessage = false;
                         this.$nextTick(() => {
                             if (up && !msgId) {
                                 this.scrollEnd(true);
@@ -1153,23 +1159,25 @@ export default {
                             if (msgId) {
                                 this.goToReply(msgId);
                             }
-                            this.endSetup();
                         });
+                        this.updateSeen(this.friendId);
                     })
                     .catch((err) => {
-                        this.isLoading = false;
-                        if (this.reFetchMessages > 4) {
-                            this.notification = true;
-                            this.text =
-                                "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
-                        } else {
-                            this.reFetchMessages++;
-                            this.getMessages(up);
-                        }
-                        this.$nextTick(() => {
-                            this.scrollEnd(true, true);
-                            this.endSetup();
-                        });
+                        this.notification = true;
+                        this.text =
+                            "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang";
+                        // this.isLoading = false;
+                        // if (this.reFetchMessages > 4) {
+                        //     this.notification = true;
+                        //     this.text =
+                        //         "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
+                        // } else {
+                        //     this.reFetchMessages++;
+                        //     this.getMessages(up);
+                        // }
+                        // this.$nextTick(() => {
+                        //     this.scrollEnd(true, true);
+                        // });
                     });
             } else {
                 return;
@@ -1243,20 +1251,20 @@ export default {
         uploadFileVideo() {
             this.$refs.messageVideo.click();
         },
-        changeAudioToSendMessage(e) {
-            this.audio = e.target.files[0];
-            this.sendMessage(3);
-        },
-        changeVideoToSendMessage(e) {
-            let selectedVideo = e.target.files;
-            let length = selectedVideo.length;
-            for (let i = 0; i < length; i++) {
-                this.video.push(selectedVideo[i]);
-            }
-            if (this.video.length > 0) {
-                this.showPreviewImg = true;
-            }
-        },
+        // changeAudioToSendMessage(e) {
+        //     this.audio = e.target.files[0];
+        //     this.sendMessage(3);
+        // },
+        // changeVideoToSendMessage(e) {
+        //     let selectedVideo = e.target.files;
+        //     let length = selectedVideo.length;
+        //     for (let i = 0; i < length; i++) {
+        //         this.video.push(selectedVideo[i]);
+        //     }
+        //     if (this.video.length > 0) {
+        //         this.showPreviewImg = true;
+        //     }
+        // },
 
         changeToSendMessage(e) {
             let selectedFiles = e.target.files;
@@ -1307,101 +1315,80 @@ export default {
             // this.updateSrcImg();
             // this.setHeightChatLayoutBody();
         },
-        pushFile: function (type, id, info) {
-            const file = info.file;
-            const data = {
-                id: id,
-                file: file,
-                type: type,
-            };
-            switch (type) {
-                case "image":
-                    this.images.push(data);
-                    break;
-                case "audio":
-                    this.audio.push(data);
-                    break;
-                case "video":
-                    this.video.push(data);
-                    break;
-                default:
-                    s;
-                    break;
-            }
-        },
+        // pushFile: function (type, id, info) {
+        //     const file = info.file;
+        //     const data = {
+        //         id: id,
+        //         file: file,
+        //         type: type,
+        //     };
+        //     switch (type) {
+        //         case "image":
+        //             this.images.push(data);
+        //             break;
+        //         case "audio":
+        //             this.audio.push(data);
+        //             break;
+        //         case "video":
+        //             this.video.push(data);
+        //             break;
+        //         default:
+        //             break;
+        //     }
+        // },
+        // ANCHOR send message //////////////////////////////////////////////////////
         sendMessage: async function () {
             if (!this.message && this.files.length <= 0 && !this.mediaRecord) {
                 this.resetAll();
                 alert("U là trời có nhắn cái gì đâu mà gửi troài =))");
             } else {
+                this.sendTurn++;
                 this.$store.commit("message/deleteMsgReply");
                 this.showPreviewFile = false;
+                if (this.message) {
+                    this.apiSendMsg(this.typem("text"), this.message);
+                    this.message = "";
+                }
                 const images = this.images;
                 const video = this.video;
                 const audio = this.audio;
                 const record = this.record;
-                // const turn = this.turnProcess.push([]) - 1;
-                const turn = this.sendTurn++;
-                this.$set(this.turnProcess, turn, {});
                 this.record = null;
+                this.images = [];
+                this.video = [];
+                this.audio = [];
                 this.files = [];
-                if (this.message) {
-                    this.apiSendMsg(this.typem("text"), this.message);
-                }
                 if (images.length > 0) {
                     for (let im = 0; im < images.length; im++) {
-                        var dim = null,
-                            imgId = null;
-                        dim = images[im];
-                        let isLast = false;
-                        if (im == images.length - 1) {
-                            isLast = true;
-                        }
-
-                        imgId =
-                            String(turn) +
-                            String(dim.id) +
-                            this.makeStreamId(7);
+                        const dim = images[im];
                         const payload = {
-                            id: imgId,
+                            id: this.makeIdFile("img", im),
                             file: dim.file,
                             type: this.typem(dim.type),
                         };
-                        await this.upload(payload, isLast, turn);
+                        this.upload(payload);
                     }
                 }
                 if (audio.length > 0) {
                     for (let ia = 0; ia < audio.length; ia++) {
-                        var dia = null,
-                            auId = null;
-                        dia = audio[ia];
-                        auId =
-                            String(turn) +
-                            String(dia.id) +
-                            this.makeStreamId(7);
+                        const dia = audio[ia];
                         const payload = {
-                            id: auId,
+                            id: this.makeIdFile("au", ia),
                             file: dia.file,
                             type: this.typem(dia.type),
                         };
-                        await this.upload(payload, false, turn);
+                        this.upload(payload);
                     }
                 }
                 if (video.length > 0) {
                     for (let iv = 0; iv < video.length; iv++) {
-                        var div = null,
-                            vidId = null;
-                        div = video[iv];
-                        vidId =
-                            String(turn) +
-                            String(div.id) +
-                            this.makeStreamId(7);
+                        const div = video[iv];
                         const payload = {
-                            id: vidId,
+                            id: this.makeIdFile("vid", iv),
                             file: div.file,
                             type: this.typem(div.type),
                         };
-                        await this.upload(payload, false, turn);
+                        this.upload(payload);
                     }
                 }
                 // if (this.mediaRecord) {
@@ -1409,29 +1396,33 @@ export default {
                 // }
             }
         },
-        initUpload(array = []) {},
-        removeKeyFile(key = 0, id = null) {
-            switch (key) {
-                case this.typem("image"):
-                    this.images = this.images.filter((element) => {
-                        return element.id != id;
-                    });
-                    break;
-                case this.typem("video"):
-                    this.video = this.video.filter((element) => {
-                        return element.id != id;
-                    });
-                    break;
-                case this.typem("audio"):
-                    this.audio = this.audio.filter((element) => {
-                        return element.id != id;
-                    });
-                    break;
-                default:
-                    break;
-            }
+        makeIdFile(type = "img", index) {
+            return type + this.sendTurn + index + this.makeStreamId(7);
         },
-        apiSendMsg: function (type = 0, message = "", process) {
+        // initUpload(array = []) {},
+        // removeKeyFile(key = 0, id = null) {
+        //     switch (key) {
+        //         case this.typem("image"):
+        //             this.images = this.images.filter((element) => {
+        //                 return element.id != id;
+        //             });
+        //             break;
+        //         case this.typem("video"):
+        //             this.video = this.video.filter((element) => {
+        //                 return element.id != id;
+        //             });
+        //             break;
+        //         case this.typem("audio"):
+        //             this.audio = this.audio.filter((element) => {
+        //                 return element.id != id;
+        //             });
+        //             break;
+        //         default:
+        //             break;
+        //     }
+        // },
+        // ANCHOR api send msg //////////////////////////////////////////////////////
+        apiSendMsg: function (type = 0, message = "") {
             const seen = this.inRoom;
             let payload = {
                 to: this.friendId,
@@ -1444,137 +1435,109 @@ export default {
             this.$store
                 .dispatch("message/sendMessage", payload)
                 .then((req) => {
-                    if (type == this.typem("image")) {
-                        for (let index = 0; index < process.length; index++) {
-                            const element = process[index];
-                            this.removeProcess(element);
-                        }
-                    } else {
-                        this.removeProcess(process);
-                    }
+                    // if (type == this.typem("image")) {
+                    //     for (let index = 0; index < process.length; index++) {
+                    //         const element = process[index];
+                    //         this.removeProcess(element);
+                    //     }
+                    // } else {
+                    //     this.removeProcess(process);
+                    // }
                     if (type == 1) {
                         this.message = "";
                     }
-                    this.scrollEnd(true, true);
+                    this.$nextTick(() => {
+                        this.scrollEnd(true, true);
+                    });
                 })
                 .catch((err) => {
                     if (type == 1) {
                         this.message = "";
                     }
-                    this.scrollEnd(true, true);
+                    this.$nextTick(() => {
+                        this.scrollEnd(true, true);
+                    });
                 });
         },
         closeEvent() {
             this.showFormatMessage = false;
         },
-        removeProcess(dataProcess) {
-            return this.$delete(
-                this.turnProcess[dataProcess.turn],
-                dataProcess.id
-            );
-            if (
-                process &&
-                process.hasOwnProperty("turn") &&
-                process.hasOwnProperty("id")
-            ) {
-                const array = this.turnProcess[process.turn].filter((proc) => {
-                    return proc.id != process.id;
-                });
-                this.turnProcess[process.turn] = array;
-                // if (index !== -1) {
-                //     this.turnProcess[process.turn].splice(index);
-                // }
-                console.log({
-                    p: process,
-                    i: index,
-                    turn: this.turnProcess[process.turn],
-                });
-            }
-            return;
-        },
-        updateProcess(idProcess, turn, process) {
-            if (this.turnProcess[turn].hasOwnProperty([idProcess])) {
-                this.$set(
-                    this.turnProcess[turn][idProcess],
-                    "process",
-                    process
-                );
-            }
-            return;
+        // ANCHOR handle progress //////////////////////////////////////////////////////
+        removeProcess(id) {},
+        updateProgress(id, process) {
+            return (this.stackProgress[id].completed = process);
         },
 
-        setProcess(payload, turn) {
+        setProgress(payload) {
             const data = {
                 url: payload.url,
                 id: payload.id,
-                process: 0,
-                turn: turn,
+                completed: 0,
                 type: this.typem(payload.type),
             };
-            this.$set(this.turnProcess[turn], payload.id, data);
+            this.$set(this.stackProgress, payload.id, data);
+
+            console.log({
+                stackProgress: this.stackProgress,
+            });
             return;
         },
-        groupByTypeProcess: function (collection, property) {
-            var val,
-                index,
-                values = [],
-                result = [];
-            for (var i = 0; i < collection.length; i++) {
-                val = collection[i][property];
-                index = values.indexOf(val);
-                if (index > -1) result[index].push(collection[i]);
-                else {
-                    values.push(val);
-                    result.push([collection[i]]);
-                }
-            }
-            return result;
-        },
-        resetProcess(type, id = null) {
-            switch (type) {
-                case "image":
-                    this.processImage = [];
-                    break;
-                case "video":
-                    const myArray = this.processVideo.filter(function (obj) {
-                        return obj.id != id;
-                    });
-                    this.processVideo = myArray;
-                default:
-                    break;
-            }
-            return;
-        },
-        resetFile(type, id = null) {
-            switch (type) {
-                case 1:
-                    this.message = "";
-                    break;
-                case 2:
-                    this.files = this.removeKeyFile("image");
+        // groupByTypeProcess: function (collection, property) {
+        //     var val,
+        //         index,
+        //         values = [],
+        //         result = [];
+        //     for (var i = 0; i < collection.length; i++) {
+        //         val = collection[i][property];
+        //         index = values.indexOf(val);
+        //         if (index > -1) result[index].push(collection[i]);
+        //         else {
+        //             values.push(val);
+        //             result.push([collection[i]]);
+        //         }
+        //     }
+        //     return result;
+        // },
 
-                    break;
-                case 3:
-                    this.files = this.removeKeyFile("audio", id);
+        // resetFile(type, id = null) {
+        //     switch (type) {
+        //         case 1:
+        //             this.message = "";
+        //             break;
+        //         case 2:
+        //             this.files = this.removeKeyFile("image");
 
-                    break;
-                case 6:
-                    this.record = null;
-                    break;
-                case 7:
-                    this.files = this.removeKeyFile("video", id);
+        //             break;
+        //         case 3:
+        //             this.files = this.removeKeyFile("audio", id);
 
-                    break;
-                default:
-                    break;
-            }
-        },
+        //             break;
+        //         case 6:
+        //             this.record = null;
+        //             break;
+        //         case 7:
+        //             this.files = this.removeKeyFile("video", id);
+
+        //             break;
+        //         default:
+        //             break;
+        //     }
+        // },
         resetLoad() {
             this.setType(null);
             Object.assign(this.$data, initialState());
         },
     },
+    // ANCHOR watch //////////////////////////////////////////////////////
     watch: {
+        sizeProgress(n) {
+            console.log(n);
+        },
+        messageImage(newval) {
+            console.log({
+                messageImage: newval,
+            });
+        },
         startImage(nv) {
             this.openFile = nv != null ? true : false;
         },
@@ -1648,6 +1611,9 @@ export default {
                 this.getMessages(true);
             }
         },
+        showPreviewFile(n) {
+            this.setHeightChatLayoutBody();
+        },
         showPreviewImg(newVal) {
             const el = document.querySelector(
                 ".dav__wp-chat--input .v-textarea"
@@ -1702,6 +1668,7 @@ export default {
 #chatLayout {
     padding-left: 10px !important;
     padding-right: 10px !important;
+    height: calc(100vh - 86px - 78px - 100px);
 }
 #dialog__reaction {
     &--nav {
@@ -1830,9 +1797,6 @@ export default {
     }
 }
 
-#chatLayout {
-    height: 100%;
-}
 // .wp__item {
 //     span {
 //         width: 100%;

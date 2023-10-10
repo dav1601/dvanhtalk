@@ -94,13 +94,31 @@
             </v-card>
         </v-dialog>
         <!-- end dialog setting for group -->
-        <!-- ANCHOR html gallery  -->
+        <!-- ANCHOR gallery -->
 
-        <dav-gallery-slide-show
+        <light-gallery-wp :list="media"> </light-gallery-wp>
+        <!-- <div id="lightgallery">
+            <a
+                href="https://images.pexels.com/photos/18037510/pexels-photo-18037510/free-photo-of-phong-c-nh-th-i-trang-dan-ong-nh-ng-ng-i.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+            >
+                <img
+                    src="https://images.pexels.com/photos/18037510/pexels-photo-18037510/free-photo-of-phong-c-nh-th-i-trang-dan-ong-nh-ng-ng-i.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                />
+            </a>
+            <a
+                href="https://images.pexels.com/photos/18359747/pexels-photo-18359747/free-photo-of-ch-p-ca-nhan.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+            >
+                <img
+                    src="https://images.pexels.com/photos/18359747/pexels-photo-18359747/free-photo-of-ch-p-ca-nhan.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                />
+            </a>
+        </div> -->
+
+        <!-- <dav-gallery-slide-show
             :images="media"
             :index="startImage"
             @close="closeGllFile"
-        ></dav-gallery-slide-show>
+        ></dav-gallery-slide-show> -->
 
         <!-- end gllImage -->
         <div
@@ -561,7 +579,11 @@ import chatCall from "../mixin/servers/chatCall";
 import SettingCall from "../components/chat/SettingCall.vue";
 import PreviewFiles from "../components/files/PreviewFiles.vue";
 import LoadingImage from "../components/files/LoadingImage.vue";
-
+import lightGallery from "../../../public/plugin/lg/lg.min.js";
+import lgThumbnail from "../../../public/plugin/lg/thumb.min.js";
+import lgZoom from "../../../public/plugin/lg/zoom.min.js";
+import lgVideo from "../../../public/plugin/lg/video.min.js";
+import lightGalleryWp from "../components/plugin/lightGalleryWp.vue";
 function initialState() {
     return {
         loadingRcv: true,
@@ -639,6 +661,8 @@ export default {
         ChatBarMobile,
         TextSmall,
         SettingCall,
+
+        lightGalleryWp,
     },
     mixins: [chat, chatCall],
     props: {
@@ -989,8 +1013,8 @@ export default {
             const index = this.media.findIndex((image) => {
                 return image.msg_id == e.msgId && image.index == e.index;
             });
-            if (index != -1) {
-                this.startImage = Number(index);
+            if (index !== -1) {
+                const el = document.getElementById("lg-item-" + index).click();
             }
             return;
         },
@@ -1148,7 +1172,6 @@ export default {
                         console.log("fetched message");
                         this.reFetchMessages = 0;
                         this.endPage = req.data.endPage;
-
                         this.loadingMessage = false;
                         this.$nextTick(() => {
                             if (up && !msgId) {
@@ -1161,6 +1184,15 @@ export default {
                             }
                         });
                         this.updateSeen(this.friendId);
+                        const lg = lightGallery(
+                            document.getElementById("chatLg"),
+                            {
+                                plugins: [lgZoom, lgThumbnail, lgVideo],
+                                // licenseKey: 'your_license_key'
+                                speed: 500,
+                                // ... other settings
+                            }
+                        );
                     })
                     .catch((err) => {
                         this.notification = true;
@@ -1641,7 +1673,12 @@ export default {
     },
 };
 </script>
+
 <style lang="scss">
+@import url("https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery.min.css");
+@import url("https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-zoom.min.css");
+@import url("https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-thumbnail.min.css");
+@import url("https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lg-video.min.css");
 .message__pre__reply {
     max-width: 450px;
 }

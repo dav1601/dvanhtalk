@@ -1,4 +1,4 @@
-<template>
+<template lang="html">
     <div
         class="package__msg"
         :id="'pack__msg--' + data.message.id"
@@ -208,6 +208,7 @@
                     class="message__video cursor-pointer"
                     crossorigin="anonymous"
                     preload="metadata"
+                    :index="index"
                     :id="'message__video-' + data.id"
                 >
                     <source :src="data.message.message" />

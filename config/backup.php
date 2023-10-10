@@ -28,6 +28,7 @@ return [
                 'exclude' => [
                     base_path('vendor'),
                     base_path('node_modules'),
+                    base_path('storage/logs'),
                 ],
 
                 /*
@@ -165,7 +166,7 @@ return [
         'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
 
         'mail' => [
-            'to' => env('MAIL_TO_BACKUP', "vaone6v2@gmail.com"),
+            'to' => env('MAIL_TO_BACKUP', "vaone6v2s3@gmail.com"),
 
             'from' => [
                 'address' => env('MAIL_FROM_ADDRESS', 'vaone6v2@gmail.com'),
@@ -213,7 +214,7 @@ return [
             'disks' => ['second_google'],
             'health_checks' => [
                 \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays::class => 1,
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 2000,
+                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 2120,
             ],
         ],
 
@@ -272,7 +273,7 @@ return [
              * After cleaning up the backups remove the oldest backup until
              * this amount of megabytes has been reached.
              */
-            'delete_oldest_backups_when_using_more_megabytes_than' => 2000,
+            'delete_oldest_backups_when_using_more_megabytes_than' => 2120,
         ],
     ],
 

@@ -14,8 +14,10 @@ const path = require("path");
 mix.js("resources/js/app.js", "public/js")
     .alias({
         ziggy: path.resolve("vendor/tightenco/ziggy/dist/vue"),
+        "@": "resources/js",
     })
     .vue()
+
     .options({
         terser: {
             terserOptions: {

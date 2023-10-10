@@ -32,6 +32,8 @@ import user from "./mixin/user";
 import appMixin from "./mixin/app";
 import vi from "vuetify/lib/locale/vi";
 import en from "vuetify/lib/locale/en";
+
+
 Vue.use(Vuetify);
 Vue.use(Notifications);
 Vue.use(VEmojiPicker);

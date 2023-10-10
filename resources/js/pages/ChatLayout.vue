@@ -410,6 +410,7 @@
                         class="preview__images--wp p-2"
                         :style="styleFilesPreview"
                         v-if="showPreviewFile"
+                        id="preview__files"
                     >
                         <div
                             class="wp__item d-flex justify-content-start align-items-center flex-wrap w-100"
@@ -706,6 +707,9 @@ export default {
             Echo.leave(`group-chat-${this.friendId}`);
             this.serverGroup(this.friendId);
         }
+    },
+    updated() {
+        this.setTopPreviewFile();
     },
     async mounted() {
         // this.setHeightChatLayoutBody();
@@ -1559,6 +1563,13 @@ export default {
             this.setType(null);
             Object.assign(this.$data, initialState());
         },
+        setTopPreviewFile() {
+            const el = document.getElementById("preview__files");
+            if (el) {
+                console.log(el.offsetHeight);
+                return (el.style.top = -el.offsetHeight + "px");
+            }
+        },
     },
     // ANCHOR watch //////////////////////////////////////////////////////
     watch: {
@@ -1614,6 +1625,7 @@ export default {
             this.images = images;
             this.video = video;
             this.audio = audio;
+            this.setTopPreviewFile();
         },
         async friendId(newVal, oldVal) {
             localStorage.setItem("saveScrollHeight", 0);
@@ -1644,6 +1656,7 @@ export default {
             }
         },
         showPreviewFile(n) {
+            console.log(n);
             this.setHeightChatLayoutBody();
         },
         showPreviewImg(newVal) {
@@ -1885,8 +1898,13 @@ export default {
 .dav__wp-chat--input {
     .preview__images {
         &--wp {
-            background: hsla(0, 0%, 100%, 0.08);
+            // background: hsla(0, 0%, 100%, 0.08);
+            background: #121212;
+            z-index: 100000;
             border-radius: 4px 4px 0 0 !important;
+            position: absolute;
+            top: -88px;
+            width: 100% !important;
         }
     }
 }

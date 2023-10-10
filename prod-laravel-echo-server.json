@@ -1,0 +1,32 @@
+{
+    "authHost": "https://dvanhtalk.online",
+    "authEndpoint": "/broadcasting/auth",
+    "clients": [],
+    "database": "redis",
+    "databaseConfig": {
+        "redis": {},
+        "sqlite": {
+            "databasePath": "/database/laravel-echo-server.sqlite"
+        }
+    },
+    "devMode": false,
+    "host": null,
+    "port": "6001",
+    "protocol": "https",
+    "socketio": {},
+    "secureOptions": 67108864,
+    "sslCertPath": "/etc/nginx/ssl/dvanhtalk.online/dvanhtalk.online.crt",
+    "sslKeyPath": "/etc/nginx/ssl/dvanhtalk.online/dvanhtalk.online.key",
+    "sslCertChainPath": "",
+    "sslPassphrase": "",
+    "subscribers": {
+        "http": true,
+        "redis": true
+    },
+    "apiOriginAllow": {
+        "allowCors": false,
+        "allowOrigin": "",
+        "allowMethods": "",
+        "allowHeaders": ""
+    }
+}

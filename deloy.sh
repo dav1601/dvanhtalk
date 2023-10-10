@@ -1,7 +1,10 @@
 # Turn on maintenance mode
 php artisan down
+
 # Pull the latest changes from the git repository
+git stash
 git pull origin master
+git stash pop
 # update pr
 sudo chown -R www-data:www-data .
 # Install/update composer dependecies
@@ -12,6 +15,7 @@ npm install --no-audit --legacy-peer-deps
 sudo chown -R www-data:www-data .
 #
 php artisan migrate --force
+cp prod-laravel-echo-server.json laravel-echo-server.json
 # Clear caches
 php artisan cache:clear
 

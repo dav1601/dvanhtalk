@@ -144,9 +144,15 @@ const mutations = {
     setActiveReply(s, p) {
         s.activeReply = p;
     },
-
+    // ANCHOR push media //////////////////////////////////////////////////////
     pushMedia(s, p) {
+        console.log("🚀 ~ file: message.js:149 ~ pushMedia ~  p:", p);
+
         const arrayMedia = p.message.split(",");
+        console.log(
+            "🚀 ~ file: message.js:152 ~ pushMedia ~ arrayMedia:",
+            arrayMedia
+        );
         arrayMedia.forEach((el, index) => {
             let data = {
                 alt: "gll",
@@ -287,7 +293,9 @@ const mutations = {
     setReceiver(s, p) {
         s.receiver = { ...s.receiver, ...p };
     },
-    async pushMessage(s, p) {
+    pushMessage(s, p) {
+        console.log("🚀 ~ file: message.js:291 ~ pushMessage ~ p:", p);
+
         s.typing = false;
         const index = s.messages.findIndex((el) => {
             return el.created_at == p.group_created_at;
@@ -295,10 +303,10 @@ const mutations = {
         let messages = [];
         messages.push(p);
         let data = { created_at: p.group_created_at, messages };
-        if (index != -1) {
-            await s.messages[index].messages.push(p);
+        if (index !== -1) {
+            s.messages[index].messages.push(p);
         } else {
-            await s.messages.push(data);
+            s.messages.push(data);
         }
     },
     updateMember(s, p) {
@@ -434,17 +442,17 @@ const actions = {
                 });
         });
     },
-    async getMessage(c, p) {
-        await c.commit("users/updateLastMessage", p, { root: true });
+    getMessage(c, p) {
+        c.commit("users/updateLastMessage", p, { root: true });
         if (p.type == 0) {
             if (c.rootGetters["auth/id"] == p.rcv_id) {
                 if (c.getters.receiver.id == p.sd_id) {
-                    await c.commit("pushMessage", p);
+                    c.commit("pushMessage", p);
                     if (p.type_msg == 2 || p.type_msg == 7) {
-                        await c.commit("pushMedia", p.message);
+                        c.commit("pushMedia", p.message);
                     }
                 } else {
-                    await c.commit("users/updatePosUsers", p.sd_id, {
+                    c.commit("users/updatePosUsers", p.sd_id, {
                         root: true,
                     });
                 }
@@ -452,9 +460,9 @@ const actions = {
                 return;
             }
         } else {
-            await c.commit("pushMessage", p);
+            c.commit("pushMessage", p);
             if (p.message_images) {
-                await c.commit("pushMessage", p.message_images);
+                c.commit("pushMessage", p.message_images);
             }
         }
     },
@@ -470,7 +478,7 @@ const actions = {
                 .catch((err) => {});
         });
     },
-
+    // ANCHOR send message //////////////////////////////////////////////////////
     sendMessage(c, p) {
         let data = new FormData();
         const parent_id = p.messageReply ? p.messageReply.msg_id : null;
@@ -485,12 +493,11 @@ const actions = {
                 .post(route("messages.store"), data)
                 .then(async (req) => {
                     const data = req.data.payload;
-                    console.log(data);
-                    await c.commit("pushMessage", data);
+                    c.commit("pushMessage", data);
                     if (data.type_msg == 2 || data.type_msg == 7) {
-                        await c.commit("pushMedia", data.message.message);
+                        c.commit("pushMedia", data.message.message);
                     }
-                    await c.commit("users/updateLastMessage", data, {
+                    c.commit("users/updateLastMessage", data, {
                         root: true,
                     });
 

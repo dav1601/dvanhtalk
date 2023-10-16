@@ -16,21 +16,7 @@
             ref="messageImage"
             @change="changeToSendMessage"
         />
-        <!-- <input
-            type="file"
-            accept="audio/*"
-            class="d-none"
-            ref="messageAudio"
-            @change="changeAudioToSendMessage"
-        />
-        <input
-            type="file"
-            accept="video/*"
-            class="d-none"
-            ref="messageVideo"
-            multiple
-            @change="changeVideoToSendMessage"
-        /> -->
+
         <!-- ANCHOR dialog setting group -->
         <v-dialog
             :fullscreen="true"
@@ -96,29 +82,8 @@
         <!-- end dialog setting for group -->
         <!-- ANCHOR gallery -->
 
-        <light-gallery-wp :list="media"> </light-gallery-wp>
-        <!-- <div id="lightgallery">
-            <a
-                href="https://images.pexels.com/photos/18037510/pexels-photo-18037510/free-photo-of-phong-c-nh-th-i-trang-dan-ong-nh-ng-ng-i.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-            >
-                <img
-                    src="https://images.pexels.com/photos/18037510/pexels-photo-18037510/free-photo-of-phong-c-nh-th-i-trang-dan-ong-nh-ng-ng-i.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                />
-            </a>
-            <a
-                href="https://images.pexels.com/photos/18359747/pexels-photo-18359747/free-photo-of-ch-p-ca-nhan.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-            >
-                <img
-                    src="https://images.pexels.com/photos/18359747/pexels-photo-18359747/free-photo-of-ch-p-ca-nhan.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                />
-            </a>
-        </div> -->
-
-        <!-- <dav-gallery-slide-show
-            :images="media"
-            :index="startImage"
-            @close="closeGllFile"
-        ></dav-gallery-slide-show> -->
+        <light-gallery-wp :list="media" @updated="updatedGallery">
+        </light-gallery-wp>
 
         <!-- end gllImage -->
         <div
@@ -585,6 +550,7 @@ import lgThumbnail from "../../../public/plugin/lg/thumb.min.js";
 import lgZoom from "../../../public/plugin/lg/zoom.min.js";
 import lgVideo from "../../../public/plugin/lg/video.min.js";
 import lightGalleryWp from "../components/plugin/lightGalleryWp.vue";
+// ANCHOR data //////////////////////////////////////////////////////
 function initialState() {
     return {
         loadingRcv: true,
@@ -627,7 +593,6 @@ function initialState() {
         showEmoji: false,
         tabReationActive: "all",
         showChatInfo: false,
-        friendInRoom: false,
         dialogSettingCall: false,
         reFetchRcv: 0,
         reFetchMessages: 0,
@@ -710,6 +675,7 @@ export default {
     },
     updated() {
         this.setTopPreviewFile();
+        // this.initLg();
     },
     async mounted() {
         // this.setHeightChatLayoutBody();
@@ -726,6 +692,7 @@ export default {
             },
         },
     },
+    // ANCHOR computed //////////////////////////////////////////////////////
     computed: {
         sizeProgress() {
             return Object.keys(this.stackProgress).length;
@@ -755,9 +722,7 @@ export default {
         blockLoadImg() {
             return this.$store.getters["message/blockLoadImg"];
         },
-        inRoom() {
-            return this.$store.getters["message/rcvInRoom"];
-        },
+
         streamId() {
             return this.authId + this.makeStreamId(10);
         },
@@ -877,9 +842,14 @@ export default {
                     reader.readAsDataURL(payload.file);
                 }
             }
+            this.scrollEnd(true);
         },
         uploadApi(payload = {}, url = "") {
-            const turn = this.sendTurn;
+            console.log(
+                "🚀 ~ file: ChatLayout.vue:845 ~ uploadApi ~ payload:",
+                payload
+            );
+            // const turn = this.sendTurn;
             let formData = new FormData();
             let folder = `user-${this.authId}-message-${this.typem(
                 payload.type
@@ -1119,6 +1089,14 @@ export default {
         endSetup() {
             this.setting = false;
         },
+        // ANCHOR updatedGallery //////////////////////////////////////////////////////
+        updatedGallery() {
+            lightGallery(document.getElementById("chatLg"), {
+                plugins: [lgZoom, lgThumbnail, lgVideo],
+                licenseKey: "0116-1601-1111-2222",
+                speed: 500,
+            });
+        },
         // ANCHOR set receiver //////////////////////////////////////////////////////
         setReceiver() {
             if (this.typeChat == 1) {
@@ -1156,7 +1134,15 @@ export default {
             };
             this.uploadApi(payload, false, this.sendTurn, url);
         },
+        // initLg() {
+        //     const lg = lightGallery(document.getElementById("chatLg"), {
+        //         plugins: [lgZoom, lgThumbnail],
+        //         licenseKey: "0116-1601-1111-2222",
+        //         speed: 500,
+        //     });
+        // },
         // ANCHOR get message //////////////////////////////////////////////////////
+
         async getMessages(up = false, msgId = null) {
             if (this.endPage == null || this.endPage == 0) {
                 const elLayoutChat = document.getElementById("chatLayout");
@@ -1173,7 +1159,6 @@ export default {
                         msgId: msgId,
                     })
                     .then((req) => {
-                        console.log("fetched message");
                         this.reFetchMessages = 0;
                         this.endPage = req.data.endPage;
                         this.loadingMessage = false;
@@ -1188,35 +1173,22 @@ export default {
                             }
                         });
                         this.updateSeen(this.friendId);
-                        const lg = lightGallery(
-                            document.getElementById("chatLg"),
-                            {
-                                plugins: [lgZoom, lgThumbnail, lgVideo],
-                                // licenseKey: 'your_license_key'
-                                speed: 500,
-                                // ... other settings
-                            }
-                        );
+                        // lightGallery(document.getElementById("chatLg"), {
+                        //     plugins: [lgZoom, lgThumbnail, lgVideo],
+                        //     licenseKey: "0116-1601-1111-2222",
+                        //     speed: 500,
+                        // });
                     })
                     .catch((err) => {
+                        console.log(
+                            "🚀 ~ file: ChatLayout.vue:1164 ~ getMessages ~ err:",
+                            err
+                        );
+
                         this.notification = true;
                         this.text =
                             "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang";
-                        // this.isLoading = false;
-                        // if (this.reFetchMessages > 4) {
-                        //     this.notification = true;
-                        //     this.text =
-                        //         "Load tin nhắn thất bại bạn vui lòng nhấn F5 để thử lại hoặc Refresh lại trang ";
-                        // } else {
-                        //     this.reFetchMessages++;
-                        //     this.getMessages(up);
-                        // }
-                        // this.$nextTick(() => {
-                        //     this.scrollEnd(true, true);
-                        // });
                     });
-            } else {
-                return;
             }
         },
 
@@ -1435,6 +1407,12 @@ export default {
         makeIdFile(type = "img", index) {
             return type + this.sendTurn + index + this.makeStreamId(7);
         },
+        friendInRoom() {
+            const exist = this.usersMyRoom.findIndex((user) => {
+                return user.id == this.friendId;
+            });
+            return exist !== -1 ? 1 : 0;
+        },
         // initUpload(array = []) {},
         // removeKeyFile(key = 0, id = null) {
         //     switch (key) {
@@ -1459,7 +1437,7 @@ export default {
         // },
         // ANCHOR api send msg //////////////////////////////////////////////////////
         apiSendMsg: function (type = 0, message = "") {
-            const seen = this.inRoom;
+            const seen = this.friendInRoom();
             let payload = {
                 to: this.friendId,
                 from: this.authId,
@@ -1471,25 +1449,12 @@ export default {
             this.$store
                 .dispatch("message/sendMessage", payload)
                 .then((req) => {
-                    // if (type == this.typem("image")) {
-                    //     for (let index = 0; index < process.length; index++) {
-                    //         const element = process[index];
-                    //         this.removeProcess(element);
-                    //     }
-                    // } else {
-                    //     this.removeProcess(process);
-                    // }
-                    if (type == 1) {
-                        this.message = "";
-                    }
+                    this.message = "";
                     this.$nextTick(() => {
                         this.scrollEnd(true, true);
                     });
                 })
                 .catch((err) => {
-                    if (type == 1) {
-                        this.message = "";
-                    }
                     this.$nextTick(() => {
                         this.scrollEnd(true, true);
                     });
@@ -1518,47 +1483,7 @@ export default {
             });
             return;
         },
-        // groupByTypeProcess: function (collection, property) {
-        //     var val,
-        //         index,
-        //         values = [],
-        //         result = [];
-        //     for (var i = 0; i < collection.length; i++) {
-        //         val = collection[i][property];
-        //         index = values.indexOf(val);
-        //         if (index > -1) result[index].push(collection[i]);
-        //         else {
-        //             values.push(val);
-        //             result.push([collection[i]]);
-        //         }
-        //     }
-        //     return result;
-        // },
 
-        // resetFile(type, id = null) {
-        //     switch (type) {
-        //         case 1:
-        //             this.message = "";
-        //             break;
-        //         case 2:
-        //             this.files = this.removeKeyFile("image");
-
-        //             break;
-        //         case 3:
-        //             this.files = this.removeKeyFile("audio", id);
-
-        //             break;
-        //         case 6:
-        //             this.record = null;
-        //             break;
-        //         case 7:
-        //             this.files = this.removeKeyFile("video", id);
-
-        //             break;
-        //         default:
-        //             break;
-        //     }
-        // },
         resetLoad() {
             this.setType(null);
             Object.assign(this.$data, initialState());
@@ -1573,6 +1498,12 @@ export default {
     },
     // ANCHOR watch //////////////////////////////////////////////////////
     watch: {
+        media(newList) {
+            console.log(
+                "🚀 ~ file: ChatLayout.vue:1501 ~ media ~ newList:",
+                newList
+            );
+        },
         sizeProgress(n) {
             console.log(n);
         },
@@ -1685,6 +1616,7 @@ export default {
         },
     },
 };
+// ANCHOR style //////////////////////////////////////////////////////
 </script>
 
 <style lang="scss">

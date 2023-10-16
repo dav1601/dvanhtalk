@@ -22,6 +22,9 @@
 <script>
 export default {
     props: ["list"],
+    updated() {
+        this.$emit("updated");
+    },
     methods: {
         isVid(file) {
             return file.type === 7;

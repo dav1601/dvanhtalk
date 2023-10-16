@@ -143,21 +143,22 @@ export default {
                     this.$store.commit("message/leavingChat", user.id);
                 })
                 // ANCHOR xử lý tin nhắn đã gửi đến người nhậN //////////////////////////////////////////////////////
-                .listen("SendMessage", async (e) => {
-                    console.log(e);
-                    await this.$store.dispatch("message/getTyping", false);
-                    await this.$store.commit("message/setActiveReply", null);
+                .listen("SendMessage", (e) => {
+                    console.log("🚀 ~ file: chat.js:147 ~ .listen ~ e:", e);
+                    this.$store.dispatch("message/getTyping", false);
+                    this.$store.commit("message/setActiveReply", null);
                     const authId = Number(this.$store.getters["auth/id"]);
-                    const rcvId = this.isChat
-                        ? Number(this.$store.getters["message/receiver"].id)
-                        : 0;
 
                     const userMessage = e.user_message;
 
                     if (userMessage.seen === 0) {
-                        console.log("ok");
                         this.$store.commit("users/updateUnseen", {
                             type: "increase",
+                            userId: parseInt(userMessage.sd_id),
+                        });
+                    } else if (userMessage.seen === 1) {
+                        this.$store.commit("users/updateUnseen", {
+                            type: "reset",
                             userId: parseInt(userMessage.sd_id),
                         });
                     }
@@ -165,26 +166,30 @@ export default {
                         Number(userMessage.rcv_id) == authId ||
                         userMessage.call_info
                     ) {
-                        this.chatting = true;
-                        const blocking = this.isPointBlockScroll();
-                        if (blocking) {
-                            this.$store.commit("message/setBlockLoadImg", true);
-                        } else {
-                            this.$store.commit(
-                                "message/setBlockLoadImg",
-                                false
-                            );
-                        }
+                        this.$store.commit(
+                            "message/setBlockLoadImg",
+                            this.isPointBlockScroll()
+                        );
                         this.$store.dispatch("message/getMessage", userMessage);
-
-                        if (rcvId == Number(userMessage.sd_id)) {
-                            this.$store.dispatch("message/getIsChatting", true);
-                            if (!blocking) {
-                                this.scrollEnd(true);
-                            }
-                        }
                         const tone = this.$refs.msgTone;
                         tone.play();
+                        // const blocking = this.isPointBlockScroll();
+                        // if (this.isPointBlockScroll()) {
+                        //     this.$store.commit("message/setBlockLoadImg", true);
+                        // } else {
+                        //     this.$store.commit(
+                        //         "message/setBlockLoadImg",
+                        //         false
+                        //     );
+                        // }
+                        // ///////////////
+
+                        // if (rcvId == Number(userMessage.sd_id)) {
+                        //     this.$store.dispatch("message/getIsChatting", true);
+                        //     if (!blocking) {
+                        //         this.scrollEnd(true);
+                        //     }
+                        // }
                     }
                 })
                 .listen("CustomEvent", (e) => {
